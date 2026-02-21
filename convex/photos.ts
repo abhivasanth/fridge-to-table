@@ -42,8 +42,11 @@ export const analyzePhoto = action({
               type: "text",
               text: `Analyse this fridge photo for a vegetarian recipe app.
 List every food ingredient you can identify.
-Assume all ingredients are vegetarian. If something is ambiguous (e.g. could be
-meat broth or vegetable broth), assume vegetarian and add it to the uncertain list.
+All ingredients are assumed vegetarian. Only add an ingredient to the "uncertain" list
+if it could plausibly be a meat or fish product (e.g. a broth that could be meat-based,
+an unlabelled sausage, or an unidentifiable protein). Never flag spices, condiments,
+herbs, salt, pepper, oils, vinegars, dairy, eggs, fruit, vegetables, grains, or
+any ingredient that is obviously vegetarian.
 Return JSON only, no other text: { "ingredients": string[], "uncertain": string[] }`,
             },
           ],
