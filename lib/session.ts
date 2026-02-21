@@ -13,7 +13,10 @@ function generateUUID(): string {
 // On subsequent visits, returns the stored UUID.
 // If the stored value is corrupt or invalid, generates a fresh one.
 // This ties favourites to a browser without requiring a login.
+// Returns "" on the server (SSR) — localStorage is browser-only.
+// Components should skip Convex queries when this returns "".
 export function getSessionId(): string {
+  if (typeof window === "undefined") return "";
   const key = "fridge_session_id";
   const existing = localStorage.getItem(key);
   if (existing && UUID_V4_RE.test(existing)) return existing;

@@ -11,7 +11,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 export function FavouritesGrid() {
   const sessionId = getSessionId();
   // `undefined` while loading, `[]` when loaded but empty
-  const favourites = useQuery(api.favourites.getFavourites, { sessionId });
+  const favourites = useQuery(api.favourites.getFavourites, sessionId ? { sessionId } : "skip");
   const removeFavourite = useMutation(api.favourites.removeFavourite);
 
   if (favourites === undefined) {

@@ -13,7 +13,7 @@ type Props = {
 // Uses Convex's real-time query — the button updates instantly after clicking.
 export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
   const sessionId = getSessionId();
-  const favourites = useQuery(api.favourites.getFavourites, { sessionId });
+  const favourites = useQuery(api.favourites.getFavourites, sessionId ? { sessionId } : "skip");
   const saveFavourite = useMutation(api.favourites.saveFavourite);
   const removeFavourite = useMutation(api.favourites.removeFavourite);
 
