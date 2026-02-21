@@ -6,15 +6,16 @@ import type { Recipe } from "@/types/recipe";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type Props = {
-  params: { recipeSetId: string; recipeIndex: string };
+  params: Promise<{ recipeSetId: string; recipeIndex: string }>;
 };
 
 export default async function RecipeDetailPage({ params }: Props) {
+  const { recipeSetId, recipeIndex: recipeIndexStr } = await params;
   const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
-    recipeSetId: params.recipeSetId as Id<"recipes">,
+    recipeSetId: recipeSetId as Id<"recipes">,
   });
 
-  const recipeIndex = parseInt(params.recipeIndex, 10);
+  const recipeIndex = parseInt(recipeIndexStr, 10);
   const recipe = recipeSet
     ? (recipeSet.results as Recipe[])[recipeIndex]
     : null;
@@ -37,7 +38,7 @@ export default async function RecipeDetailPage({ params }: Props) {
       <div className="max-w-2xl mx-auto px-4 py-12">
         {/* Back link */}
         <Link
-          href={`/results/${params.recipeSetId}`}
+          href={`/results/${recipeSetId}`}
           className="text-green-600 text-sm hover:underline mb-6 inline-block"
         >
           ← Back to results
@@ -56,7 +57,7 @@ export default async function RecipeDetailPage({ params }: Props) {
         <div className="flex items-start justify-between gap-4 mb-6">
           <h1 className="text-3xl font-bold text-gray-900">{recipe.title}</h1>
           <FavouriteButton
-            recipeSetId={params.recipeSetId}
+            recipeSetId={recipeSetId}
             recipeIndex={recipeIndex}
           />
         </div>

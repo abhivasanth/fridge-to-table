@@ -6,13 +6,14 @@ import type { Recipe } from "@/types/recipe";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type Props = {
-  params: { recipeSetId: string };
+  params: Promise<{ recipeSetId: string }>;
 };
 
 // Server component — fetches data before rendering (no loading spinner needed)
 export default async function ResultsPage({ params }: Props) {
+  const { recipeSetId } = await params;
   const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
-    recipeSetId: params.recipeSetId as Id<"recipes">,
+    recipeSetId: recipeSetId as Id<"recipes">,
   });
 
   if (!recipeSet) {
@@ -55,7 +56,7 @@ export default async function ResultsPage({ params }: Props) {
             <RecipeCard
               key={index}
               recipe={recipe}
-              recipeSetId={params.recipeSetId}
+              recipeSetId={recipeSetId}
               recipeIndex={index}
             />
           ))}
