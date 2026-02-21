@@ -1,6 +1,7 @@
 import { action, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Recipe } from "../types/recipe";
 
@@ -45,7 +46,7 @@ export const generateRecipes = action({
       ),
     }),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Id<"recipes">> => {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     const ingredientList = args.ingredients.join(", ");
@@ -91,8 +92,10 @@ ${recipeSchema}`,
       ],
     });
 
-    const text =
+    const rawText =
       response.content[0].type === "text" ? response.content[0].text : "[]";
+    // Strip markdown code fences if Claude wraps the JSON (e.g. ```json ... ```)
+    const text = rawText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const recipes = JSON.parse(text) as Recipe[];
 
     // Use ctx.runMutation to call the internal mutation from within this action
