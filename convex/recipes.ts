@@ -5,12 +5,6 @@ import { Id } from "./_generated/dataModel";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Recipe } from "../types/recipe";
 
-const dietValidator = v.union(
-  v.literal("vegetarian"),
-  v.literal("vegan"),
-  v.literal("non-vegetarian")
-);
-
 const filtersValidator = v.object({
   cuisine: v.string(),
   maxCookingTime: v.number(),
@@ -19,7 +13,11 @@ const filtersValidator = v.object({
     v.literal("medium"),
     v.literal("hard")
   ),
-  diet: dietValidator,
+  diet: v.optional(v.union(
+    v.literal("vegetarian"),
+    v.literal("vegan"),
+    v.literal("non-vegetarian")
+  )),
 });
 
 // Internal mutation — saves a generated recipe set to the database.
@@ -53,10 +51,11 @@ export const generateRecipes = action({
     const ingredientList = args.ingredients.join(", ");
     const cuisineNote = args.filters.cuisine || "any style";
 
+    const diet = args.filters.diet ?? "vegetarian";
     const dietInstruction =
-      args.filters.diet === "vegan"
+      diet === "vegan"
         ? "All recipes must be strictly vegan (no meat, fish, dairy, or eggs)."
-        : args.filters.diet === "vegetarian"
+        : diet === "vegetarian"
           ? "All recipes must be vegetarian (no meat or fish, but dairy and eggs are fine)."
           : "Recipes can include meat, fish, or any other ingredients — non-vegetarian is welcome.";
 
