@@ -5,23 +5,25 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: "jsdom",
-    setupFiles: ["./vitest.setup.ts"],
-    globals: true,
     projects: [
       {
-        name: "unit",
+        extends: true,
         test: {
+          name: "unit",
           include: ["tests/unit/**/*.test.{ts,tsx}"],
           environment: "jsdom",
           setupFiles: ["./vitest.setup.ts"],
+          globals: true,
         },
       },
       {
-        name: "integration",
+        extends: true,
         test: {
+          name: "integration",
           include: ["tests/integration/**/*.test.ts"],
           environment: "edge-runtime",
+          globals: true,
+          server: { deps: { inline: ["convex-test"] } },
         },
       },
     ],
