@@ -19,7 +19,7 @@ export default defineSchema({
     }),
     results: v.array(v.any()),        // array of exactly 3 Recipe objects (JSON)
     generatedAt: v.number(),          // Date.now() timestamp
-  }),
+  }).index("by_session", ["sessionId"]),
 
   // Tracks which recipes a session has saved as favourites.
   favourites: defineTable({
@@ -27,5 +27,7 @@ export default defineSchema({
     recipeSetId: v.id("recipes"),     // references the recipes table
     recipeIndex: v.number(),          // 0, 1, or 2 — which of the 3 recipes
     savedAt: v.number(),
-  }),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_and_recipe", ["sessionId", "recipeSetId", "recipeIndex"]),
 });
