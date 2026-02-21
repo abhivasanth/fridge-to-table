@@ -27,4 +27,14 @@ describe("getSessionId", () => {
     localStorage.setItem("fridge_session_id", existingId);
     expect(getSessionId()).toBe(existingId);
   });
+
+  it("ignores a corrupt localStorage value and generates a fresh ID", () => {
+    localStorage.setItem("fridge_session_id", "not-a-uuid");
+    const id = getSessionId();
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+    expect(localStorage.getItem("fridge_session_id")).toBe(id);
+    expect(id).not.toBe("not-a-uuid");
+  });
 });
