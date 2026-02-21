@@ -1,0 +1,76 @@
+import { fetchQuery } from "convex/nextjs";
+import { api } from "@/convex/_generated/api";
+import { RecipeCard } from "@/components/RecipeCard";
+import Link from "next/link";
+import type { Recipe } from "@/types/recipe";
+import type { Id } from "@/convex/_generated/dataModel";
+
+type Props = {
+  params: { recipeSetId: string };
+};
+
+// Server component — fetches data before rendering (no loading spinner needed)
+export default async function ResultsPage({ params }: Props) {
+  const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
+    recipeSetId: params.recipeSetId as Id<"recipes">,
+  });
+
+  if (!recipeSet) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-green-50">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Recipe set not found.</p>
+          <Link href="/" className="text-green-600 underline">
+            Start a new search
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const recipes = recipeSet.results as Recipe[];
+
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="text-green-600 text-sm hover:underline mb-4 inline-block"
+          >
+            ← New search
+          </Link>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Here&apos;s what we found
+          </h2>
+          <p className="text-gray-400 text-sm mt-1">
+            Based on: {recipeSet.ingredients.join(", ")}
+          </p>
+        </div>
+
+        {/* 3 recipe cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {recipes.map((recipe, index) => (
+            <RecipeCard
+              key={index}
+              recipe={recipe}
+              recipeSetId={params.recipeSetId}
+              recipeIndex={index}
+            />
+          ))}
+        </div>
+
+        {/* Link to favourites */}
+        <div className="mt-10 text-center">
+          <Link
+            href="/favourites"
+            className="text-gray-400 text-sm hover:text-green-600 transition-colors"
+          >
+            View saved favourites →
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
