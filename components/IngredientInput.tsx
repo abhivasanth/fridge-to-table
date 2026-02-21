@@ -2,17 +2,23 @@
 import { useState } from "react";
 import { parseIngredients } from "@/lib/ingredientParser";
 import { compressImage } from "@/lib/imageCompression";
+import type { RecipeFilters } from "@/types/recipe";
 
 type Props = {
-  // Called when the user clicks "Find Recipes"
-  // ingredients: parsed text list OR empty array (if photo mode — action will extract them)
-  // imageBase64: only present when photo mode is used
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
+  diet: RecipeFilters["diet"];
+  onDietChange: (diet: RecipeFilters["diet"]) => void;
 };
 
+const DIET_OPTIONS: { value: RecipeFilters["diet"]; label: string }[] = [
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "vegan", label: "Vegan" },
+  { value: "non-vegetarian", label: "Non-Vegetarian" },
+];
+
 // Handles both text input (comma-separated list) and photo upload.
-export function IngredientInput({ onSubmit, isLoading }: Props) {
+export function IngredientInput({ onSubmit, isLoading, diet, onDietChange }: Props) {
   const [activeTab, setActiveTab] = useState<"text" | "photo">("text");
   const [textInput, setTextInput] = useState("");
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -24,7 +30,6 @@ export function IngredientInput({ onSubmit, isLoading }: Props) {
     if (!file) return;
     setPhotoError(null);
     try {
-      // Compress before storing — keeps payload within Convex's 8MB limit
       const compressed = await compressImage(file, 1024);
       setPhotoBase64(compressed);
       setPhotoPreview(compressed);
@@ -40,7 +45,6 @@ export function IngredientInput({ onSubmit, isLoading }: Props) {
       onSubmit(ingredients);
     } else {
       if (!photoBase64) return;
-      // In photo mode, pass empty ingredients array — the analyzePhoto action extracts them
       onSubmit([], photoBase64);
     }
   }
@@ -121,6 +125,26 @@ export function IngredientInput({ onSubmit, isLoading }: Props) {
           )}
         </div>
       )}
+
+      {/* Diet filter */}
+      <div className="mt-4">
+        <p className="text-xs font-medium text-gray-500 mb-2">Diet preference</p>
+        <div className="flex gap-2">
+          {DIET_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => onDietChange(option.value)}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors
+                ${diet === option.value
+                  ? "bg-green-600 text-white border-green-600"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
+                }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Submit button */}
       <button

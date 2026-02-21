@@ -22,4 +22,5 @@ export type RecipeFilters = {
   cuisine: string;              // free-text — feeds directly into the Claude prompt
   maxCookingTime: number;       // minutes
   difficulty: "easy" | "medium" | "hard";
+  diet: "vegetarian" | "vegan" | "non-vegetarian";
 };

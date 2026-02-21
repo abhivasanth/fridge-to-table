@@ -5,21 +5,30 @@ import { Id } from "./_generated/dataModel";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Recipe } from "../types/recipe";
 
+const dietValidator = v.union(
+  v.literal("vegetarian"),
+  v.literal("vegan"),
+  v.literal("non-vegetarian")
+);
+
+const filtersValidator = v.object({
+  cuisine: v.string(),
+  maxCookingTime: v.number(),
+  difficulty: v.union(
+    v.literal("easy"),
+    v.literal("medium"),
+    v.literal("hard")
+  ),
+  diet: dietValidator,
+});
+
 // Internal mutation — saves a generated recipe set to the database.
 // "internal" means it cannot be called directly from the browser; only from actions.
 export const insertRecipeSet = internalMutation({
   args: {
     sessionId: v.string(),
     ingredients: v.array(v.string()),
-    filters: v.object({
-      cuisine: v.string(),
-      maxCookingTime: v.number(),
-      difficulty: v.union(
-        v.literal("easy"),
-        v.literal("medium"),
-        v.literal("hard")
-      ),
-    }),
+    filters: filtersValidator,
     results: v.array(v.any()),
   },
   handler: async (ctx, args) => {
@@ -30,27 +39,26 @@ export const insertRecipeSet = internalMutation({
   },
 });
 
-// Generates 3 vegetarian recipes from a list of ingredients and filters.
+// Generates 3 recipes from a list of ingredients and filters.
 // Calls Claude API, stores the results in Convex, and returns the recipe set ID.
 export const generateRecipes = action({
   args: {
     sessionId: v.string(),
     ingredients: v.array(v.string()),
-    filters: v.object({
-      cuisine: v.string(),
-      maxCookingTime: v.number(),
-      difficulty: v.union(
-        v.literal("easy"),
-        v.literal("medium"),
-        v.literal("hard")
-      ),
-    }),
+    filters: filtersValidator,
   },
   handler: async (ctx, args): Promise<Id<"recipes">> => {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     const ingredientList = args.ingredients.join(", ");
     const cuisineNote = args.filters.cuisine || "any style";
+
+    const dietInstruction =
+      args.filters.diet === "vegan"
+        ? "All recipes must be strictly vegan (no meat, fish, dairy, or eggs)."
+        : args.filters.diet === "vegetarian"
+          ? "All recipes must be vegetarian (no meat or fish, but dairy and eggs are fine)."
+          : "Recipes can include meat, fish, or any other ingredients — non-vegetarian is welcome.";
 
     // Including the schema in the prompt dramatically improves Claude's JSON reliability
     const recipeSchema = `{
@@ -72,10 +80,11 @@ export const generateRecipes = action({
       messages: [
         {
           role: "user",
-          content: `You are a creative vegetarian chef generating recipe suggestions.
+          content: `You are a creative chef generating recipe suggestions.
 
 The user has these ingredients: ${ingredientList}.
-Generate exactly 3 vegetarian recipes using mostly these ingredients.
+Generate exactly 3 recipes using mostly these ingredients.
+Diet preference: ${dietInstruction}
 Cuisine style: ${cuisineNote}.
 Maximum cooking time: ${args.filters.maxCookingTime} minutes.
 Difficulty level: ${args.filters.difficulty}.

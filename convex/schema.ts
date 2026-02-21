@@ -16,6 +16,11 @@ export default defineSchema({
         v.literal("medium"),
         v.literal("hard")
       ),
+      diet: v.union(
+        v.literal("vegetarian"),
+        v.literal("vegan"),
+        v.literal("non-vegetarian")
+      ),
     }),
     results: v.array(v.any()),        // array of exactly 3 Recipe objects (JSON)
     generatedAt: v.number(),          // Date.now() timestamp
