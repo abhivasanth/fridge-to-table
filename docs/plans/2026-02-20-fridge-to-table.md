@@ -2,11 +2,33 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a vegetarian recipe suggestion web app where users input fridge ingredients (text or photo) and get 3 personalised recipes with shopping lists.
+**Status:** ✅ Completed 2026-02-21
+**Live:** https://fridge-to-table-mu.vercel.app
 
-**Architecture:** Next.js 14 (App Router) as a pure UI layer calling Convex for all server logic. Claude API calls happen exclusively inside Convex Actions. Anonymous sessions via UUID in localStorage identify users without any login.
+**Goal:** Build a recipe suggestion web app where users input fridge ingredients (text or photo) and get 3 personalised recipes with shopping lists.
 
-**Tech Stack:** Next.js 14, TypeScript, Tailwind CSS, Convex, Anthropic SDK (`@anthropic-ai/sdk`), Claude `claude-sonnet-4-6`, Vitest, React Testing Library, Playwright, Vercel
+**Architecture:** Next.js 16 (App Router) as a pure UI layer calling Convex for all server logic. Claude API calls happen exclusively inside Convex Actions. Anonymous sessions via UUID in localStorage identify users without any login.
+
+**Tech Stack:** Next.js 16, TypeScript, Tailwind CSS, Convex, Anthropic SDK (`@anthropic-ai/sdk`), Claude `claude-sonnet-4-6`, Vitest, React Testing Library, Playwright, Vercel
+
+---
+
+## Deviations & Fixes Applied During Implementation
+
+The following changes were made during implementation that differ from the original plan:
+
+| Area | Original Plan | What Was Actually Built |
+|---|---|---|
+| Next.js version | 14 | 16.1.6 (latest at time of build) |
+| `params` in pages | `params.recipeSetId` | `const { recipeSetId } = await params` — Next.js 15+ requires awaiting params |
+| `localStorage` in SSR | Not considered | `getSessionId()` guards with `typeof window === "undefined"`; Convex queries use `"skip"` pattern |
+| Claude JSON response | Direct `JSON.parse` | Strip markdown code fences (` ```json `) before parsing — Claude wraps JSON inconsistently |
+| Convex deployment | `npx convex deploy` | Must use `npx convex deploy --cmd 'npm run build'` with `CONVEX_DEPLOY_KEY` in Vercel env |
+| `convex/_generated/` | In `.gitignore` | Committed to git — required for Vercel build to find Convex bindings |
+| Diet filter | Vegetarian only | Added post-implementation: Vegetarian / Vegan / Non-Vegetarian toggle before Find Recipes button |
+| New schema fields | N/A | New fields on existing tables must use `v.optional()` to avoid validation errors on old records |
+| Photo uncertainty prompt | Flag all ambiguous items | Tightened: never flag salt, pepper, spices, dairy, eggs, or clearly vegetarian items |
+| Vercel auto-deploy | Expected from GitHub push | Unreliable — use `npx vercel --prod` from CLI; git author email must match Vercel account |
 
 ---
 
