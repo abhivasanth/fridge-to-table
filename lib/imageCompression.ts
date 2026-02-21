@@ -17,8 +17,14 @@ export function compressImage(
 
     const reader = new FileReader();
 
+    // Reject if the file cannot be read (e.g. permission error, corrupt file)
+    reader.onerror = () => reject(new Error("Failed to read file"));
+
     reader.onload = (e) => {
       const img = new Image();
+
+      // Reject if the image cannot be decoded (e.g. corrupt JPEG data)
+      img.onerror = () => reject(new Error("Failed to decode image"));
 
       img.onload = () => {
         // Calculate new dimensions, preserving the aspect ratio
@@ -38,7 +44,11 @@ export function compressImage(
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d")!;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
         ctx.drawImage(img, 0, 0, width, height);
 
         // Export as JPEG at 85% quality — good balance of size vs. quality
