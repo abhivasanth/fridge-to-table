@@ -41,5 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# generated
-convex/_generated/
+# generated (not ignored — Vercel needs these files to build)
+# convex/_generated/
