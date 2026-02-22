@@ -18,9 +18,21 @@ export type Recipe = {
 };
 
 // Filters the user can apply when searching for recipes
+// diet is intentionally removed — Claude infers dietary requirements from ingredients
 export type RecipeFilters = {
   cuisine: string;              // free-text — feeds directly into the Claude prompt
   maxCookingTime: number;       // minutes
   difficulty: "easy" | "medium" | "hard";
-  diet: "vegetarian" | "vegan" | "non-vegetarian";
+};
+
+export type ChefVideoResult = {
+  chefId: string;
+  chefName: string;
+  chefEmoji: string;
+  found: boolean;
+  video?: {
+    title: string;
+    thumbnail: string;
+    videoId: string;
+  };
 };

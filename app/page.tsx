@@ -13,7 +13,6 @@ const DEFAULT_FILTERS: RecipeFilters = {
   cuisine: "",
   maxCookingTime: 30,
   difficulty: "easy",
-  diet: "vegetarian",
 };
 
 export default function HomePage() {
@@ -79,8 +78,6 @@ export default function HomePage() {
         <IngredientInput
           onSubmit={handleSubmit}
           isLoading={isLoading}
-          diet={filters.diet}
-          onDietChange={(diet) => setFilters((f) => ({ ...f, diet }))}
         />
 
         {/* Optional filters */}

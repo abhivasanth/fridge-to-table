@@ -2,23 +2,14 @@
 import { useState } from "react";
 import { parseIngredients } from "@/lib/ingredientParser";
 import { compressImage } from "@/lib/imageCompression";
-import type { RecipeFilters } from "@/types/recipe";
 
 type Props = {
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
-  diet: RecipeFilters["diet"];
-  onDietChange: (diet: RecipeFilters["diet"]) => void;
 };
 
-const DIET_OPTIONS: { value: RecipeFilters["diet"]; label: string }[] = [
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: "vegan", label: "Vegan" },
-  { value: "non-vegetarian", label: "Non-Vegetarian" },
-];
-
 // Handles both text input (comma-separated list) and photo upload.
-export function IngredientInput({ onSubmit, isLoading, diet, onDietChange }: Props) {
+export function IngredientInput({ onSubmit, isLoading }: Props) {
   const [activeTab, setActiveTab] = useState<"text" | "photo">("text");
   const [textInput, setTextInput] = useState("");
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -125,26 +116,6 @@ export function IngredientInput({ onSubmit, isLoading, diet, onDietChange }: Pro
           )}
         </div>
       )}
-
-      {/* Diet filter */}
-      <div className="mt-4">
-        <p className="text-xs font-medium text-gray-500 mb-2">Diet preference</p>
-        <div className="flex gap-2">
-          {DIET_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onDietChange(option.value)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors
-                ${diet === option.value
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Submit button */}
       <button
