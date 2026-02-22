@@ -22,10 +22,10 @@ export default async function RecipeDetailPage({ params }: Props) {
 
   if (!recipe) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
+      <main className="min-h-screen flex items-center justify-center bg-[#FAF6F1]">
         <p className="text-gray-500">
           Recipe not found.{" "}
-          <Link href="/" className="text-green-600 underline">
+          <Link href="/" className="text-[#D4622A] underline">
             Go home
           </Link>
         </p>
@@ -34,12 +34,12 @@ export default async function RecipeDetailPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="max-w-2xl mx-auto px-4 py-12">
+    <main className="min-h-screen bg-[#FAF6F1] pb-24">
+      <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Back link */}
         <Link
           href={`/results/${recipeSetId}`}
-          className="text-green-600 text-sm hover:underline mb-6 inline-block"
+          className="text-[#D4622A] text-sm hover:underline mb-6 inline-block"
         >
           ← Back to results
         </Link>
@@ -55,7 +55,7 @@ export default async function RecipeDetailPage({ params }: Props) {
 
         {/* Title and favourite button */}
         <div className="flex items-start justify-between gap-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">{recipe.title}</h1>
+          <h1 className="text-3xl font-bold text-[#1A3A2A]">{recipe.title}</h1>
           <FavouriteButton
             recipeSetId={recipeSetId}
             recipeIndex={recipeIndex}
@@ -64,7 +64,7 @@ export default async function RecipeDetailPage({ params }: Props) {
 
         {/* Meta badges */}
         <div className="flex flex-wrap gap-2 mb-6 text-sm">
-          <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium">
+          <span className="bg-[#C8DFC8] text-[#1A3A2A] px-3 py-1 rounded-full font-medium">
             {recipe.cuisineType}
           </span>
           <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
@@ -82,7 +82,7 @@ export default async function RecipeDetailPage({ params }: Props) {
 
         {/* Ingredients list */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">
+          <h2 className="text-lg font-semibold text-[#1A3A2A] mb-3">
             Ingredients
           </h2>
           <ul className="space-y-2">
@@ -92,7 +92,7 @@ export default async function RecipeDetailPage({ params }: Props) {
                   className={`w-5 h-5 rounded-full flex items-center justify-center
                     text-xs flex-shrink-0
                     ${ing.inFridge
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-[#C8DFC8] text-[#1A3A2A]"
                       : "bg-gray-100 text-gray-400"
                     }`}
                 >
@@ -110,14 +110,14 @@ export default async function RecipeDetailPage({ params }: Props) {
 
         {/* Step-by-step instructions */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">
+          <h2 className="text-lg font-semibold text-[#1A3A2A] mb-3">
             Instructions
           </h2>
           <ol className="space-y-4">
             {recipe.steps.map((step, i) => (
               <li key={i} className="flex gap-4 text-sm text-gray-700">
                 <span
-                  className="w-7 h-7 rounded-full bg-green-600 text-white font-bold
+                  className="w-7 h-7 rounded-full bg-[#D4622A] text-white font-bold
                              flex items-center justify-center flex-shrink-0 text-xs"
                 >
                   {i + 1}
@@ -131,7 +131,7 @@ export default async function RecipeDetailPage({ params }: Props) {
         {/* Shopping list — only shown if there are items to buy */}
         {recipe.shoppingList.length > 0 && (
           <section className="bg-amber-50 rounded-xl p-5">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            <h2 className="text-lg font-semibold text-[#1A3A2A] mb-3">
               🛒 Shopping List
             </h2>
             <ul className="space-y-1">
