@@ -7,12 +7,13 @@ export function isVoiceSupported(): boolean {
   return "SpeechRecognition" in window || "webkitSpeechRecognition" in window;
 }
 
-export function createSpeechRecognition(): SpeechRecognition | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createSpeechRecognition(): any {
   if (!isVoiceSupported()) return null;
   const SR =
     (window as any).SpeechRecognition ||
     (window as any).webkitSpeechRecognition;
-  const recognition: SpeechRecognition = new SR();
+  const recognition = new SR();
   recognition.continuous = false;
   recognition.interimResults = false;
   recognition.lang = "en-US";

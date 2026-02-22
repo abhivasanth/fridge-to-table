@@ -15,7 +15,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
   const [preview, setPreview] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const photoMenuRef = useRef<HTMLDivElement>(null);
@@ -57,7 +57,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
     if (!recognition) return;
     recognitionRef.current = recognition;
     recognition.onstart = () => setVoiceState("recording");
-    recognition.onresult = (e) => {
+    recognition.onresult = (e: any) => {
       const transcript = e.results[0][0].transcript;
       setText((prev) => (prev ? prev + ", " + transcript : transcript));
     };
