@@ -43,7 +43,7 @@ export function FiltersPanel({ filters, onChange }: Props) {
           {/* Max cooking time */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Max cooking time
+              Max cooking time (mins)
             </label>
             <div className="flex gap-2">
               {([15, 30, 45, 60] as const).map((t) => (
@@ -52,11 +52,11 @@ export function FiltersPanel({ filters, onChange }: Props) {
                   onClick={() => onChange({ ...filters, maxCookingTime: t })}
                   className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition-colors
                     ${filters.maxCookingTime === t
-                      ? "bg-green-600 text-white border-green-600"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
+                      ? "bg-[#D4622A] text-white border-[#D4622A]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#D4622A]"
                     }`}
                 >
-                  {t === 60 ? "60+ m" : `${t} m`}
+                  {t === 60 ? "60+" : `${t}`}
                 </button>
               ))}
             </div>
@@ -74,8 +74,8 @@ export function FiltersPanel({ filters, onChange }: Props) {
                   onClick={() => onChange({ ...filters, difficulty: d })}
                   className={`flex-1 py-1.5 rounded-lg text-sm font-medium border capitalize transition-colors
                     ${filters.difficulty === d
-                      ? "bg-green-600 text-white border-green-600"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
+                      ? "bg-[#D4622A] text-white border-[#D4622A]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#D4622A]"
                     }`}
                 >
                   {d}

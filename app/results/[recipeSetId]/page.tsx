@@ -18,10 +18,10 @@ export default async function ResultsPage({ params }: Props) {
 
   if (!recipeSet) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-green-50">
+      <main className="min-h-screen flex items-center justify-center bg-[#FAF6F1]">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Recipe set not found.</p>
-          <Link href="/" className="text-green-600 underline">
+          <Link href="/" className="text-[#D4622A] underline">
             Start a new search
           </Link>
         </div>
@@ -32,17 +32,17 @@ export default async function ResultsPage({ params }: Props) {
   const recipes = recipeSet.results as Recipe[];
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      <div className="max-w-4xl mx-auto px-4 py-12">
+    <main className="min-h-screen bg-[#FAF6F1] pb-24">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/"
-            className="text-green-600 text-sm hover:underline mb-4 inline-block"
+            className="text-[#D4622A] text-sm hover:underline mb-4 inline-block"
           >
             ← New search
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-[#1A3A2A]">
             Here&apos;s what we found
           </h2>
           <p className="text-gray-400 text-sm mt-1">
@@ -60,16 +60,6 @@ export default async function ResultsPage({ params }: Props) {
               recipeIndex={index}
             />
           ))}
-        </div>
-
-        {/* Link to favourites */}
-        <div className="mt-10 text-center">
-          <Link
-            href="/favourites"
-            className="text-gray-400 text-sm hover:text-green-600 transition-colors"
-          >
-            View saved favourites →
-          </Link>
         </div>
       </div>
     </main>

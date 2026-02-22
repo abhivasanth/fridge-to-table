@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test("user can save and remove a favourite recipe", async ({ page }) => {
   await page.goto("/");
-  await page.getByPlaceholder(/e.g. eggs/).fill("pasta, tomatoes, basil");
-  await page.getByRole("button", { name: "Find Recipes" }).click();
+  await page.getByPlaceholder(/type your ingredients/i).fill("pasta, tomatoes, basil");
+  await page.getByRole("button", { name: /find recipes/i }).click();
 
   await page.waitForURL(/\/results\//, { timeout: 30_000 });
 

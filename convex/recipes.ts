@@ -13,11 +13,7 @@ const filtersValidator = v.object({
     v.literal("medium"),
     v.literal("hard")
   ),
-  diet: v.optional(v.union(
-    v.literal("vegetarian"),
-    v.literal("vegan"),
-    v.literal("non-vegetarian")
-  )),
+  // diet removed — Claude infers dietary requirements from ingredients
 });
 
 // Internal mutation — saves a generated recipe set to the database.
@@ -51,14 +47,6 @@ export const generateRecipes = action({
     const ingredientList = args.ingredients.join(", ");
     const cuisineNote = args.filters.cuisine || "any style";
 
-    const diet = args.filters.diet ?? "vegetarian";
-    const dietInstruction =
-      diet === "vegan"
-        ? "All recipes must be strictly vegan (no meat, fish, dairy, or eggs)."
-        : diet === "vegetarian"
-          ? "All recipes must be vegetarian (no meat or fish, but dairy and eggs are fine)."
-          : "Recipes can include meat, fish, or any other ingredients — non-vegetarian is welcome.";
-
     // Including the schema in the prompt dramatically improves Claude's JSON reliability
     const recipeSchema = `{
   title: string,
@@ -83,7 +71,6 @@ export const generateRecipes = action({
 
 The user has these ingredients: ${ingredientList}.
 Generate exactly 3 recipes using mostly these ingredients.
-Diet preference: ${dietInstruction}
 Cuisine style: ${cuisineNote}.
 Maximum cooking time: ${args.filters.maxCookingTime} minutes.
 Difficulty level: ${args.filters.difficulty}.

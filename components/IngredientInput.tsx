@@ -1,160 +1,187 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { parseIngredients } from "@/lib/ingredientParser";
 import { compressImage } from "@/lib/imageCompression";
-import type { RecipeFilters } from "@/types/recipe";
+import { isVoiceSupported, createSpeechRecognition } from "@/lib/voiceInput";
 
 type Props = {
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
-  diet: RecipeFilters["diet"];
-  onDietChange: (diet: RecipeFilters["diet"]) => void;
+  disabled?: boolean;
 };
 
-const DIET_OPTIONS: { value: RecipeFilters["diet"]; label: string }[] = [
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: "vegan", label: "Vegan" },
-  { value: "non-vegetarian", label: "Non-Vegetarian" },
-];
+export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
+  const [text, setText] = useState("");
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
+  const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
+  const [preview, setPreview] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const photoMenuRef = useRef<HTMLDivElement>(null);
 
-// Handles both text input (comma-separated list) and photo upload.
-export function IngredientInput({ onSubmit, isLoading, diet, onDietChange }: Props) {
-  const [activeTab, setActiveTab] = useState<"text" | "photo">("text");
-  const [textInput, setTextInput] = useState("");
-  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
+  // isVoiceSupported() reads window — must be deferred to avoid SSR/client hydration mismatch
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  useEffect(() => {
+    setVoiceSupported(isVoiceSupported());
+  }, []);
+  const ingredients = parseIngredients(text);
+  const hasInput = ingredients.length > 0 || preview !== null;
 
-  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoError(null);
-    try {
-      const compressed = await compressImage(file, 1024);
-      setPhotoBase64(compressed);
-      setPhotoPreview(compressed);
-    } catch {
-      setPhotoError("Couldn't read that image — please try another.");
+  // Close photo menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (photoMenuRef.current && !photoMenuRef.current.contains(e.target as Node)) {
+        setShowPhotoMenu(false);
+      }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  async function handlePhotoFile(file: File) {
+    setShowPhotoMenu(false);
+    if (!file.type.startsWith("image/")) return;
+    const base64 = await compressImage(file);
+    setPreview(base64);
+    setText("");
+  }
+
+  function handleMicClick() {
+    if (voiceState === "recording") {
+      recognitionRef.current?.stop();
+      setVoiceState("idle");
+      return;
+    }
+    const recognition = createSpeechRecognition();
+    if (!recognition) return;
+    recognitionRef.current = recognition;
+    recognition.onstart = () => setVoiceState("recording");
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setText((prev) => (prev ? prev + ", " + transcript : transcript));
+    };
+    recognition.onend = () => setVoiceState("idle");
+    recognition.onerror = () => setVoiceState("idle");
+    recognition.start();
   }
 
   function handleSubmit() {
-    if (activeTab === "text") {
-      const ingredients = parseIngredients(textInput);
-      if (ingredients.length === 0) return;
-      onSubmit(ingredients);
+    if (preview) {
+      onSubmit([], preview);
     } else {
-      if (!photoBase64) return;
-      onSubmit([], photoBase64);
+      onSubmit(ingredients);
     }
   }
 
-  const canSubmit =
-    !isLoading &&
-    (activeTab === "text"
-      ? parseIngredients(textInput).length > 0
-      : photoBase64 !== null);
-
   return (
-    <div className="w-full max-w-xl">
-      {/* Tab toggle */}
-      <div className="flex rounded-xl border border-gray-200 mb-4 overflow-hidden">
-        {(["text", "photo"] as const).map((tab) => (
+    <div className="space-y-4">
+      {/* Photo preview */}
+      {preview && (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="Fridge photo" className="w-full rounded-2xl object-cover max-h-48" />
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors
-              ${activeTab === tab
-                ? "bg-green-600 text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-              }`}
+            onClick={() => setPreview(null)}
+            className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm"
+            aria-label="Remove photo"
           >
-            {tab === "text" ? "Type ingredients" : "Upload photo"}
+            ✕
           </button>
-        ))}
-      </div>
-
-      {/* Text input */}
-      {activeTab === "text" && (
-        <textarea
-          value={textInput}
-          onChange={(e) => setTextInput(e.target.value)}
-          placeholder="e.g. eggs, spinach, tomatoes, feta cheese..."
-          rows={4}
-          className="w-full rounded-xl border border-gray-200 p-4 text-gray-800
-                     placeholder:text-gray-400 focus:outline-none focus:ring-2
-                     focus:ring-green-500 resize-none"
-        />
+        </div>
       )}
 
-      {/* Photo upload */}
-      {activeTab === "photo" && (
-        <div>
-          <label
-            htmlFor="photo-upload"
-            className="flex flex-col items-center justify-center w-full h-48
-                       border-2 border-dashed border-gray-300 rounded-xl
-                       cursor-pointer hover:border-green-400 hover:bg-green-50
-                       transition-colors bg-gray-50 overflow-hidden"
-          >
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoPreview}
-                alt="Your fridge"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-center p-4">
-                <p className="text-4xl mb-2">📸</p>
-                <p className="text-gray-500 text-sm">
-                  Click or drag to upload your fridge photo
-                </p>
-              </div>
-            )}
-          </label>
-          <input
-            id="photo-upload"
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="hidden"
+      {/* Text input + photo + mic */}
+      {!preview && (
+        <div className="relative flex items-start gap-2">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Type your ingredients, e.g. eggs, spinach, tomatoes..."
+            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-20 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-[#D4622A] min-h-[56px]"
+            rows={2}
           />
-          {photoError && (
-            <p className="text-red-500 text-sm mt-2">{photoError}</p>
-          )}
+
+          {/* Inline buttons (absolute positioned inside textarea) */}
+          <div className="absolute right-3 top-3 flex items-center gap-2">
+            {/* Photo "+" button */}
+            <div className="relative" ref={photoMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowPhotoMenu((v) => !v)}
+                className="text-gray-400 hover:text-[#D4622A] transition-colors text-xl leading-none"
+                aria-label="Add photo"
+              >
+                +
+              </button>
+              {showPhotoMenu && (
+                <div className="absolute right-0 top-8 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 w-44 z-10">
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    onClick={() => cameraInputRef.current?.click()}
+                  >
+                    📷 Take a photo
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    onClick={() => galleryInputRef.current?.click()}
+                  >
+                    🖼️ Upload a photo
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Voice mic button */}
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={handleMicClick}
+                aria-label={voiceState === "recording" ? "Stop recording" : "Start voice input"}
+                className={`text-xl leading-none transition-colors ${
+                  voiceState === "recording"
+                    ? "text-red-500 animate-pulse"
+                    : "text-gray-400 hover:text-[#D4622A]"
+                }`}
+              >
+                🎙️
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Diet filter */}
-      <div className="mt-4">
-        <p className="text-xs font-medium text-gray-500 mb-2">Diet preference</p>
-        <div className="flex gap-2">
-          {DIET_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onDietChange(option.value)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors
-                ${diet === option.value
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Voice not supported notice */}
+      {!voiceSupported && (
+        <p className="text-xs text-gray-400">
+          Voice not supported in this browser. Use Chrome or Edge for voice input.
+        </p>
+      )}
+
+      {/* Hidden file inputs */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handlePhotoFile(e.target.files[0])}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handlePhotoFile(e.target.files[0])}
+      />
 
       {/* Submit button */}
       <button
         onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="mt-4 w-full py-3 rounded-xl font-semibold text-white
-                   bg-green-600 hover:bg-green-700 disabled:opacity-40
-                   disabled:cursor-not-allowed transition-colors"
+        disabled={!hasInput || isLoading || disabled}
+        className="w-full bg-[#D4622A] text-white font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#BF5525] transition-colors"
       >
-        {isLoading ? "Finding recipes..." : "Find Recipes"}
+        {isLoading ? "🍳 Finding recipes..." : "Find Recipes →"}
       </button>
     </div>
   );

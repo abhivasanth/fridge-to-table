@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Recipe } from "@/types/recipe";
 
 const difficultyColours = {
-  easy: "bg-green-100 text-green-800",
+  easy: "bg-[#C8DFC8] text-[#1A3A2A]",
   medium: "bg-amber-100 text-amber-800",
   hard: "bg-red-100 text-red-800",
 };
@@ -24,7 +24,7 @@ export function RecipeCard({ recipe, recipeSetId, recipeIndex }: RecipeCardProps
                    hover:shadow-md transition-shadow duration-200 h-full flex flex-col"
       >
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
+          <span className="text-xs font-medium text-[#1A3A2A] bg-[#C8DFC8] px-2 py-1 rounded-full">
             {recipe.cuisineType}
           </span>
           <span
@@ -35,8 +35,8 @@ export function RecipeCard({ recipe, recipeSetId, recipeIndex }: RecipeCardProps
         </div>
 
         <h3
-          className="text-lg font-semibold text-gray-900 mb-2
-                     group-hover:text-green-700 transition-colors"
+          className="text-lg font-semibold text-[#1A3A2A] mb-2
+                     group-hover:text-[#D4622A] transition-colors"
         >
           {recipe.title}
         </h3>

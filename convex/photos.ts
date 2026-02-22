@@ -27,35 +27,42 @@ export const analyzePhoto = action({
       | "image/gif"
       | "image/webp";
 
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: base64Data },
-            },
-            {
-              type: "text",
-              text: `Analyse this fridge photo for a vegetarian recipe app.
-List every food ingredient you can identify.
-All ingredients are assumed vegetarian. Only add an ingredient to the "uncertain" list
-if it could plausibly be a meat or fish product (e.g. a broth that could be meat-based,
-an unlabelled sausage, or an unidentifiable protein). Never flag spices, condiments,
-herbs, salt, pepper, oils, vinegars, dairy, eggs, fruit, vegetables, grains, or
-any ingredient that is obviously vegetarian.
+    let response;
+    try {
+      console.log("[analyzePhoto] Starting Claude vision call");
+      response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: mediaType, data: base64Data },
+              },
+              {
+                type: "text",
+                text: `Analyse this fridge photo and list every food ingredient you can identify.
+Flag an ingredient as "uncertain" only if it is completely unidentifiable (e.g. an
+unlabelled package with no visible contents). Common items like vegetables, dairy,
+eggs, condiments, sauces, grains, and fruit should always go in "ingredients".
 Return JSON only, no other text: { "ingredients": string[], "uncertain": string[] }`,
-            },
-          ],
-        },
-      ],
-    });
+              },
+            ],
+          },
+        ],
+      });
+      console.log("[analyzePhoto] Claude returned response");
+    } catch (err: any) {
+      console.error("[analyzePhoto] Claude API error:", err?.message || err);
+      throw new Error("Photo analysis failed: " + (err?.message || "unknown error"));
+    }
 
-    const text =
+    // Strip markdown code fences if Claude wraps the JSON (e.g. ```json ... ```)
+    const rawText =
       response.content[0].type === "text" ? response.content[0].text : "{}";
+    const text = rawText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
 
     const parsed = JSON.parse(text) as {
       ingredients?: string[];

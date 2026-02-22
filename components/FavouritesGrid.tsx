@@ -33,8 +33,8 @@ export function FavouritesGrid() {
         <p className="text-gray-400 mb-6">Save recipes you love while cooking!</p>
         <Link
           href="/"
-          className="inline-block bg-green-600 text-white px-6 py-3 rounded-xl
-                     font-medium hover:bg-green-700 transition-colors"
+          className="inline-block bg-[#D4622A] text-white px-6 py-3 rounded-2xl
+                     font-medium hover:bg-[#BF5525] transition-colors"
         >
           Find recipes
         </Link>
@@ -93,10 +93,10 @@ function FavouriteCard({
       </button>
 
       <Link href={`/recipe/${recipeSetId}/${recipeIndex}`}>
-        <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
+        <span className="text-xs font-medium text-[#1A3A2A] bg-[#C8DFC8] px-2 py-1 rounded-full">
           {recipe.cuisineType}
         </span>
-        <h3 className="text-base font-semibold text-gray-900 mt-2 mb-1 hover:text-green-700 transition-colors">
+        <h3 className="text-base font-semibold text-[#1A3A2A] mt-2 mb-1 hover:text-[#D4622A] transition-colors">
           {recipe.title}
         </h3>
         <p className="text-gray-400 text-xs">⏱ {recipe.cookingTime} min</p>
