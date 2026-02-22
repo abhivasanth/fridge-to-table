@@ -10,6 +10,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* v2 fridge design tokens */
+  --color-fridge-ivory: #FAF6F1;
+  --color-fridge-green: #1A3A2A;
+  --color-fridge-terracotta: #D4622A;
+  --color-fridge-sage: #C8DFC8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,7 +26,7 @@
 }
 
 body {
-  background: var(--background);
+  background-color: #FAF6F1;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
