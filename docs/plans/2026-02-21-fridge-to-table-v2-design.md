@@ -242,18 +242,34 @@ A hardcoded array of chef objects stored in the codebase (not in Convex):
 ```typescript
 // lib/chefs.ts
 type Chef = {
-  id: string              // e.g. "jamie-oliver"
-  name: string            // e.g. "Jamie Oliver"
-  emoji: string           // e.g. "🍕"
-  youtubeChannelId: string // e.g. "UCpSgg_ECBj25s9moCDfSTsA"
+  id: string               // slug e.g. "gordon-ramsay"
+  name: string             // display name e.g. "Gordon Ramsay"
+  country: string          // e.g. "UK"
+  emoji: string            // avatar emoji e.g. "🍳"
+  youtubeChannelId: string // official YouTube channel ID — verified before implementation
 }
+
+export const CHEFS: Chef[] = [
+  { id: "gordon-ramsay",       name: "Gordon Ramsay",       country: "UK",       emoji: "🍳", youtubeChannelId: "TBD" },
+  { id: "jamie-oliver",        name: "Jamie Oliver",        country: "UK",       emoji: "🍕", youtubeChannelId: "TBD" },
+  { id: "ranveer-brar",        name: "Ranveer Brar",        country: "India",    emoji: "🍛", youtubeChannelId: "TBD" },
+  { id: "maangchi",            name: "Maangchi",            country: "Korea",    emoji: "🥢", youtubeChannelId: "TBD" },
+  { id: "pati-jinich",         name: "Pati Jinich",         country: "Mexico",   emoji: "🌮", youtubeChannelId: "TBD" },
+  { id: "kenji-lopez-alt",     name: "Kenji López-Alt",     country: "USA",      emoji: "🔬", youtubeChannelId: "TBD" },
+  { id: "pailin-chongchitnant",name: "Pailin Chongchitnant",country: "Thailand", emoji: "🌶️", youtubeChannelId: "TBD" },
+  { id: "lidia-bastianich",    name: "Lidia Bastianich",    country: "Italy",    emoji: "🍝", youtubeChannelId: "TBD" },
+];
 ```
 
-The specific chefs and their channel IDs are to be decided (TBD). Requirements:
-- 6–8 chefs maximum
-- Must have active YouTube channels with recipe content
-- Must cover diverse cuisine styles and cooking approaches
-- Must NOT be the same list as the mockup template used for reference
+**Selection criteria met by all 8 chefs:**
+- Elite but home-replicable cooking style
+- Large YouTube channel with hundreds of uploads
+- Culturally distinct — UK, India, Korea, Mexico, USA, Thailand, Italy
+- Gender balanced — 4 male, 4 female
+
+> **Note:** YouTube channel IDs marked TBD must be verified against each chef's official channel before implementation begins. Channel IDs are permanent — unlike usernames, they never change.
+
+**Fits 2-column avatar grid on mobile (4 rows × 2 columns) — no awkward orphan card.**
 
 ### YouTube Data API Integration
 
