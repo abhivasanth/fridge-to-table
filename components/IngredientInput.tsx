@@ -20,7 +20,11 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const photoMenuRef = useRef<HTMLDivElement>(null);
 
-  const voiceSupported = isVoiceSupported();
+  // isVoiceSupported() reads window — must be deferred to avoid SSR/client hydration mismatch
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  useEffect(() => {
+    setVoiceSupported(isVoiceSupported());
+  }, []);
   const ingredients = parseIngredients(text);
   const hasInput = ingredients.length > 0 || preview !== null;
 
