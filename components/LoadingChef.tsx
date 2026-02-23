@@ -18,8 +18,8 @@ export function LoadingChef() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 gap-4">
-      <span className="text-6xl animate-bounce">👨‍🍳</span>
+    <div className="flex flex-col items-center justify-center pt-6 pb-2 gap-3">
+      <span className="text-4xl animate-bounce">👨‍🍳</span>
       <p className="text-sm text-gray-500 animate-pulse">{MESSAGES[messageIndex]}</p>
     </div>
   );

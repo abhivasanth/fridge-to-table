@@ -145,34 +145,28 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
             type="button"
             onClick={handleMicClick}
             aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
               voiceState === "recording"
                 ? "bg-[#1A3A2A] text-white shadow-lg scale-105"
-                : "bg-white border border-gray-200 text-gray-600 hover:border-[#D4622A] hover:text-[#D4622A] shadow-sm"
+                : "bg-white border border-gray-200 text-gray-500 hover:border-[#D4622A] hover:text-[#D4622A] shadow-sm"
             }`}
           >
             {voiceState === "recording" ? (
-              <>
-                <span className="flex items-end gap-0.5 h-4" aria-hidden="true">
-                  {[0.6, 1.0, 0.8, 1.0, 0.6].map((h, i) => (
-                    <span
-                      key={i}
-                      className="w-0.5 bg-white rounded-full animate-bounce"
-                      style={{
-                        height: `${h * 100}%`,
-                        animationDelay: `${i * 0.1}s`,
-                        animationDuration: "0.7s",
-                      }}
-                    />
-                  ))}
-                </span>
-                <span>Listening... tap to stop</span>
-              </>
+              <span className="flex items-end gap-0.5 h-4" aria-hidden="false">
+                {[0.6, 1.0, 0.8, 1.0, 0.6].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-0.5 bg-white rounded-full animate-bounce"
+                    style={{
+                      height: `${h * 100}%`,
+                      animationDelay: `${i * 0.1}s`,
+                      animationDuration: "0.7s",
+                    }}
+                  />
+                ))}
+              </span>
             ) : (
-              <>
-                <span aria-hidden="true">🎤</span>
-                <span>Speak your ingredients</span>
-              </>
+              <span className="text-base">🎤</span>
             )}
           </button>
         </div>

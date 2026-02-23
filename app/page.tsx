@@ -154,9 +154,6 @@ export default function HomePage() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="pt-16 pb-10 px-4 text-center">
-        <p className="text-xs font-semibold tracking-widest text-[#D4622A] uppercase mb-4">
-          AI-Powered Cooking
-        </p>
         <h1 className="font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4">
           What&apos;s in your{" "}
           <em className="text-[#D4622A] not-italic">fridge?</em>
@@ -197,21 +194,19 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Loading animation replaces input while loading */}
-          {isLoading ? (
-            <LoadingChef />
-          ) : (
-            <IngredientInput
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-              disabled={chefsTableDisabled}
-              beforeSubmit={
-                activeTab === "any-recipe" ? (
-                  <FiltersPanel filters={filters} onChange={setFilters} />
-                ) : undefined
-              }
-            />
-          )}
+          <IngredientInput
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            disabled={chefsTableDisabled}
+            beforeSubmit={
+              activeTab === "any-recipe" ? (
+                <FiltersPanel filters={filters} onChange={setFilters} />
+              ) : undefined
+            }
+          />
+
+          {/* Chef animation appears below the button while loading */}
+          {isLoading && <LoadingChef />}
 
           {/* Error message */}
           {error && (

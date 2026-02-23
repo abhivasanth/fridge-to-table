@@ -30,26 +30,12 @@ export function Navbar() {
         {/* Nav links */}
         <div className="flex items-center gap-6">
           <Link
-            href="/"
-            className={`text-sm font-medium transition-colors ${
-              pathname === "/" ? "text-white" : "text-white/70 hover:text-white"
-            }`}
-          >
-            Home
-          </Link>
-          <Link
             href="/favourites"
             className={`text-sm font-medium transition-colors ${
               pathname === "/favourites" ? "text-white" : "text-white/70 hover:text-white"
             }`}
           >
             Favourites
-          </Link>
-          <Link
-            href="/#playground"
-            className="bg-[#D4622A] hover:bg-[#BF5525] text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
-          >
-            Try Free →
           </Link>
         </div>
       </div>

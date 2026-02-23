@@ -15,10 +15,10 @@ describe("Navbar", () => {
     expect(screen.getByText("Fridge to Table")).toBeInTheDocument();
   });
 
-  it("Home link points to /", () => {
+  it("logo link points to /", () => {
     render(<Navbar />);
-    const homeLink = screen.getByRole("link", { name: /home/i });
-    expect(homeLink).toHaveAttribute("href", "/");
+    const logoLink = screen.getByRole("link", { name: /fridge to table/i });
+    expect(logoLink).toHaveAttribute("href", "/");
   });
 
   it("Favourites link points to /favourites", () => {
@@ -27,8 +27,13 @@ describe("Navbar", () => {
     expect(favLink).toHaveAttribute("href", "/favourites");
   });
 
-  it("renders a Try Free call-to-action", () => {
+  it("does not render a Home nav link", () => {
     render(<Navbar />);
-    expect(screen.getByText(/try free/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^home$/i })).not.toBeInTheDocument();
+  });
+
+  it("does not render a Try Free button", () => {
+    render(<Navbar />);
+    expect(screen.queryByText(/try free/i)).not.toBeInTheDocument();
   });
 });
