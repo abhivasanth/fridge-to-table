@@ -8,14 +8,15 @@ type Props = {
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
   disabled?: boolean;
+  beforeSubmit?: React.ReactNode;
 };
 
-export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
+export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }: Props) {
   const [text, setText] = useState("");
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
   const [preview, setPreview] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const photoMenuRef = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
     if (!recognition) return;
     recognitionRef.current = recognition;
     recognition.onstart = () => setVoiceState("recording");
-    recognition.onresult = (e) => {
+    recognition.onresult = (e: any) => {
       const transcript = e.results[0][0].transcript;
       setText((prev) => (prev ? prev + ", " + transcript : transcript));
     };
@@ -104,6 +105,38 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
 
           {/* Inline buttons (absolute positioned inside textarea) */}
           <div className="absolute right-3 top-3 flex items-center gap-2">
+            {/* Mic button (inline, next to +) */}
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={handleMicClick}
+                aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  voiceState === "recording"
+                    ? "bg-[#1A3A2A] text-white"
+                    : "text-gray-400 hover:text-[#D4622A]"
+                }`}
+              >
+                {voiceState === "recording" ? (
+                  <span className="flex items-end gap-px h-3" aria-hidden="false">
+                    {[0.6, 1.0, 0.8, 1.0, 0.6].map((h, i) => (
+                      <span
+                        key={i}
+                        className="w-px bg-white rounded-full animate-bounce"
+                        style={{
+                          height: `${h * 100}%`,
+                          animationDelay: `${i * 0.1}s`,
+                          animationDuration: "0.7s",
+                        }}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <span className="text-sm">🎤</span>
+                )}
+              </button>
+            )}
+
             {/* Photo "+" button */}
             <div className="relative" ref={photoMenuRef}>
               <button
@@ -132,32 +165,9 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
               )}
             </div>
 
-            {/* Voice mic button */}
-            {voiceSupported && (
-              <button
-                type="button"
-                onClick={handleMicClick}
-                aria-label={voiceState === "recording" ? "Stop recording" : "Start voice input"}
-                className={`text-xl leading-none transition-colors ${
-                  voiceState === "recording"
-                    ? "text-red-500 animate-pulse"
-                    : "text-gray-400 hover:text-[#D4622A]"
-                }`}
-              >
-                🎙️
-              </button>
-            )}
           </div>
         </div>
       )}
-
-      {/* Voice not supported notice */}
-      {!voiceSupported && (
-        <p className="text-xs text-gray-400">
-          Voice not supported in this browser. Use Chrome or Edge for voice input.
-        </p>
-      )}
-
       {/* Hidden file inputs */}
       <input
         ref={cameraInputRef}
@@ -174,6 +184,9 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
         className="hidden"
         onChange={(e) => e.target.files?.[0] && handlePhotoFile(e.target.files[0])}
       />
+
+      {/* Slot for content above the submit button (e.g. FiltersPanel) */}
+      {beforeSubmit}
 
       {/* Submit button */}
       <button

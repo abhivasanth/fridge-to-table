@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as chefs from "../chefs.js";
 import type * as favourites from "../favourites.js";
 import type * as photos from "../photos.js";
 import type * as recipes from "../recipes.js";
@@ -19,6 +20,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  chefs: typeof chefs;
   favourites: typeof favourites;
   photos: typeof photos;
   recipes: typeof recipes;
