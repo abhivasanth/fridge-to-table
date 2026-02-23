@@ -7,6 +7,7 @@ import { getSessionId } from "@/lib/session";
 import { IngredientInput } from "@/components/IngredientInput";
 import { FiltersPanel } from "@/components/FiltersPanel";
 import { ChefGrid } from "@/components/ChefGrid";
+import { LoadingChef } from "@/components/LoadingChef";
 import { getSelectedChefs } from "@/lib/chefs";
 import type { RecipeFilters } from "@/types/recipe";
 
@@ -20,6 +21,57 @@ const DEFAULT_FILTERS: RecipeFilters = {
 
 const SELECTED_CHEFS_KEY = "fridgeToTable_selectedChefs";
 
+// ─── Feature cards data ──────────────────────────────────────────────────────
+
+const FEATURES = [
+  {
+    emoji: "📸",
+    iconBg: "bg-orange-100",
+    title: "Snap, speak, or type",
+    body: "Snap a pic or type a short summary or say it out loud.",
+  },
+  {
+    emoji: "👨‍🍳",
+    iconBg: "bg-green-100",
+    title: "Cook like your idols",
+    body: "Recipes inspired by Gordon Ramsay, Jamie Oliver, and more. Real techniques. Your ingredients. One beautiful result.",
+  },
+  {
+    emoji: "🎯",
+    iconBg: "bg-yellow-100",
+    title: "Any skill, any night",
+    body: "Filter from quick weeknight dinners to weekend showstoppers. Every recipe is designed to help you grow.",
+  },
+  {
+    emoji: "✨",
+    iconBg: "bg-purple-100",
+    title: "Zero ads. Always.",
+    body: "We're subscriber-funded. No sponsored recipes. No pop-ups. Just you and the food you love.",
+  },
+];
+
+// ─── Testimonials data ───────────────────────────────────────────────────────
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "I used to stare at my fridge for 20 minutes wondering what to cook. Now I just snap a photo and I've got three delicious options in seconds.",
+    author: "Priya M., San Francisco",
+  },
+  {
+    quote:
+      "The Chef's Table feature is unreal. Getting Jamie Oliver-inspired recipes from what's actually in my kitchen? Game changer.",
+    author: "Jake T., London",
+  },
+  {
+    quote:
+      "Finally an app that meets me where I am. I can type, talk, or take a picture — and it always gets it right.",
+    author: "Aisha K., Toronto",
+  },
+];
+
+// ─── Page component ──────────────────────────────────────────────────────────
+
 export default function HomePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>("any-recipe");
@@ -28,7 +80,6 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load saved chef selections from localStorage on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(SELECTED_CHEFS_KEY);
@@ -99,71 +150,146 @@ export default function HomePage() {
   const chefsTableDisabled = activeTab === "chefs-table" && selectedChefIds.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1] pb-24">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Hero */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#1A3A2A]">
-            What&apos;s in your <em>fridge?</em>
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Tell us your ingredients and we&apos;ll find the perfect recipe.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#FAF6F1]">
 
-        {/* Tab selector */}
-        <div className="flex gap-1 bg-white rounded-2xl p-1 mb-6 shadow-sm">
-          {(["any-recipe", "chefs-table"] as ActiveTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === tab
-                  ? "bg-[#D4622A] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab === "any-recipe" ? "Any Recipe" : "Chef's Table 🍽️"}
-            </button>
-          ))}
-        </div>
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      <section className="pt-16 pb-10 px-4 text-center">
+        <p className="text-xs font-semibold tracking-widest text-[#D4622A] uppercase mb-4">
+          AI-Powered Cooking
+        </p>
+        <h1 className="font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4">
+          What&apos;s in your{" "}
+          <em className="text-[#D4622A] not-italic">fridge?</em>
+        </h1>
+        <p className="text-gray-500 text-base max-w-md mx-auto">
+          Tell us your ingredients — we&apos;ll find the perfect recipe.
+        </p>
+      </section>
 
-        {/* Chef grid — only on Chef's Table tab */}
-        {activeTab === "chefs-table" && (
-          <div className="mb-6">
-            <ChefGrid
-              selectedIds={selectedChefIds}
-              onChange={handleChefSelectionChange}
+      {/* ── APP PLAYGROUND ───────────────────────────────────── */}
+      <section id="playground" className="px-4 pb-16">
+        <div className="max-w-xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+
+          {/* Tab selector */}
+          <div className="flex gap-1 bg-gray-50 rounded-2xl p-1 mb-6">
+            {(["any-recipe", "chefs-table"] as ActiveTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  activeTab === tab
+                    ? "bg-[#D4622A] text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab === "any-recipe" ? "Any Recipe" : "Chef's Table 🍽️"}
+              </button>
+            ))}
+          </div>
+
+          {/* Chef grid */}
+          {activeTab === "chefs-table" && (
+            <div className="mb-6">
+              <ChefGrid
+                selectedIds={selectedChefIds}
+                onChange={handleChefSelectionChange}
+              />
+            </div>
+          )}
+
+          {/* Loading animation replaces input while loading */}
+          {isLoading ? (
+            <LoadingChef />
+          ) : (
+            <IngredientInput
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+              disabled={chefsTableDisabled}
+              beforeSubmit={
+                activeTab === "any-recipe" ? (
+                  <FiltersPanel filters={filters} onChange={setFilters} />
+                ) : undefined
+              }
             />
-          </div>
-        )}
+          )}
 
-        {/* Ingredient input — filters passed as beforeSubmit slot */}
-        <IngredientInput
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-          disabled={chefsTableDisabled}
-          beforeSubmit={
-            activeTab === "any-recipe" ? (
-              <FiltersPanel filters={filters} onChange={setFilters} />
-            ) : undefined
-          }
-        />
+          {/* Error message */}
+          {error && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex justify-between items-start">
+              <p className="text-red-700 text-sm">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600 ml-3 flex-shrink-0"
+                aria-label="Dismiss error"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
-        {/* Error message */}
-        {error && (
-          <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex justify-between items-start">
-            <p className="text-red-700 text-sm">{error}</p>
-            <button
-              onClick={() => setError(null)}
-              className="text-red-400 hover:text-red-600 ml-3 flex-shrink-0"
-              aria-label="Dismiss error"
-            >
-              ✕
-            </button>
+      {/* ── FEATURES SECTION ─────────────────────────────────── */}
+      <section className="px-4 py-20 bg-[#FAF6F1]">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-xs font-semibold tracking-widest text-[#D4622A] uppercase text-center mb-3">
+            Why Fridge to Table
+          </p>
+          <h2 className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-[#1A3A2A] text-center mb-12">
+            Built around{" "}
+            <em className="text-[#D4622A] not-italic">how you cook</em>
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+              >
+                <div className={`w-12 h-12 ${f.iconBg} rounded-xl flex items-center justify-center text-2xl mb-4`}>
+                  {f.emoji}
+                </div>
+                <h3 className="font-semibold text-[#1A3A2A] text-base mb-2">{f.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{f.body}</p>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS SECTION ─────────────────────────────── */}
+      <section className="px-4 py-20 bg-[#1A3A2A]">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-white text-center mb-2">
+            Trusted by{" "}
+            <em className="text-[#C9A84C] not-italic">thousands of food lovers</em>
+          </h2>
+          <p className="text-white/60 text-center text-sm mb-12">
+            Enjoy cooking. From easy weeknight dinners to weekend showstoppers.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((t) => (
+              <div
+                key={t.author}
+                className="bg-[#224232] rounded-2xl p-6 border border-white/10"
+              >
+                <div className="text-[#C9A84C] text-sm mb-3">★★★★★</div>
+                <p className="text-white/90 text-sm leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
+                <p className="text-white/50 text-xs">— {t.author}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Rating stat */}
+          <div className="text-center mt-12">
+            <p className="font-[family-name:var(--font-playfair)] text-6xl font-bold text-white">4.9</p>
+            <p className="text-[#C9A84C] text-sm mt-1">★★★★★</p>
+            <p className="text-white/50 text-xs mt-1">Average rating from our community</p>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
