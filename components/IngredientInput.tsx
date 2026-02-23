@@ -98,7 +98,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Type your ingredients, e.g. eggs, spinach, tomatoes..."
-            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-20 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-[#D4622A] min-h-[56px]"
+            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-14 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-[#D4622A] min-h-[56px]"
             rows={2}
           />
 
@@ -132,32 +132,50 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
               )}
             </div>
 
-            {/* Voice mic button */}
-            {voiceSupported && (
-              <button
-                type="button"
-                onClick={handleMicClick}
-                aria-label={voiceState === "recording" ? "Stop recording" : "Start voice input"}
-                className={`text-xl leading-none transition-colors ${
-                  voiceState === "recording"
-                    ? "text-red-500 animate-pulse"
-                    : "text-gray-400 hover:text-[#D4622A]"
-                }`}
-              >
-                🎙️
-              </button>
-            )}
           </div>
         </div>
       )}
 
-      {/* Voice not supported notice */}
-      {!voiceSupported && (
-        <p className="text-xs text-gray-400">
-          Voice not supported in this browser. Use Chrome or Edge for voice input.
-        </p>
-      )}
 
+      {/* Standalone voice pill button */}
+      {voiceSupported && !preview && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={handleMicClick}
+            aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+              voiceState === "recording"
+                ? "bg-[#1A3A2A] text-white shadow-lg scale-105"
+                : "bg-white border border-gray-200 text-gray-600 hover:border-[#D4622A] hover:text-[#D4622A] shadow-sm"
+            }`}
+          >
+            {voiceState === "recording" ? (
+              <>
+                <span className="flex items-end gap-0.5 h-4" aria-hidden="true">
+                  {[0.6, 1.0, 0.8, 1.0, 0.6].map((h, i) => (
+                    <span
+                      key={i}
+                      className="w-0.5 bg-white rounded-full animate-bounce"
+                      style={{
+                        height: `${h * 100}%`,
+                        animationDelay: `${i * 0.1}s`,
+                        animationDuration: "0.7s",
+                      }}
+                    />
+                  ))}
+                </span>
+                <span>Listening... tap to stop</span>
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true">🎤</span>
+                <span>Speak your ingredients</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
       {/* Hidden file inputs */}
       <input
         ref={cameraInputRef}
