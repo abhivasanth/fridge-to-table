@@ -21,9 +21,9 @@ describe("Navbar", () => {
     expect(logoLink).toHaveAttribute("href", "/");
   });
 
-  it("Favourites link points to /favourites", () => {
+  it("Favorites link points to /favourites", () => {
     render(<Navbar />);
-    const favLink = screen.getByRole("link", { name: /favourites/i });
+    const favLink = screen.getByRole("link", { name: /favorites/i });
     expect(favLink).toHaveAttribute("href", "/favourites");
   });
 

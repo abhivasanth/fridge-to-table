@@ -99,12 +99,44 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Type your ingredients, e.g. eggs, spinach, tomatoes..."
-            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-14 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-[#D4622A] min-h-[56px]"
+            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-20 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-[#D4622A] min-h-[56px]"
             rows={2}
           />
 
           {/* Inline buttons (absolute positioned inside textarea) */}
           <div className="absolute right-3 top-3 flex items-center gap-2">
+            {/* Mic button (inline, next to +) */}
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={handleMicClick}
+                aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  voiceState === "recording"
+                    ? "bg-[#1A3A2A] text-white"
+                    : "text-gray-400 hover:text-[#D4622A]"
+                }`}
+              >
+                {voiceState === "recording" ? (
+                  <span className="flex items-end gap-px h-3" aria-hidden="false">
+                    {[0.6, 1.0, 0.8, 1.0, 0.6].map((h, i) => (
+                      <span
+                        key={i}
+                        className="w-px bg-white rounded-full animate-bounce"
+                        style={{
+                          height: `${h * 100}%`,
+                          animationDelay: `${i * 0.1}s`,
+                          animationDuration: "0.7s",
+                        }}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <span className="text-sm">🎤</span>
+                )}
+              </button>
+            )}
+
             {/* Photo "+" button */}
             <div className="relative" ref={photoMenuRef}>
               <button
@@ -134,41 +166,6 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
             </div>
 
           </div>
-        </div>
-      )}
-
-
-      {/* Standalone voice pill button */}
-      {voiceSupported && !preview && (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={handleMicClick}
-            aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              voiceState === "recording"
-                ? "bg-[#1A3A2A] text-white shadow-lg scale-105"
-                : "bg-white border border-gray-200 text-gray-500 hover:border-[#D4622A] hover:text-[#D4622A] shadow-sm"
-            }`}
-          >
-            {voiceState === "recording" ? (
-              <span className="flex items-end gap-0.5 h-4" aria-hidden="false">
-                {[0.6, 1.0, 0.8, 1.0, 0.6].map((h, i) => (
-                  <span
-                    key={i}
-                    className="w-0.5 bg-white rounded-full animate-bounce"
-                    style={{
-                      height: `${h * 100}%`,
-                      animationDelay: `${i * 0.1}s`,
-                      animationDuration: "0.7s",
-                    }}
-                  />
-                ))}
-              </span>
-            ) : (
-              <span className="text-base">🎤</span>
-            )}
-          </button>
         </div>
       )}
       {/* Hidden file inputs */}

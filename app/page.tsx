@@ -154,12 +154,15 @@ export default function HomePage() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="pt-16 pb-10 px-4 text-center">
+        <p className="font-[family-name:var(--font-playfair)] text-sm italic text-[#D4622A] mb-4">
+          Fridge to Table
+        </p>
         <h1 className="font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4">
           What&apos;s in your{" "}
           <em className="text-[#D4622A] not-italic">fridge?</em>
         </h1>
         <p className="text-gray-500 text-base max-w-md mx-auto">
-          Tell us your ingredients — we&apos;ll find the perfect recipe.
+          Tell us your ingredients — we&apos;ll find you a fun recipe.
         </p>
       </section>
 

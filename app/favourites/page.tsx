@@ -12,7 +12,7 @@ export default function FavouritesPage() {
           >
             ← Back to search
           </Link>
-          <h1 className="text-2xl font-bold text-[#1A3A2A]">Your Favourites</h1>
+          <h1 className="text-2xl font-bold text-[#1A3A2A]">Your Favorites</h1>
           <p className="text-gray-400 text-sm mt-1">
             Recipes you&apos;ve saved this session
           </p>
