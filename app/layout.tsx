@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
-import { BottomNav } from "@/components/BottomNav";
+import { ClientNav } from "@/components/ClientNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +36,7 @@ export default function RootLayout({
         {/* ConvexClientProvider gives all pages access to the Convex backend */}
         <ConvexClientProvider>
           {children}
-          <BottomNav />
+          <ClientNav />
         </ConvexClientProvider>
       </body>
     </html>
