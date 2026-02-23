@@ -138,19 +138,17 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Ingredient input */}
+        {/* Ingredient input — filters passed as beforeSubmit slot */}
         <IngredientInput
           onSubmit={handleSubmit}
           isLoading={isLoading}
           disabled={chefsTableDisabled}
+          beforeSubmit={
+            activeTab === "any-recipe" ? (
+              <FiltersPanel filters={filters} onChange={setFilters} />
+            ) : undefined
+          }
         />
-
-        {/* Filters — only on Any Recipe tab */}
-        {activeTab === "any-recipe" && (
-          <div className="mt-4">
-            <FiltersPanel filters={filters} onChange={setFilters} />
-          </div>
-        )}
 
         {/* Error message */}
         {error && (

@@ -8,9 +8,10 @@ type Props = {
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
   disabled?: boolean;
+  beforeSubmit?: React.ReactNode;
 };
 
-export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
+export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }: Props) {
   const [text, setText] = useState("");
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
@@ -192,6 +193,9 @@ export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
         className="hidden"
         onChange={(e) => e.target.files?.[0] && handlePhotoFile(e.target.files[0])}
       />
+
+      {/* Slot for content above the submit button (e.g. FiltersPanel) */}
+      {beforeSubmit}
 
       {/* Submit button */}
       <button
