@@ -43,3 +43,5 @@ next-env.d.ts
 
 # generated (not ignored — Vercel needs these files to build)
 # convex/_generated/
+
+.vercel

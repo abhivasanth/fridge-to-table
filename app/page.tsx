@@ -60,13 +60,18 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "The Chef's Table feature is unreal. Getting Jamie Oliver-inspired recipes from what's actually in my kitchen? Game changer.",
-    author: "Jake T., London",
+      "I used to dread the 'what's for dinner' question. Now my daughter rushes to the fridge to help pick ingredients. We cook together almost every night.",
+    author: "Emma R., Sydney",
   },
   {
     quote:
       "Finally an app that meets me where I am. I can type, talk, or take a picture — and it always gets it right.",
     author: "Aisha K., Toronto",
+  },
+  {
+    quote:
+      "Had leftover rice, some vegetables, and chicken that needed using up. It suggested chicken fried rice and it turned out really well. Will definitely be making it again.",
+    author: "Jason M., Austin",
   },
 ];
 
@@ -99,17 +104,6 @@ function VerifiedBadge({ active }: { active: boolean }) {
     </svg>
   );
 }
-
-// ─── Floating emojis ─────────────────────────────────────────────────────────
-
-const FLOATING_EMOJIS = [
-  { emoji: "🥑", top: "22%", left: "8%",  size: 32, delay: 1.0 },
-  { emoji: "🍋", top: "35%", right: "9%", size: 26, delay: 1.2 },
-  { emoji: "🧄", top: "58%", left: "6%",  size: 24, delay: 1.4 },
-  { emoji: "🌿", top: "15%", right: "15%",size: 22, delay: 1.6 },
-  { emoji: "🍅", top: "70%", right: "7%", size: 28, delay: 1.8 },
-  { emoji: "🧅", top: "48%", left: "12%", size: 20, delay: 2.0 },
-];
 
 // ─── Page component ──────────────────────────────────────────────────────────
 
@@ -221,26 +215,6 @@ export default function HomePage() {
         }} />
       </div>
 
-      {/* ── FLOATING EMOJIS ──────────────────────────────────── */}
-      <div aria-hidden="true" className="hidden sm:block" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, userSelect: "none" }}>
-        {FLOATING_EMOJIS.map((item) => (
-          <span
-            key={item.emoji}
-            style={{
-              position: "absolute",
-              top: item.top,
-              left: "left" in item ? item.left : undefined,
-              right: "right" in item ? (item as any).right : undefined,
-              fontSize: `${item.size}px`,
-              animation: `floatIn 1s ease-out ${item.delay}s both`,
-              display: "block",
-            }}
-          >
-            {item.emoji}
-          </span>
-        ))}
-      </div>
-
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="pt-16 pb-10 px-4 text-center" style={{ position: "relative", zIndex: 1 }}>
         <h1
@@ -248,7 +222,7 @@ export default function HomePage() {
           style={{ animationDelay: "0.2s" }}
         >
           What&apos;s in your{" "}
-          <em className="text-[#D4622A] not-italic">fridge?</em>
+          <em className="text-[#D4622A]">fridge?</em>
         </h1>
         <p
           className="text-gray-500 text-base max-w-md mx-auto animate-fade-up"
@@ -334,8 +308,8 @@ export default function HomePage() {
             Why Fridge to Table
           </p>
           <h2 className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-[#1A3A2A] text-center mb-12">
-            Built around{" "}
-            <em className="text-[#D4622A] not-italic">how you cook</em>
+            Designed around{" "}
+            <em className="text-[#D4622A] not-italic">what you already have</em>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -358,15 +332,12 @@ export default function HomePage() {
       {/* ── TESTIMONIALS SECTION ─────────────────────────────── */}
       <section className="px-4 py-20 bg-[#1A3A2A]" style={{ position: "relative", zIndex: 1 }}>
         <div className="max-w-4xl mx-auto">
-          <h2 className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-white text-center mb-2">
+          <h2 className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-white text-center mb-12">
             Trusted by{" "}
-            <em className="text-[#C9A84C] not-italic">thousands of food lovers</em>
+            <em className="text-[#C9A84C] not-italic">thousands of home chefs and food lovers</em>
           </h2>
-          <p className="text-white/60 text-center text-sm mb-12">
-            Enjoy cooking. From easy weeknight dinners to weekend showstoppers.
-          </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {TESTIMONIALS.map((t) => (
               <div
                 key={t.author}
@@ -379,12 +350,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Rating stat */}
-          <div className="text-center mt-12">
-            <p className="font-[family-name:var(--font-playfair)] text-6xl font-bold text-white">4.9</p>
-            <p className="text-[#C9A84C] text-sm mt-1">★★★★★</p>
-            <p className="text-white/50 text-xs mt-1">Average rating from our community</p>
-          </div>
         </div>
       </section>
 

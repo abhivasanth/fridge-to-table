@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 function WordmarkLogo() {
   return (
     <svg
-      width="154"
+      width="126"
       height="28"
-      viewBox="0 0 154 28"
+      viewBox="0 0 132 28"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="fridge to table"
@@ -15,7 +15,7 @@ function WordmarkLogo() {
     >
       {/* "fridge" — weight 500 */}
       <text
-        x="0"
+        x="9"
         y="21"
         fontFamily="var(--font-outfit, Outfit, sans-serif)"
         fontSize="18"
@@ -50,12 +50,12 @@ function WordmarkLogo() {
       >
         table
       </text>
-      {/* Horizontal line at x-height (just above top of 'a') */}
+      {/* Horizontal line — sits just above top of short lowercase letters (x-height) */}
       <line
-        x1="0"
-        y1="8"
-        x2="154"
-        y2="8"
+        x1="9"
+        y1="13"
+        x2="126"
+        y2="13"
         stroke="#C5451A"
         strokeWidth="1.4"
         strokeLinecap="round"

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:e2e 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run build 2>&1)",
+      "Bash(tail:*)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit -- chefs 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit -- voiceInput 2>&1)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit -- BottomNav 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit -- ChefGrid 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit -- ChefVideoCard 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:e2e -- tests/e2e/text-input.spec.ts 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npm run test:unit 2>&1 && npm run test:e2e 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && git push -u origin feature/v2 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx convex deploy --cmd 'npm run build' 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx convex deploy -y --cmd 'npm run build' 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && git add components/IngredientInput.tsx lib/voiceInput.ts && git commit -m \"$\\(cat <<'EOF'\nfix: resolve SpeechRecognition type errors in production build\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)",
+      "WebFetch(domain:fridge-to-table-mu.vercel.app)",
+      "Bash(cat:*)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx tsc --noEmit 2>&1)",
+      "Bash(printf %s\\\\n:*)",
+      "Bash(python3:*)",
+      "Bash(python3.exe:*)",
+      "Bash(py:*)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx vercel 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx vercel env pull .env.preview.local --environment=preview 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx vercel deploy --prebuilt 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx vercel env pull .env.production.local --environment=production 2>&1)",
+      "Bash(cd /c/Users/abhiv/claudecode_projects/fridge_to_table && npx vercel --prod 2>&1)",
+      "Bash(grep:*)"
+    ]
+  }
+}
