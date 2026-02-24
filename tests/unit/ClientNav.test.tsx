@@ -14,10 +14,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("ClientNav", () => {
-  it("shows Navbar (brand name) on the home route", () => {
+  it("shows Navbar (logo) on the home route", () => {
     mockUsePathname.mockReturnValue("/");
     render(<ClientNav />);
-    expect(screen.getByText("Fridge to Table")).toBeInTheDocument();
+    expect(screen.getByLabelText("fridge to table")).toBeInTheDocument();
   });
 
   it("shows BottomNav (Saved tab) on non-home routes", () => {

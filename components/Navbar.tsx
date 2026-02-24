@@ -2,18 +2,65 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-function LogoMark() {
+function WordmarkLogo() {
   return (
-    <div className="w-8 h-8 rounded-full bg-[#1A3A2A] flex items-center justify-center flex-shrink-0">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="8.25" y="9.5" width="1.5" height="6.5" rx="0.75" fill="white"/>
-        <rect x="5.5" y="2" width="1.2" height="6" rx="0.6" fill="white"/>
-        <rect x="8.4" y="2" width="1.2" height="6" rx="0.6" fill="white"/>
-        <rect x="11.3" y="2" width="1.2" height="6" rx="0.6" fill="white"/>
-        <path d="M5.5 8 Q9 9.5 12.5 8" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <ellipse cx="4.5" cy="4.5" rx="1.8" ry="2.5" transform="rotate(-30 4.5 4.5)" fill="#D4622A"/>
-      </svg>
-    </div>
+    <svg
+      width="154"
+      height="28"
+      viewBox="0 0 154 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="fridge to table"
+      style={{ fontFamily: "var(--font-outfit, Outfit, sans-serif)" }}
+    >
+      {/* "fridge" — weight 500 */}
+      <text
+        x="0"
+        y="21"
+        fontFamily="var(--font-outfit, Outfit, sans-serif)"
+        fontSize="18"
+        fontWeight="500"
+        fill="#C5451A"
+        letterSpacing="-0.3"
+      >
+        fridge
+      </text>
+      {/* "to" — weight 300, opacity 0.4 */}
+      <text
+        x="62"
+        y="21"
+        fontFamily="var(--font-outfit, Outfit, sans-serif)"
+        fontSize="18"
+        fontWeight="300"
+        fill="#C5451A"
+        fillOpacity="0.4"
+        letterSpacing="-0.3"
+      >
+        to
+      </text>
+      {/* "table" — weight 500 */}
+      <text
+        x="84"
+        y="21"
+        fontFamily="var(--font-outfit, Outfit, sans-serif)"
+        fontSize="18"
+        fontWeight="500"
+        fill="#C5451A"
+        letterSpacing="-0.3"
+      >
+        table
+      </text>
+      {/* Horizontal line at x-height (just above top of 'a') */}
+      <line
+        x1="0"
+        y1="8"
+        x2="154"
+        y2="8"
+        stroke="#C5451A"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -21,25 +68,51 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <nav
+      className="sticky top-0 z-50 animate-slide-down"
+      style={{
+        background: "rgba(250, 247, 242, 0.85)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(45, 74, 46, 0.06)",
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo — acts as home button */}
-        <Link href="/" className="flex items-center gap-2.5 text-[#1A3A2A] font-semibold text-base tracking-tight">
-          <LogoMark />
-          <span>Fridge to Table</span>
+        {/* Logo wordmark */}
+        <Link
+          href="/"
+          className="flex items-center"
+          style={{
+            transition: "transform 0.3s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        >
+          <WordmarkLogo />
         </Link>
 
-        {/* Favorites link with heart */}
+        {/* Favorites link */}
         <Link
           href="/favourites"
-          className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-            pathname === "/favourites"
-              ? "text-[#D4622A]"
-              : "text-gray-500 hover:text-[#D4622A]"
-          }`}
+          className="flex items-center gap-1.5 text-sm font-medium"
+          style={{
+            color: pathname === "/favourites" ? "#2D4A2E" : "#6b7280",
+            padding: "8px 16px",
+            borderRadius: "100px",
+            transition: "all 0.25s ease",
+            background: pathname === "/favourites" ? "rgba(45, 74, 46, 0.05)" : "transparent",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#2D4A2E";
+            e.currentTarget.style.background = "rgba(45, 74, 46, 0.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = pathname === "/favourites" ? "#2D4A2E" : "#6b7280";
+            e.currentTarget.style.background = pathname === "/favourites" ? "rgba(45, 74, 46, 0.05)" : "transparent";
+          }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-            <path d="M8 13.5L2.05 7.55C1.02 6.52 1.02 4.85 2.05 3.82C3.08 2.79 4.75 2.79 5.78 3.82L8 6.04L10.22 3.82C11.25 2.79 12.92 2.79 13.95 3.82C14.98 4.85 14.98 6.52 13.95 7.55L8 13.5Z"/>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path d="M8 13.5L2.05 7.55C1.02 6.52 1.02 4.85 2.05 3.82C3.08 2.79 4.75 2.79 5.78 3.82L8 6.04L10.22 3.82C11.25 2.79 12.92 2.79 13.95 3.82C14.98 4.85 14.98 6.52 13.95 7.55L8 13.5Z" strokeLinejoin="round"/>
           </svg>
           <span>Favorites</span>
         </Link>

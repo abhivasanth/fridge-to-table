@@ -10,9 +10,9 @@ vi.mock("next/link", () => ({
 }));
 
 describe("Navbar", () => {
-  it("renders the brand name", () => {
+  it("renders the brand logo", () => {
     render(<Navbar />);
-    expect(screen.getByText("Fridge to Table")).toBeInTheDocument();
+    expect(screen.getByLabelText("fridge to table")).toBeInTheDocument();
   });
 
   it("logo link points to /", () => {

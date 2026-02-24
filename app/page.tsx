@@ -70,6 +70,47 @@ const TESTIMONIALS = [
   },
 ];
 
+// ─── Verified badge icon ─────────────────────────────────────────────────────
+
+function VerifiedBadge({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <circle
+        cx="8"
+        cy="8"
+        r="7.5"
+        fill={active ? "white" : "currentColor"}
+        fillOpacity={active ? 1 : 0.85}
+      />
+      <path
+        d="M5 8.5l2 2 4-4"
+        stroke={active ? "#C4622A" : "white"}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ─── Floating emojis ─────────────────────────────────────────────────────────
+
+const FLOATING_EMOJIS = [
+  { emoji: "🥑", top: "22%", left: "8%",  size: 32, delay: 1.0 },
+  { emoji: "🍋", top: "35%", right: "9%", size: 26, delay: 1.2 },
+  { emoji: "🧄", top: "58%", left: "6%",  size: 24, delay: 1.4 },
+  { emoji: "🌿", top: "15%", right: "15%",size: 22, delay: 1.6 },
+  { emoji: "🍅", top: "70%", right: "7%", size: 28, delay: 1.8 },
+  { emoji: "🧅", top: "48%", left: "12%", size: 20, delay: 2.0 },
+];
+
 // ─── Page component ──────────────────────────────────────────────────────────
 
 export default function HomePage() {
@@ -150,25 +191,79 @@ export default function HomePage() {
   const chefsTableDisabled = activeTab === "chefs-table" && selectedChefIds.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-screen bg-[#FAF6F1] relative overflow-x-hidden">
+
+      {/* ── BACKGROUND BLOBS ─────────────────────────────────── */}
+      <div aria-hidden="true" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        {/* Top-right rust blob */}
+        <div style={{
+          position: "absolute", top: "-80px", right: "-80px",
+          width: "500px", height: "500px",
+          background: "radial-gradient(circle, rgba(196,98,42,0.07) 0%, transparent 70%)",
+          filter: "blur(80px)",
+          animation: "blobFadeIn 2s ease-out 0.3s both",
+        }} />
+        {/* Bottom-left green blob */}
+        <div style={{
+          position: "absolute", bottom: "-100px", left: "-100px",
+          width: "600px", height: "600px",
+          background: "radial-gradient(circle, rgba(45,74,46,0.05) 0%, transparent 70%)",
+          filter: "blur(80px)",
+          animation: "blobFadeIn 2s ease-out 0.6s both",
+        }} />
+        {/* Center-left peach blob */}
+        <div style={{
+          position: "absolute", top: "30%", left: "-60px",
+          width: "350px", height: "350px",
+          background: "radial-gradient(circle, rgba(232,196,168,0.12) 0%, transparent 70%)",
+          filter: "blur(80px)",
+          animation: "blobFadeIn 2s ease-out 0.9s both",
+        }} />
+      </div>
+
+      {/* ── FLOATING EMOJIS ──────────────────────────────────── */}
+      <div aria-hidden="true" className="hidden sm:block" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, userSelect: "none" }}>
+        {FLOATING_EMOJIS.map((item) => (
+          <span
+            key={item.emoji}
+            style={{
+              position: "absolute",
+              top: item.top,
+              left: "left" in item ? item.left : undefined,
+              right: "right" in item ? (item as any).right : undefined,
+              fontSize: `${item.size}px`,
+              animation: `floatIn 1s ease-out ${item.delay}s both`,
+              display: "block",
+            }}
+          >
+            {item.emoji}
+          </span>
+        ))}
+      </div>
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="pt-16 pb-10 px-4 text-center">
-        <p className="font-[family-name:var(--font-playfair)] text-sm italic text-[#D4622A] mb-4">
-          Fridge to Table
-        </p>
-        <h1 className="font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4">
+      <section className="pt-16 pb-10 px-4 text-center" style={{ position: "relative", zIndex: 1 }}>
+        <h1
+          className="font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4 animate-fade-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           What&apos;s in your{" "}
           <em className="text-[#D4622A] not-italic">fridge?</em>
         </h1>
-        <p className="text-gray-500 text-base max-w-md mx-auto">
+        <p
+          className="text-gray-500 text-base max-w-md mx-auto animate-fade-up"
+          style={{ animationDelay: "0.35s" }}
+        >
           Tell us your ingredients — we&apos;ll find you a fun recipe.
         </p>
       </section>
 
       {/* ── APP PLAYGROUND ───────────────────────────────────── */}
-      <section id="playground" className="px-4 pb-16">
-        <div className="max-w-xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+      <section id="playground" className="px-4 pb-16" style={{ position: "relative", zIndex: 1 }}>
+        <div
+          className="max-w-xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 p-6 animate-fade-up-card"
+          style={{ animationDelay: "0.5s" }}
+        >
 
           {/* Tab selector */}
           <div className="flex gap-1 bg-gray-50 rounded-2xl p-1 mb-6">
@@ -176,13 +271,18 @@ export default function HomePage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
                   activeTab === tab
                     ? "bg-[#D4622A] text-white shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {tab === "any-recipe" ? "Any Recipe" : "Chef's Table 🍽️"}
+                {tab === "any-recipe" ? "Any Recipe" : (
+                  <>
+                    Chef&apos;s Table
+                    <VerifiedBadge active={activeTab === "chefs-table"} />
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -228,7 +328,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES SECTION ─────────────────────────────────── */}
-      <section className="px-4 py-20 bg-[#FAF6F1]">
+      <section className="px-4 py-20 bg-[#FAF6F1]" style={{ position: "relative", zIndex: 1 }}>
         <div className="max-w-4xl mx-auto">
           <p className="text-xs font-semibold tracking-widest text-[#D4622A] uppercase text-center mb-3">
             Why Fridge to Table
@@ -256,7 +356,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TESTIMONIALS SECTION ─────────────────────────────── */}
-      <section className="px-4 py-20 bg-[#1A3A2A]">
+      <section className="px-4 py-20 bg-[#1A3A2A]" style={{ position: "relative", zIndex: 1 }}>
         <div className="max-w-4xl mx-auto">
           <h2 className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-white text-center mb-2">
             Trusted by{" "}

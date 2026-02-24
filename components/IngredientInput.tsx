@@ -16,20 +16,20 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
   const [preview, setPreview] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const recognitionRef = useRef<any>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const photoMenuRef = useRef<HTMLDivElement>(null);
 
-  // isVoiceSupported() reads window — must be deferred to avoid SSR/client hydration mismatch
   const [voiceSupported, setVoiceSupported] = useState(false);
   useEffect(() => {
     setVoiceSupported(isVoiceSupported());
   }, []);
+
   const ingredients = parseIngredients(text);
   const hasInput = ingredients.length > 0 || preview !== null;
 
-  // Close photo menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (photoMenuRef.current && !photoMenuRef.current.contains(e.target as Node)) {
@@ -75,6 +75,14 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
     }
   }
 
+  const wrapperStyle: React.CSSProperties = {
+    border: focused ? "1.5px solid #D4845A" : "1.5px solid #e5e7eb",
+    borderRadius: "14px",
+    boxShadow: focused ? "0 0 0 3px rgba(196, 98, 42, 0.08)" : "none",
+    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+    background: "white",
+  };
+
   return (
     <div className="space-y-4">
       {/* Photo preview */}
@@ -92,30 +100,107 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
         </div>
       )}
 
-      {/* Text input + photo + mic */}
+      {/* Input row: + left | textarea | mic right */}
       {!preview && (
-        <div className="relative flex items-start gap-2">
+        <div className="flex items-start" style={wrapperStyle}>
+          {/* + button — left side */}
+          <div className="relative flex-shrink-0" ref={photoMenuRef} style={{ margin: "10px 0 10px 10px" }}>
+            <button
+              type="button"
+              onClick={() => setShowPhotoMenu((v) => !v)}
+              aria-label="Add photo"
+              style={{
+                width: "38px",
+                height: "38px",
+                borderRadius: "10px",
+                background: "#FAF7F2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#9ca3af",
+                fontSize: "20px",
+                lineHeight: 1,
+                border: "none",
+                cursor: "pointer",
+                transition: "background 0.15s ease, color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = "#f0ebe3";
+                (e.currentTarget as HTMLButtonElement).style.color = "#6b7280";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = "#FAF7F2";
+                (e.currentTarget as HTMLButtonElement).style.color = "#9ca3af";
+              }}
+            >
+              +
+            </button>
+            {showPhotoMenu && (
+              <div className="absolute left-0 top-12 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 w-44 z-10">
+                <button
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  📷 Take a photo
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  🖼️ Upload a photo
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Textarea — middle */}
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             placeholder="Type your ingredients, e.g. eggs, spinach, tomatoes..."
-            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-20 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-[#D4622A] min-h-[56px]"
+            style={{
+              flex: 1,
+              padding: "16px 14px 16px 12px",
+              border: "none",
+              background: "transparent",
+              resize: "none",
+              outline: "none",
+              fontSize: "14px",
+              color: "#1f2937",
+              minHeight: "60px",
+            }}
             rows={2}
           />
 
-          {/* Inline buttons (absolute positioned inside textarea) */}
-          <div className="absolute right-3 top-3 flex items-center gap-2">
-            {/* Mic button (inline, next to +) */}
-            {voiceSupported && (
+          {/* Mic button — right side */}
+          {voiceSupported && (
+            <div style={{ margin: "14px 12px 14px 0", flexShrink: 0 }}>
               <button
                 type="button"
                 onClick={handleMicClick}
                 aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                  voiceState === "recording"
-                    ? "bg-[#1A3A2A] text-white"
-                    : "text-gray-400 hover:text-[#D4622A]"
-                }`}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  background: voiceState === "recording" ? "#1A3A2A" : "transparent",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (voiceState !== "recording")
+                    (e.currentTarget as HTMLButtonElement).style.background = "#FAF7F2";
+                }}
+                onMouseLeave={(e) => {
+                  if (voiceState !== "recording")
+                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                }}
               >
                 {voiceState === "recording" ? (
                   <span className="flex items-end gap-px h-3" aria-hidden="false">
@@ -132,42 +217,19 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
                     ))}
                   </span>
                 ) : (
-                  <span className="text-sm">🎤</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="2" width="6" height="11" rx="3"/>
+                    <path d="M5 10a7 7 0 0 0 14 0"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                    <line x1="9" y1="22" x2="15" y2="22"/>
+                  </svg>
                 )}
               </button>
-            )}
-
-            {/* Photo "+" button */}
-            <div className="relative" ref={photoMenuRef}>
-              <button
-                type="button"
-                onClick={() => setShowPhotoMenu((v) => !v)}
-                className="text-gray-400 hover:text-[#D4622A] transition-colors text-xl leading-none"
-                aria-label="Add photo"
-              >
-                +
-              </button>
-              {showPhotoMenu && (
-                <div className="absolute right-0 top-8 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 w-44 z-10">
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    onClick={() => cameraInputRef.current?.click()}
-                  >
-                    📷 Take a photo
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    onClick={() => galleryInputRef.current?.click()}
-                  >
-                    🖼️ Upload a photo
-                  </button>
-                </div>
-              )}
             </div>
-
-          </div>
+          )}
         </div>
       )}
+
       {/* Hidden file inputs */}
       <input
         ref={cameraInputRef}
@@ -192,7 +254,32 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
       <button
         onClick={handleSubmit}
         disabled={!hasInput || isLoading || disabled}
-        className="w-full bg-[#D4622A] text-white font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#BF5525] transition-colors"
+        className="btn-find-recipes w-full text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{
+          background: "#C4622A",
+          borderRadius: "14px",
+          padding: "16px 24px",
+          fontSize: "15px",
+          fontWeight: 500,
+          border: "none",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+        }}
+        onMouseEnter={(e) => {
+          if (!e.currentTarget.disabled) {
+            e.currentTarget.style.background = "#B5551F";
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 20px rgba(196, 98, 42, 0.3)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "#C4622A";
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
       >
         {isLoading ? "🍳 Finding recipes..." : "Find Recipes →"}
       </button>
