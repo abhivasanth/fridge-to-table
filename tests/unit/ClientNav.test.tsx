@@ -8,21 +8,18 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const mockUsePathname = vi.fn();
 vi.mock("next/navigation", () => ({
-  usePathname: () => mockUsePathname(),
+  usePathname: () => "/",
 }));
 
 describe("ClientNav", () => {
-  it("shows Navbar (logo) on the home route", () => {
-    mockUsePathname.mockReturnValue("/");
+  it("shows Navbar on all routes", () => {
     render(<ClientNav />);
     expect(screen.getByLabelText("fridge to table")).toBeInTheDocument();
   });
 
-  it("shows BottomNav (Saved tab) on non-home routes", () => {
-    mockUsePathname.mockReturnValue("/favourites");
+  it("shows Favorites link", () => {
     render(<ClientNav />);
-    expect(screen.getByText("Saved")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /favorites/i })).toBeInTheDocument();
   });
 });

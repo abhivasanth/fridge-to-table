@@ -23,6 +23,9 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
   const photoMenuRef = useRef<HTMLDivElement>(null);
 
   const [voiceSupported, setVoiceSupported] = useState(false);
+  const [interimText, setInterimText] = useState("");
+  const committedTextRef = useRef(""); // finalized dictation text
+  const manualStopRef = useRef(false);  // true when user tapped mic to stop
   useEffect(() => {
     setVoiceSupported(isVoiceSupported());
   }, []);
@@ -48,23 +51,65 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
     setText("");
   }
 
-  function handleMicClick() {
-    if (voiceState === "recording") {
-      recognitionRef.current?.stop();
-      setVoiceState("idle");
-      return;
-    }
+  function startRecognition() {
     const recognition = createSpeechRecognition();
     if (!recognition) return;
+    recognition.interimResults = true;
+    // continuous: false — each phrase is its own session, preventing browser audio replay duplication
     recognitionRef.current = recognition;
+
     recognition.onstart = () => setVoiceState("recording");
     recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setText((prev) => (prev ? prev + ", " + transcript : transcript));
+      let interim = "";
+      let finalTranscript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        const base = committedTextRef.current;
+        const updated = base ? base + " " + finalTranscript : finalTranscript;
+        committedTextRef.current = updated;
+        setText(updated);
+      }
+      setInterimText(interim);
     };
-    recognition.onend = () => setVoiceState("idle");
-    recognition.onerror = () => setVoiceState("idle");
+    recognition.onend = () => {
+      setInterimText("");
+      if (!manualStopRef.current) {
+        // Brief pause before restarting so browser fully flushes the previous session
+        setTimeout(() => {
+          if (!manualStopRef.current) {
+            try { startRecognition(); } catch { setVoiceState("idle"); }
+          }
+        }, 150);
+      } else {
+        setVoiceState("idle");
+      }
+    };
+    recognition.onerror = (e: any) => {
+      // "no-speech" is harmless — onend will fire and restart
+      if (e.error !== "no-speech") {
+        manualStopRef.current = true;
+        setVoiceState("idle");
+        setInterimText("");
+      }
+    };
     recognition.start();
+  }
+
+  function handleMicClick() {
+    if (voiceState === "recording") {
+      manualStopRef.current = true;
+      recognitionRef.current?.stop();
+      return;
+    }
+    manualStopRef.current = false;
+    committedTextRef.current = text;
+    startRecognition();
   }
 
   function handleSubmit() {
@@ -155,8 +200,12 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
 
           {/* Textarea — middle */}
           <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+            value={
+              voiceState === "recording" && interimText
+                ? (committedTextRef.current ? committedTextRef.current + " " + interimText : interimText)
+                : text
+            }
+            onChange={(e) => { if (voiceState !== "recording") setText(e.target.value); }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder="Type your ingredients, e.g. eggs, spinach, tomatoes..."
@@ -180,7 +229,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
               <button
                 type="button"
                 onClick={handleMicClick}
-                aria-label={voiceState === "recording" ? "Listening, tap to stop" : "Speak your ingredients"}
+                aria-label={voiceState === "recording" ? "Dictating, tap to stop" : "Dictate your ingredients"}
                 style={{
                   width: "32px",
                   height: "32px",

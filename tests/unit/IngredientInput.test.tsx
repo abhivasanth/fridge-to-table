@@ -17,9 +17,9 @@ vi.mock("@/lib/voiceInput", () => ({
 }));
 
 describe("IngredientInput — voice button", () => {
-  it("shows Speak button when voice is supported", () => {
+  it("shows Dictate button when voice is supported", () => {
     render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
-    expect(screen.getByRole("button", { name: /speak your ingredients/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dictate your ingredients/i })).toBeInTheDocument();
   });
 
   it("does not show the old inline mic emoji button", () => {
@@ -29,12 +29,12 @@ describe("IngredientInput — voice button", () => {
 
   it("shows Listening text when recording starts", () => {
     render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
-    const speakBtn = screen.getByRole("button", { name: /speak your ingredients/i });
-    fireEvent.click(speakBtn);
+    const dictateBtn = screen.getByRole("button", { name: /dictate your ingredients/i });
+    fireEvent.click(dictateBtn);
     // Simulate recognition.onstart firing
     act(() => {
       mockRecognition.onstart?.();
     });
-    expect(screen.getByRole("button", { name: /listening.*tap to stop/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dictating.*tap to stop/i })).toBeInTheDocument();
   });
 });
