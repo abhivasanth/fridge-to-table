@@ -36,4 +36,10 @@ describe("Navbar", () => {
     render(<Navbar />);
     expect(screen.queryByText(/try free/i)).not.toBeInTheDocument();
   });
+
+  it("My Chefs link points to /my-chefs", () => {
+    render(<Navbar />);
+    const link = screen.getByRole("link", { name: /my chefs/i });
+    expect(link).toHaveAttribute("href", "/my-chefs");
+  });
 });

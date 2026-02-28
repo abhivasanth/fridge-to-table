@@ -35,4 +35,18 @@ export default defineSchema({
   })
     .index("by_session", ["sessionId"])
     .index("by_session_and_recipe", ["sessionId", "recipeSetId", "recipeIndex"]),
+
+  customChefs: defineTable({
+    sessionId: v.string(),
+    chefs: v.array(
+      v.object({
+        channelId: v.string(),
+        channelName: v.string(),
+        channelThumbnail: v.string(),
+        addedAt: v.number(),
+        resolvedAt: v.number(),
+      })
+    ),
+    updatedAt: v.number(),
+  }).index("by_session", ["sessionId"]),
 });
