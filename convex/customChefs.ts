@@ -129,7 +129,7 @@ export const resolveYouTubeChannel = action({
         ok: true as const,
         channelId: channel.id as string,
         channelName: channel.snippet.title as string,
-        channelThumbnail: channel.snippet.thumbnails.default.url as string,
+        channelThumbnail: (channel.snippet.thumbnails?.default?.url ?? "") as string,
         resolvedAt: Date.now(),
       };
     } catch {

@@ -19,7 +19,7 @@ export function parseYouTubeInput(input: string): ParseResult {
     const urlStr = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
     const url = new URL(urlStr);
 
-    if (!url.hostname.endsWith("youtube.com")) {
+    if (url.hostname !== "youtube.com" && url.hostname !== "www.youtube.com") {
       return { type: "error" };
     }
 
