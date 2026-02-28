@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi, afterEach } from "vitest";
 import { api } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 
@@ -181,5 +181,96 @@ describe("removeCustomChef", () => {
       sessionId: "session-abc",
     });
     expect(result).toHaveLength(1);
+  });
+});
+
+describe("resolveYouTubeChannel", () => {
+  function mockFetchSuccess(channelId: string, title: string, thumbnailUrl: string) {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      json: async () => ({
+        items: [{
+          id: channelId,
+          snippet: {
+            title,
+            thumbnails: { default: { url: thumbnailUrl } },
+          },
+        }],
+      }),
+    }));
+  }
+
+  function mockFetchEmpty() {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      json: async () => ({ items: [] }),
+    }));
+  }
+
+  function mockFetchApiError() {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      json: async () => ({ error: { message: "API error" } }),
+    }));
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.YOUTUBE_API_KEY;
+  });
+
+  test("resolves a valid @handle and returns channel metadata", async () => {
+    process.env.YOUTUBE_API_KEY = "fake-key";
+    mockFetchSuccess("UCtest123", "Babish Culinary Universe", "https://example.com/thumb.jpg");
+
+    const t = convexTest(schema);
+    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
+      input: "@babish",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.channelId).toBe("UCtest123");
+      expect(result.channelName).toBe("Babish Culinary Universe");
+      expect(result.channelThumbnail).toBe("https://example.com/thumb.jpg");
+    }
+  });
+
+  test("returns parse_error for an unrecognised input", async () => {
+    process.env.YOUTUBE_API_KEY = "fake-key";
+    const t = convexTest(schema);
+    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
+      input: "not a url",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("parse_error");
+  });
+
+  test("returns not_found when YouTube returns no items", async () => {
+    process.env.YOUTUBE_API_KEY = "fake-key";
+    mockFetchEmpty();
+    const t = convexTest(schema);
+    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
+      input: "@nobody",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("not_found");
+  });
+
+  test("returns not_found when YouTube returns an error object", async () => {
+    process.env.YOUTUBE_API_KEY = "fake-key";
+    mockFetchApiError();
+    const t = convexTest(schema);
+    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
+      input: "@babish",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("not_found");
+  });
+
+  test("returns api_error when YOUTUBE_API_KEY is not set", async () => {
+    const t = convexTest(schema);
+    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
+      input: "@babish",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("api_error");
   });
 });
