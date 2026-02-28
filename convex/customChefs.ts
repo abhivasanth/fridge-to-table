@@ -65,3 +65,27 @@ export const addCustomChef = mutation({
     });
   },
 });
+
+// ─── removeCustomChef ──────────────────────────────────────────────────────
+
+export const removeCustomChef = mutation({
+  args: {
+    sessionId: v.string(),
+    channelId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query("customChefs")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .unique();
+
+    if (!doc) return;
+
+    const filtered = doc.chefs.filter((c) => c.channelId !== args.channelId);
+    if (filtered.length === doc.chefs.length) return;
+    await ctx.db.patch(doc._id, {
+      chefs: filtered,
+      updatedAt: Date.now(),
+    });
+  },
+});

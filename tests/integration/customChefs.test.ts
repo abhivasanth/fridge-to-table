@@ -120,3 +120,66 @@ describe("addCustomChef", () => {
     ).rejects.toThrow("duplicate");
   });
 });
+
+describe("removeCustomChef", () => {
+  test("removes the chef with the given channelId", async () => {
+    const t = convexTest(schema);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("customChefs", {
+        sessionId: "session-abc",
+        chefs: [
+          { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
+          { channelId: "UC2", channelName: "Chef B", channelThumbnail: "b.jpg", addedAt: 2000, resolvedAt: 1000 },
+        ],
+        updatedAt: 2000,
+      });
+    });
+
+    await t.mutation(api.customChefs.removeCustomChef, {
+      sessionId: "session-abc",
+      channelId: "UC1",
+    });
+
+    const result = await t.query(api.customChefs.listCustomChefs, {
+      sessionId: "session-abc",
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].channelId).toBe("UC2");
+  });
+
+  test("is a no-op when session has no document", async () => {
+    const t = convexTest(schema);
+
+    await expect(
+      t.mutation(api.customChefs.removeCustomChef, {
+        sessionId: "session-none",
+        channelId: "UC1",
+      })
+    ).resolves.toBeNull();
+  });
+
+  test("is a no-op when channelId is not in the list", async () => {
+    const t = convexTest(schema);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("customChefs", {
+        sessionId: "session-abc",
+        chefs: [
+          { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
+        ],
+        updatedAt: 1000,
+      });
+    });
+
+    await t.mutation(api.customChefs.removeCustomChef, {
+      sessionId: "session-abc",
+      channelId: "UC-not-exist",
+    });
+
+    const result = await t.query(api.customChefs.listCustomChefs, {
+      sessionId: "session-abc",
+    });
+    expect(result).toHaveLength(1);
+  });
+});
