@@ -52,3 +52,71 @@ describe("listCustomChefs", () => {
     expect(result).toEqual([]);
   });
 });
+describe("addCustomChef", () => {
+  const newChef = {
+    sessionId: "session-abc",
+    channelId: "UCtest123",
+    channelName: "Test Chef",
+    channelThumbnail: "https://example.com/thumb.jpg",
+    resolvedAt: 1000,
+  };
+
+  test("creates a new document when none exists", async () => {
+    const t = convexTest(schema);
+
+    await t.mutation(api.customChefs.addCustomChef, newChef);
+
+    const result = await t.query(api.customChefs.listCustomChefs, {
+      sessionId: "session-abc",
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].channelId).toBe("UCtest123");
+    expect(result[0].channelName).toBe("Test Chef");
+  });
+
+  test("appends to existing document", async () => {
+    const t = convexTest(schema);
+
+    await t.mutation(api.customChefs.addCustomChef, newChef);
+    await t.mutation(api.customChefs.addCustomChef, {
+      ...newChef,
+      channelId: "UCother456",
+      channelName: "Other Chef",
+    });
+
+    const result = await t.query(api.customChefs.listCustomChefs, {
+      sessionId: "session-abc",
+    });
+    expect(result).toHaveLength(2);
+  });
+
+  test("throws when limit of 6 is reached", async () => {
+    const t = convexTest(schema);
+
+    for (let i = 1; i <= 6; i++) {
+      await t.mutation(api.customChefs.addCustomChef, {
+        ...newChef,
+        channelId: `UC${i}`,
+        channelName: `Chef ${i}`,
+      });
+    }
+
+    await expect(
+      t.mutation(api.customChefs.addCustomChef, {
+        ...newChef,
+        channelId: "UC7",
+        channelName: "Chef 7",
+      })
+    ).rejects.toThrow("limit_reached");
+  });
+
+  test("throws when channelId is already in the list", async () => {
+    const t = convexTest(schema);
+
+    await t.mutation(api.customChefs.addCustomChef, newChef);
+
+    await expect(
+      t.mutation(api.customChefs.addCustomChef, newChef)
+    ).rejects.toThrow("duplicate");
+  });
+});

@@ -15,3 +15,53 @@ export const listCustomChefs = query({
     return [...doc.chefs].sort((a, b) => a.addedAt - b.addedAt);
   },
 });
+
+// ─── addCustomChef ─────────────────────────────────────────────────────────
+
+const MAX_CHEFS = 6;
+
+export const addCustomChef = mutation({
+  args: {
+    sessionId: v.string(),
+    channelId: v.string(),
+    channelName: v.string(),
+    channelThumbnail: v.string(),
+    resolvedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query("customChefs")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .unique();
+
+    const newChef = {
+      channelId: args.channelId,
+      channelName: args.channelName,
+      channelThumbnail: args.channelThumbnail,
+      addedAt: Date.now(),
+      resolvedAt: args.resolvedAt,
+    };
+
+    if (!doc) {
+      await ctx.db.insert("customChefs", {
+        sessionId: args.sessionId,
+        chefs: [newChef],
+        updatedAt: Date.now(),
+      });
+      return;
+    }
+
+    if (doc.chefs.length >= MAX_CHEFS) {
+      throw new Error("limit_reached");
+    }
+
+    if (doc.chefs.some((c) => c.channelId === args.channelId)) {
+      throw new Error("duplicate");
+    }
+
+    await ctx.db.patch(doc._id, {
+      chefs: [...doc.chefs, newChef],
+      updatedAt: Date.now(),
+    });
+  },
+});
