@@ -135,9 +135,10 @@ export default function HomePage() {
   const analyzePhoto = useAction(api.photos.analyzePhoto);
   const generateRecipes = useAction(api.recipes.generateRecipes);
   const searchChefVideos = useAction(api.chefs.searchChefVideos);
+  const sessionId = getSessionId();
   const customChefs = useQuery(
     api.customChefs.listCustomChefs,
-    { sessionId: getSessionId() }
+    sessionId ? { sessionId } : "skip"
   ) ?? [];
 
   async function handleSubmit(ingredients: string[], imageBase64?: string) {
