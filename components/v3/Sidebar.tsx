@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadHistory } from "@/lib/searchHistory";
 import type { HistoryEntry } from "@/types/v3";
 
@@ -32,6 +32,38 @@ export function Sidebar({ open, onClose, onNewSearch, onSelectHistory }: Props) 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [search, setSearch] = useState("");
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragStartX = useRef<number | null>(null);
+  const currentDragX = useRef(0);
+  const SIDEBAR_WIDTH = 280;
+  const CLOSE_THRESHOLD = SIDEBAR_WIDTH * 0.4; // 112px
+
+  function handleTouchStart(e: React.TouchEvent) {
+    dragStartX.current = e.touches[0].clientX;
+    currentDragX.current = 0;
+    if (panelRef.current) panelRef.current.style.transition = "none";
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (dragStartX.current === null) return;
+    const dx = e.touches[0].clientX - dragStartX.current;
+    currentDragX.current = Math.max(0, dx);
+    if (panelRef.current) {
+      panelRef.current.style.transform = `translateX(${currentDragX.current}px)`;
+    }
+  }
+
+  function handleTouchEnd() {
+    if (panelRef.current) panelRef.current.style.transition = "transform 0.2s ease";
+    if (currentDragX.current > CLOSE_THRESHOLD) {
+      onClose();
+    } else {
+      if (panelRef.current) panelRef.current.style.transform = "translateX(0)";
+    }
+    dragStartX.current = null;
+    currentDragX.current = 0;
+  }
+
   useEffect(() => {
     if (open) setHistory(loadHistory());
   }, [open]);
@@ -58,6 +90,10 @@ export function Sidebar({ open, onClose, onNewSearch, onSelectHistory }: Props) 
 
       {/* Sidebar panel */}
       <div
+        ref={panelRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: "fixed", top: 0, left: 0, bottom: 0,
           width: "280px", zIndex: 95,
