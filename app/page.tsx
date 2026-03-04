@@ -23,6 +23,13 @@ export default function HomePage() {
   const analyzePhoto = useAction(api.photos.analyzePhoto);
   const generateRecipes = useAction(api.recipes.generateRecipes);
   const searchChefVideos = useAction(api.chefs.searchChefVideos);
+  const resolveYouTubeChannel = useAction(api.customChefs.resolveYouTubeChannel);
+
+  async function handleResolveChannel(url: string): Promise<{ channelId: string; channelName: string } | null> {
+    const result = await resolveYouTubeChannel({ input: url });
+    if (!result.ok) return null;
+    return { channelId: result.channelId, channelName: result.channelName };
+  }
 
   async function handleSubmit(ingredients: string[], imageBase64?: string) {
     // will be wired in Tasks 6 + 8
@@ -44,6 +51,7 @@ export default function HomePage() {
           selectedIndices={selectedSlotIndices}
           onSlotsChange={(slots) => { setChefSlots(slots); saveChefSlots(slots); }}
           onSelectionChange={setSelectedSlotIndices}
+          onResolveChannel={handleResolveChannel}
         />
       </InputArea>
     </div>
