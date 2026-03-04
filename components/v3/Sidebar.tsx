@@ -35,10 +35,12 @@ export function Sidebar({ open, onClose, onNewSearch, onSelectHistory }: Props) 
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
   const currentDragX = useRef(0);
+  const isDragging = useRef(false);
   const SIDEBAR_WIDTH = 280;
   const CLOSE_THRESHOLD = SIDEBAR_WIDTH * 0.4; // 112px
 
   function handleTouchStart(e: React.TouchEvent) {
+    isDragging.current = true;
     dragStartX.current = e.touches[0].clientX;
     currentDragX.current = 0;
     if (panelRef.current) panelRef.current.style.transition = "none";
@@ -62,6 +64,7 @@ export function Sidebar({ open, onClose, onNewSearch, onSelectHistory }: Props) 
     }
     dragStartX.current = null;
     currentDragX.current = 0;
+    isDragging.current = false;
   }
 
   useEffect(() => {
@@ -88,6 +91,13 @@ export function Sidebar({ open, onClose, onNewSearch, onSelectHistory }: Props) 
         }}
       />
 
+      {/*
+        Note: touch gesture handlers mutate style.transform directly via panelRef.
+        If a Convex subscription update triggers a re-render mid-drag, React will
+        reconcile transform back to "translateX(0)" momentarily. This is an
+        acceptable trade-off vs. the complexity of lifting drag offset to React state.
+        isDragging ref is available for future defensive guard if needed.
+      */}
       {/* Sidebar panel */}
       <div
         ref={panelRef}
