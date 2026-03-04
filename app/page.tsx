@@ -9,7 +9,7 @@ import { ResultsArea } from "@/components/v3/ResultsArea";
 import { InputArea } from "@/components/v3/InputArea";
 import { ExpandableRecipeCard } from "@/components/v3/ExpandableRecipeCard";
 import type { ChefSlot, FilterTag, HistoryEntry } from "@/types/v3";
-import { loadChefSlots, saveChefSlots } from "@/lib/chefSlots";
+import { loadChefSlots, saveChefSlots, DEFAULT_SLOTS } from "@/lib/chefSlots";
 import { ChefSlotsGrid } from "@/components/v3/ChefSlotsGrid";
 import { InlineVideoCard } from "@/components/v3/InlineVideoCard";
 import { saveHistoryEntry } from "@/lib/searchHistory";
@@ -42,7 +42,7 @@ export default function HomePage() {
   const [pendingRecipeSetId, setPendingRecipeSetId] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<FilterTag[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [chefSlots, setChefSlots] = useState<ChefSlot[]>(() => loadChefSlots());
+  const [chefSlots, setChefSlots] = useState<ChefSlot[]>(DEFAULT_SLOTS);
   useEffect(() => {
     setChefSlots(loadChefSlots());
   }, []);

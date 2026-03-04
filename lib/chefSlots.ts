@@ -3,7 +3,7 @@ import type { ChefSlot } from "@/types/v3";
 export const CHEF_SLOTS_STORAGE_KEY = "ftt_chef_slots_v3";
 const STORAGE_KEY = CHEF_SLOTS_STORAGE_KEY;
 
-const DEFAULT_SLOTS: ChefSlot[] = [
+export const DEFAULT_SLOTS: ChefSlot[] = [
   { type: "preset", chefId: "gordon-ramsay" },
   { type: "preset", chefId: "jamie-oliver" },
   { type: "preset", chefId: "ranveer-brar" },
