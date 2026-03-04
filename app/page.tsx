@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAction, useQuery } from "convex/react";
+import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { AppHeader } from "@/components/v3/AppHeader";
 import { ResultsArea } from "@/components/v3/ResultsArea";
 import { InputArea } from "@/components/v3/InputArea";
 import { ExpandableRecipeCard } from "@/components/v3/ExpandableRecipeCard";
-import type { ChefSlot, FilterTag } from "@/types/v3";
+import type { ChefSlot, FilterTag, HistoryEntry } from "@/types/v3";
 import { loadChefSlots, saveChefSlots } from "@/lib/chefSlots";
 import { ChefSlotsGrid } from "@/components/v3/ChefSlotsGrid";
 import { InlineVideoCard } from "@/components/v3/InlineVideoCard";
@@ -15,6 +16,7 @@ import { saveHistoryEntry } from "@/lib/searchHistory";
 import { CHEFS } from "@/lib/chefs";
 import { getSessionId } from "@/lib/session";
 import type { Recipe, ChefVideoResult } from "@/types/recipe";
+import { Sidebar } from "@/components/v3/Sidebar";
 
 type ResultState =
   | { type: "empty" }
@@ -69,6 +71,24 @@ export default function HomePage() {
     });
     setPendingRecipeSetId(null);
   }, [recipeSet, pendingRecipeSetId]);
+
+  async function handleHistorySelect(entry: HistoryEntry) {
+    if (entry.resultType === "recipes" && entry.recipeSetId) {
+      const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
+        recipeSetId: entry.recipeSetId as Id<"recipes">,
+      });
+      if (recipeSet) {
+        setResult({
+          type: "recipes",
+          recipes: recipeSet.results as Recipe[],
+          query: entry.query,
+          recipeSetId: entry.recipeSetId,
+        });
+      }
+    } else if (entry.resultType === "chefs" && entry.videoResults) {
+      setResult({ type: "chefs", results: entry.videoResults, query: entry.query });
+    }
+  }
 
   async function handleResolveChannel(url: string): Promise<{ channelId: string; channelName: string } | null> {
     const result = await resolveYouTubeChannel({ input: url });
@@ -139,6 +159,12 @@ export default function HomePage() {
 
   return (
     <div className="h-dvh flex flex-col bg-[#FAF6F1] overflow-hidden">
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onNewSearch={() => { setResult({ type: "empty" }); setSelectedSlotIndices([]); }}
+        onSelectHistory={handleHistorySelect}
+      />
       <AppHeader onHamburgerClick={() => setSidebarOpen(true)} />
       <ResultsArea
         showBack={result.type !== "empty"}
