@@ -38,3 +38,28 @@ describe("IngredientInput — voice button", () => {
     expect(screen.getByRole("button", { name: /dictating.*tap to stop/i })).toBeInTheDocument();
   });
 });
+
+describe("IngredientInput v3", () => {
+  it("renders send button inside the row", () => {
+    render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
+    expect(screen.getByLabelText("Find recipes")).toBeInTheDocument();
+  });
+
+  it("send button is disabled when input is empty", () => {
+    render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
+    expect(screen.getByLabelText("Find recipes")).toBeDisabled();
+  });
+
+  it("calls onSubmit when send button clicked with text", () => {
+    const onSubmit = vi.fn();
+    render(<IngredientInput onSubmit={onSubmit} isLoading={false} />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "eggs, milk" } });
+    fireEvent.click(screen.getByLabelText("Find recipes"));
+    expect(onSubmit).toHaveBeenCalledWith(["eggs", "milk"]);
+  });
+
+  it("does not render a full-width find recipes button", () => {
+    render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
+    expect(screen.queryByText(/Find Recipes/i)).not.toBeInTheDocument();
+  });
+});

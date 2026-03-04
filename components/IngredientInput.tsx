@@ -8,10 +8,9 @@ type Props = {
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
   disabled?: boolean;
-  beforeSubmit?: React.ReactNode;
 };
 
-export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }: Props) {
+export function IngredientInput({ onSubmit, isLoading, disabled }: Props) {
   const [text, setText] = useState("");
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
@@ -276,6 +275,40 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
               </button>
             </div>
           )}
+
+          {/* Send button — right side */}
+          <div style={{ margin: "14px 10px 14px 4px", flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!hasInput || isLoading || disabled}
+              aria-label="Find recipes"
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+                background: hasInput && !isLoading && !disabled ? "#C4622A" : "#f3f4f6",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: hasInput && !isLoading && !disabled ? "pointer" : "not-allowed",
+                transition: "background 0.15s ease",
+                flexShrink: 0,
+              }}
+            >
+              {isLoading ? (
+                <span style={{ fontSize: "14px" }}>⏳</span>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke={hasInput && !disabled ? "white" : "#9ca3af"}
+                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="19" x2="12" y2="5"/>
+                  <polyline points="5 12 12 5 19 12"/>
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
@@ -296,42 +329,6 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }:
         onChange={(e) => e.target.files?.[0] && handlePhotoFile(e.target.files[0])}
       />
 
-      {/* Slot for content above the submit button (e.g. FiltersPanel) */}
-      {beforeSubmit}
-
-      {/* Submit button */}
-      <button
-        onClick={handleSubmit}
-        disabled={!hasInput || isLoading || disabled}
-        className="btn-find-recipes w-full text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{
-          background: "#C4622A",
-          borderRadius: "14px",
-          padding: "16px 24px",
-          fontSize: "15px",
-          fontWeight: 500,
-          border: "none",
-          cursor: "pointer",
-          transition: "all 0.3s ease",
-        }}
-        onMouseEnter={(e) => {
-          if (!e.currentTarget.disabled) {
-            e.currentTarget.style.background = "#B5551F";
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(196, 98, 42, 0.3)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#C4622A";
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
-      >
-        {isLoading ? "🍳 Finding recipes..." : "Find Recipes →"}
-      </button>
     </div>
   );
 }
