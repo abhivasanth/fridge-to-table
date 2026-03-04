@@ -10,7 +10,9 @@ import { ExpandableRecipeCard } from "@/components/v3/ExpandableRecipeCard";
 import type { ChefSlot, FilterTag } from "@/types/v3";
 import { loadChefSlots, saveChefSlots } from "@/lib/chefSlots";
 import { ChefSlotsGrid } from "@/components/v3/ChefSlotsGrid";
+import { InlineVideoCard } from "@/components/v3/InlineVideoCard";
 import { saveHistoryEntry } from "@/lib/searchHistory";
+import { CHEFS } from "@/lib/chefs";
 import { getSessionId } from "@/lib/session";
 import type { Recipe, ChefVideoResult } from "@/types/recipe";
 
@@ -100,7 +102,30 @@ export default function HomePage() {
         setPendingRecipeSetId(recipeSetId as string);
         // useEffect above transitions to "recipes" state when data arrives
       }
-      // chef mode wired in Task 8
+      if (selectedSlotIndices.length > 0) {
+        const query = finalIngredients.join(", ");
+        // Build chef list from selected slots
+        const chefsForSearch = selectedSlotIndices.map((idx) => {
+          const slot = chefSlots[idx];
+          if (slot.type === "preset") {
+            const chef = CHEFS.find((c) => c.id === slot.chefId)!;
+            return { id: chef.id, name: chef.name, emoji: chef.emoji, youtubeChannelId: chef.youtubeChannelId };
+          } else if (slot.type === "custom") {
+            return { id: slot.channelId, name: slot.channelName, emoji: "📺", youtubeChannelId: slot.channelId };
+          }
+          return null;
+        }).filter(Boolean) as { id: string; name: string; emoji: string; youtubeChannelId: string }[];
+
+        const videoResults = await searchChefVideos({ ingredients: finalIngredients, chefs: chefsForSearch });
+        setResult({ type: "chefs", results: videoResults, query });
+        saveHistoryEntry({
+          id: crypto.randomUUID(),
+          query,
+          timestamp: Date.now(),
+          resultType: "chefs",
+          videoResults,
+        });
+      }
     } catch (err) {
       console.error("handleSubmit error:", err);
       setResult({ type: "empty" });
@@ -128,6 +153,17 @@ export default function HomePage() {
             <div className="space-y-4">
               {result.recipes.map((recipe, i) => (
                 <ExpandableRecipeCard key={i} recipe={recipe} />
+              ))}
+            </div>
+          </div>
+        )}
+        {result.type === "chefs" && (
+          <div>
+            <p className="text-xs font-semibold text-gray-400 mb-1">✦ From Your Chefs</p>
+            <p className="text-xs text-gray-400 mb-4">Videos matching your ingredients from selected chefs.</p>
+            <div className="space-y-4">
+              {result.results.map((r) => (
+                <InlineVideoCard key={r.chefId} result={r} />
               ))}
             </div>
           </div>
