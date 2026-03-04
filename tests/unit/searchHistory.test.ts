@@ -25,4 +25,16 @@ describe("searchHistory", () => {
     clearHistory();
     expect(loadHistory()).toEqual([]);
   });
+
+  it("caps history at 50 entries", () => {
+    for (let i = 0; i < 51; i++) {
+      saveHistoryEntry({ id: String(i), query: `query ${i}`, timestamp: i, resultType: "recipes" });
+    }
+    expect(loadHistory()).toHaveLength(50);
+  });
+
+  it("returns empty array when localStorage has malformed data", () => {
+    localStorage.setItem("ftt_search_history_v3", "not-json");
+    expect(loadHistory()).toEqual([]);
+  });
 });

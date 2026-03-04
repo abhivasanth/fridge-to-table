@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { loadChefSlots, saveChefSlots } from "@/lib/chefSlots";
+import { loadChefSlots, saveChefSlots, CHEF_SLOTS_STORAGE_KEY } from "@/lib/chefSlots";
 
 describe("chefSlots", () => {
   beforeEach(() => localStorage.clear());
@@ -25,7 +25,7 @@ describe("chefSlots", () => {
   });
 
   it("returns defaults if localStorage has malformed data", () => {
-    localStorage.setItem("ftt_chef_slots_v3", "not-json");
+    localStorage.setItem(CHEF_SLOTS_STORAGE_KEY, "not-json");
     expect(loadChefSlots()[0]).toEqual({ type: "preset", chefId: "gordon-ramsay" });
   });
 });
