@@ -42,10 +42,10 @@ export default function HomePage() {
   const [pendingRecipeSetId, setPendingRecipeSetId] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<FilterTag[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [chefSlots, setChefSlots] = useState<ChefSlot[]>(() => {
-    if (typeof window === "undefined") return [];
-    return loadChefSlots();
-  });
+  const [chefSlots, setChefSlots] = useState<ChefSlot[]>(() => loadChefSlots());
+  useEffect(() => {
+    setChefSlots(loadChefSlots());
+  }, []);
   const [selectedSlotIndices, setSelectedSlotIndices] = useState<number[]>([]);
 
   const analyzePhoto = useAction(api.photos.analyzePhoto);
