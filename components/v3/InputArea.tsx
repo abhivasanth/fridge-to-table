@@ -1,11 +1,12 @@
 "use client";
+import type { ReactNode } from "react";
 import { IngredientInput } from "@/components/IngredientInput";
 
 type Props = {
   onSubmit: (ingredients: string[], imageBase64?: string) => void;
   isLoading: boolean;
   disabled: boolean;
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 export function InputArea({ onSubmit, isLoading, disabled, children }: Props) {

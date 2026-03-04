@@ -1,7 +1,8 @@
 "use client";
+import type { ReactNode } from "react";
 
 type Props = {
-  children?: React.ReactNode;
+  children?: ReactNode;
   onBack?: () => void;
   showBack?: boolean;
 };
