@@ -17,6 +17,7 @@ import { CHEFS } from "@/lib/chefs";
 import { getSessionId } from "@/lib/session";
 import type { Recipe, ChefVideoResult } from "@/types/recipe";
 import { Sidebar } from "@/components/v3/Sidebar";
+import { FilterPills } from "@/components/v3/FilterPills";
 
 type ResultState =
   | { type: "empty" }
@@ -209,6 +210,7 @@ export default function HomePage() {
         isLoading={result.type === "loading"}
         disabled={false}
       >
+        <FilterPills activeFilters={activeFilters} onChange={setActiveFilters} />
         <ChefSlotsGrid
           slots={chefSlots}
           selectedIndices={selectedSlotIndices}
