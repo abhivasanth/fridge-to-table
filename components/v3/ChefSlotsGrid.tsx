@@ -39,17 +39,22 @@ export function ChefSlotsGrid({ slots, selectedIndices, onSlotsChange, onSelecti
     if (!addingUrl.trim() || !onResolveChannel) return;
     setAddingLoading(true);
     setAddingError("");
-    const result = await onResolveChannel(addingUrl.trim());
-    setAddingLoading(false);
-    if (!result) {
-      setAddingError("Channel not found. Check the URL.");
-      return;
+    try {
+      const result = await onResolveChannel(addingUrl.trim());
+      if (!result) {
+        setAddingError("Channel not found. Check the URL.");
+        return;
+      }
+      const updated = [...slots];
+      updated[index] = { type: "custom", channelId: result.channelId, channelName: result.channelName };
+      onSlotsChange(updated);
+      setAddingIndex(null);
+      setAddingUrl("");
+    } catch {
+      setAddingError("Something went wrong. Please try again.");
+    } finally {
+      setAddingLoading(false);
     }
-    const updated = [...slots];
-    updated[index] = { type: "custom", channelId: result.channelId, channelName: result.channelName };
-    onSlotsChange(updated);
-    setAddingIndex(null);
-    setAddingUrl("");
   }
 
   return (
@@ -70,8 +75,9 @@ export function ChefSlotsGrid({ slots, selectedIndices, onSlotsChange, onSelecti
                     autoFocus
                     value={addingUrl}
                     onChange={(e) => { setAddingUrl(e.target.value); setAddingError(""); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAddChef(index); if (e.key === "Escape") { setAddingIndex(null); setAddingUrl(""); } }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !addingLoading) handleAddChef(index); if (e.key === "Escape") { setAddingIndex(null); setAddingUrl(""); setAddingError(""); } }}
                     placeholder="YouTube URL"
+                    aria-label="YouTube channel URL"
                     style={{ fontSize: "11px", border: "none", outline: "none", color: "#1A3A2A", background: "transparent", width: "100%" }}
                   />
                   {addingError && <p style={{ fontSize: "10px", color: "#D4622A" }}>{addingError}</p>}
