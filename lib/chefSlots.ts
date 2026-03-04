@@ -20,7 +20,14 @@ export function loadChefSlots(): ChefSlot[] {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length !== 6) return DEFAULT_SLOTS;
     const validTypes = new Set(["preset", "custom", "empty"]);
-    if (!parsed.every((s: unknown) => typeof s === "object" && s !== null && validTypes.has((s as { type?: unknown }).type as string))) {
+    if (!parsed.every((s: unknown) => {
+      if (typeof s !== "object" || s === null) return false;
+      const slot = s as Record<string, unknown>;
+      if (!validTypes.has(slot.type as string)) return false;
+      if (slot.type === "preset") return typeof slot.chefId === "string";
+      if (slot.type === "custom") return typeof slot.channelId === "string" && typeof slot.channelName === "string";
+      return true; // "empty"
+    })) {
       return DEFAULT_SLOTS;
     }
     return parsed as ChefSlot[];

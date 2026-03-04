@@ -1,6 +1,7 @@
 import type { HistoryEntry } from "@/types/v3";
 
-const STORAGE_KEY = "ftt_search_history_v3";
+export const SEARCH_HISTORY_STORAGE_KEY = "ftt_search_history_v3";
+const STORAGE_KEY = SEARCH_HISTORY_STORAGE_KEY;
 const MAX_ENTRIES = 50;
 
 export function loadHistory(): HistoryEntry[] {

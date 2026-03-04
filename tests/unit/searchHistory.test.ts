@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { loadHistory, saveHistoryEntry, clearHistory } from "@/lib/searchHistory";
+import { loadHistory, saveHistoryEntry, clearHistory, SEARCH_HISTORY_STORAGE_KEY } from "@/lib/searchHistory";
 import type { HistoryEntry } from "@/types/v3";
 
 describe("searchHistory", () => {
@@ -34,7 +34,7 @@ describe("searchHistory", () => {
   });
 
   it("returns empty array when localStorage has malformed data", () => {
-    localStorage.setItem("ftt_search_history_v3", "not-json");
+    localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, "not-json");
     expect(loadHistory()).toEqual([]);
   });
 });
