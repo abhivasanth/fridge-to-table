@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 
 type Props = {
   children?: ReactNode;
@@ -8,6 +8,7 @@ type Props = {
 };
 
 export function ResultsArea({ children, onBack, showBack }: Props) {
+  const hasContent = Children.toArray(children).length > 0;
   return (
     <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
       <div className="max-w-[480px] mx-auto px-4 pt-6 pb-4">
@@ -19,7 +20,7 @@ export function ResultsArea({ children, onBack, showBack }: Props) {
             ← Back
           </button>
         )}
-        {children ?? (
+        {hasContent ? children : (
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center pt-8">
             <h1
               className="font-[family-name:var(--font-playfair)] text-4xl font-bold text-[#1A3A2A] leading-tight mb-3"
