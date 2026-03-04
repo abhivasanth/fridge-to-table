@@ -108,7 +108,8 @@ export default function HomePage() {
         const chefsForSearch = selectedSlotIndices.map((idx) => {
           const slot = chefSlots[idx];
           if (slot.type === "preset") {
-            const chef = CHEFS.find((c) => c.id === slot.chefId)!;
+            const chef = CHEFS.find((c) => c.id === slot.chefId);
+            if (!chef) return null;
             return { id: chef.id, name: chef.name, emoji: chef.emoji, youtubeChannelId: chef.youtubeChannelId };
           } else if (slot.type === "custom") {
             return { id: slot.channelId, name: slot.channelName, emoji: "📺", youtubeChannelId: slot.channelId };
@@ -116,6 +117,10 @@ export default function HomePage() {
           return null;
         }).filter(Boolean) as { id: string; name: string; emoji: string; youtubeChannelId: string }[];
 
+        if (chefsForSearch.length === 0) {
+          setResult({ type: "empty" });
+          return;
+        }
         const videoResults = await searchChefVideos({ ingredients: finalIngredients, chefs: chefsForSearch });
         setResult({ type: "chefs", results: videoResults, query });
         saveHistoryEntry({

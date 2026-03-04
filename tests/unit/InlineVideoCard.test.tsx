@@ -37,7 +37,9 @@ describe("InlineVideoCard", () => {
   it("renders embedded player after tapping thumbnail", () => {
     render(<InlineVideoCard result={foundResult} />);
     fireEvent.click(screen.getByRole("button"));
-    expect(screen.getByTitle("Perfect Steak")).toBeInTheDocument(); // iframe title
+    const iframe = screen.getByTitle("Perfect Steak");
+    expect(iframe).toBeInTheDocument();
+    expect(iframe.getAttribute("src")).toContain("?autoplay=1");
   });
 
   it("returns to thumbnail after tapping Close", () => {
@@ -45,5 +47,14 @@ describe("InlineVideoCard", () => {
     fireEvent.click(screen.getByRole("button"));
     fireEvent.click(screen.getByText("✕ Close"));
     expect(screen.getByText("▶ Tap to play")).toBeInTheDocument();
+  });
+
+  it("resets player size to normal when Close is tapped after going Bigger", () => {
+    render(<InlineVideoCard result={foundResult} />);
+    fireEvent.click(screen.getByRole("button")); // open player
+    fireEvent.click(screen.getByText("↗ Bigger")); // go bigger
+    fireEvent.click(screen.getByText("✕ Close")); // close
+    fireEvent.click(screen.getByRole("button")); // reopen
+    expect(screen.getByText("↗ Bigger")).toBeInTheDocument(); // should be back to normal
   });
 });
