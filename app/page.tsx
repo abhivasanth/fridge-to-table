@@ -74,16 +74,20 @@ export default function HomePage() {
 
   async function handleHistorySelect(entry: HistoryEntry) {
     if (entry.resultType === "recipes" && entry.recipeSetId) {
-      const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
-        recipeSetId: entry.recipeSetId as Id<"recipes">,
-      });
-      if (recipeSet) {
-        setResult({
-          type: "recipes",
-          recipes: recipeSet.results as Recipe[],
-          query: entry.query,
-          recipeSetId: entry.recipeSetId,
+      try {
+        const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
+          recipeSetId: entry.recipeSetId as Id<"recipes">,
         });
+        if (recipeSet) {
+          setResult({
+            type: "recipes",
+            recipes: recipeSet.results as Recipe[],
+            query: entry.query,
+            recipeSetId: entry.recipeSetId,
+          });
+        }
+      } catch {
+        setResult({ type: "empty" });
       }
     } else if (entry.resultType === "chefs" && entry.videoResults) {
       setResult({ type: "chefs", results: entry.videoResults, query: entry.query });

@@ -29,11 +29,10 @@ describe("Sidebar", () => {
 
   it("calls onClose when backdrop is clicked", () => {
     const onClose = vi.fn();
-    const { container } = render(
+    render(
       <Sidebar open={true} onClose={onClose} onNewSearch={vi.fn()} onSelectHistory={vi.fn()} />
     );
-    // backdrop is the first div rendered (fixed, inset 0)
-    fireEvent.click(container.querySelector('[style*="rgba(0,0,0"]')!);
+    fireEvent.click(screen.getByTestId("backdrop"));
     expect(onClose).toHaveBeenCalled();
   });
 

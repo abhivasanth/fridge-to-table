@@ -41,22 +41,19 @@ export function Sidebar({ open, onClose, onNewSearch, onSelectHistory }: Props) 
     : history;
   const grouped = groupByDate(filtered);
 
-  // Ref callback fires synchronously on DOM insertion, preserving literal color string
-  const backdropRefCallback = (el: HTMLDivElement | null) => {
-    if (el) {
-      el.setAttribute(
-        "style",
-        `position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.3); opacity: ${open ? 1 : 0}; pointer-events: ${open ? "auto" : "none"}; transition: opacity 0.25s ease;`
-      );
-    }
-  };
-
   return (
     <>
       {/* Backdrop */}
       <div
-        ref={backdropRefCallback}
+        data-testid="backdrop"
         onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 90,
+          background: "rgba(0,0,0,0.3)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity 0.25s ease",
+        }}
       />
 
       {/* Sidebar panel */}
