@@ -6,7 +6,8 @@ import { AppHeader } from "@/components/v3/AppHeader";
 import { ResultsArea } from "@/components/v3/ResultsArea";
 import { InputArea } from "@/components/v3/InputArea";
 import type { ChefSlot } from "@/types/v3";
-import { loadChefSlots } from "@/lib/chefSlots";
+import { loadChefSlots, saveChefSlots } from "@/lib/chefSlots";
+import { ChefSlotsGrid } from "@/components/v3/ChefSlotsGrid";
 
 type AppMode = "empty" | "loading-recipes" | "loading-chefs" | "recipes" | "chefs";
 
@@ -38,7 +39,12 @@ export default function HomePage() {
         isLoading={mode === "loading-recipes" || mode === "loading-chefs"}
         disabled={false}
       >
-        {/* ChefSlotsGrid + Filters added in Tasks 5–7 */}
+        <ChefSlotsGrid
+          slots={chefSlots}
+          selectedIndices={selectedSlotIndices}
+          onSlotsChange={(slots) => { setChefSlots(slots); saveChefSlots(slots); }}
+          onSelectionChange={setSelectedSlotIndices}
+        />
       </InputArea>
     </div>
   );
