@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { Navbar } from "@/components/Navbar";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -11,35 +10,31 @@ vi.mock("next/link", () => ({
 
 describe("Navbar", () => {
   it("renders the brand logo", () => {
-    render(<Navbar />);
+    render(<Navbar onMenuClick={vi.fn()} />);
     expect(screen.getByLabelText("fridge to table")).toBeInTheDocument();
   });
 
   it("logo link points to /", () => {
-    render(<Navbar />);
+    render(<Navbar onMenuClick={vi.fn()} />);
     const logoLink = screen.getByRole("link", { name: /fridge to table/i });
     expect(logoLink).toHaveAttribute("href", "/");
   });
 
-  it("Favorites link points to /favourites", () => {
-    render(<Navbar />);
-    const favLink = screen.getByRole("link", { name: /favorites/i });
-    expect(favLink).toHaveAttribute("href", "/favourites");
+  it("renders hamburger menu button", () => {
+    render(<Navbar onMenuClick={vi.fn()} />);
+    expect(screen.getByLabelText("Open menu")).toBeInTheDocument();
   });
 
-  it("does not render a Home nav link", () => {
-    render(<Navbar />);
-    expect(screen.queryByRole("link", { name: /^home$/i })).not.toBeInTheDocument();
+  it("calls onMenuClick when hamburger is clicked", () => {
+    const onMenuClick = vi.fn();
+    render(<Navbar onMenuClick={onMenuClick} />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    expect(onMenuClick).toHaveBeenCalled();
   });
 
-  it("does not render a Try Free button", () => {
-    render(<Navbar />);
-    expect(screen.queryByText(/try free/i)).not.toBeInTheDocument();
-  });
-
-  it("My Chefs link points to /my-chefs", () => {
-    render(<Navbar />);
-    const link = screen.getByRole("link", { name: /my chefs/i });
-    expect(link).toHaveAttribute("href", "/my-chefs");
+  it("does not render My Chefs or Favorites nav links", () => {
+    render(<Navbar onMenuClick={vi.fn()} />);
+    expect(screen.queryByText("My Chefs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Favorites")).not.toBeInTheDocument();
   });
 });
