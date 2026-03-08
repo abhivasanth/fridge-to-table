@@ -362,12 +362,14 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
       >
         {/* Header */}
         <div className="flex items-center px-5 py-4 border-b border-gray-100">
-          <span
-            className="text-base font-medium"
-            style={{ fontFamily: "var(--font-outfit, Outfit, sans-serif)", color: "#C5451A" }}
+          <button
+            type="button"
+            onClick={() => navigateTo("/")}
+            className="text-base font-medium cursor-pointer"
+            style={{ fontFamily: "var(--font-outfit, Outfit, sans-serif)", color: "#C5451A", background: "none", border: "none", padding: 0 }}
           >
             fridge <span style={{ fontWeight: 300, opacity: 0.4 }}>to</span> table
-          </span>
+          </button>
         </div>
 
         {/* Search input */}
@@ -412,24 +414,20 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
         {/* New Search + Nav links — hidden when searching */}
         {!isSearching && (
           <>
-            {/* + New Search */}
-            <div className="px-4 py-2">
+            {/* Nav links */}
+            <div className="px-3 py-2 space-y-0.5">
+              {/* New Search */}
               <button
                 type="button"
                 onClick={() => navigateTo("/")}
-                style={{
-                  width: "100%", padding: "12px 16px", borderRadius: "12px",
-                  background: "#C4622A", color: "white", border: "none",
-                  fontSize: "14px", fontWeight: 600, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: "8px",
-                }}
+                className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer text-gray-600 hover:bg-white hover:text-[#1A3A2A]"
               >
-                <span style={{ fontSize: "16px" }}>+</span> New Search
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <line x1="10" y1="4" x2="10" y2="16" />
+                  <line x1="4" y1="10" x2="16" y2="10" />
+                </svg>
+                New Search
               </button>
-            </div>
-
-            {/* Nav links */}
-            <div className="px-3 pb-2 space-y-0.5">
               {navItems.map((item) => (
                 <button
                   key={item.href}
