@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   videoId: string;
@@ -14,6 +14,16 @@ type Props = {
 export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(youtubeUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement;
@@ -104,19 +114,44 @@ export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onC
         {/* Info bar */}
         <div className="bg-white rounded-b-xl px-4 py-3">
           <p className="text-[#1A3A2A] font-semibold text-sm line-clamp-2">{title}</p>
-          <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-1.5">
               <span>{chefEmoji}</span>
               <span className="text-sm text-[#D4622A] font-medium">{chefName}</span>
             </div>
-            <a
-              href={`https://www.youtube.com/watch?v=${videoId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Watch on YouTube ↗
-            </a>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Copy video link"
+              >
+                {copied ? (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 8.5l3 3 5-5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="5" y="5" width="8" height="8" rx="1.5" />
+                      <path d="M3 11V3.5A1.5 1.5 0 014.5 2H11" />
+                    </svg>
+                    Copy link
+                  </>
+                )}
+              </button>
+              <a
+                href={youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Watch on YouTube ↗
+              </a>
+            </div>
           </div>
         </div>
       </div>

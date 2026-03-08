@@ -66,4 +66,20 @@ describe("VideoModal", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
   });
+
+  it("renders a copy link button", () => {
+    render(<VideoModal {...props} />);
+    const copyBtn = screen.getByLabelText("Copy video link");
+    expect(copyBtn).toBeInTheDocument();
+    expect(screen.getByText("Copy link")).toBeInTheDocument();
+  });
+
+  it("copies YouTube URL to clipboard when copy link is clicked", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<VideoModal {...props} onClose={vi.fn()} />);
+    const copyBtn = screen.getByLabelText("Copy video link");
+    fireEvent.click(copyBtn);
+    expect(writeText).toHaveBeenCalledWith("https://www.youtube.com/watch?v=abc123");
+  });
 });
