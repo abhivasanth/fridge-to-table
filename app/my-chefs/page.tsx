@@ -82,10 +82,10 @@ export default function MyChefsMPage() {
       setInput("");
       setPreview(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      if (message.includes("duplicate")) {
-        setAddError("You've already added this channel.");
-      } else if (message.includes("limit_reached")) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes("duplicate") || chefs.some((c) => c.channelId === preview.channelId)) {
+        setAddError("This chef is already in your list.");
+      } else if (message.toLowerCase().includes("limit")) {
         setAddError(`You've reached the ${MAX_CHEFS}-chef limit.`);
       } else {
         setAddError("Something went wrong — try again.");
