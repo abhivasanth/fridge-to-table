@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { loadHistory, deleteHistoryEntry, updateHistoryEntry } from "@/lib/searchHistory";
+import { clearSearchState } from "@/lib/searchState";
 import type { HistoryEntry } from "@/types/recipe";
 
 type Props = {
@@ -278,6 +279,7 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   }
 
   function navigateTo(href: string) {
+    if (href === "/") clearSearchState();
     if (!isDesktop) onClose();
     router.push(href);
   }
