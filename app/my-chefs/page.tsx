@@ -143,7 +143,7 @@ export default function MyChefsMPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <Link href="/" className="text-[#D4622A] text-sm mb-6 block hover:underline mt-6 sm:mt-0">
           ← Back to search
         </Link>
@@ -169,7 +169,7 @@ export default function MyChefsMPage() {
           <div className="flex items-center gap-1.5 mb-3">
             <span className="text-xs font-semibold text-gray-400 tracking-wide uppercase">Featured Chefs</span>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {CHEFS.map((chef) => {
               const isSlotted = slotIds.includes(chef.id);
               return (
@@ -177,24 +177,20 @@ export default function MyChefsMPage() {
                   key={chef.id}
                   type="button"
                   onClick={() => toggleSlot(chef.id)}
-                  className={`flex items-center gap-3 p-3 bg-white rounded-2xl border text-left transition-all ${
-                    isSlotted ? "border-[#D4622A] bg-orange-50/50" : "border-gray-200"
+                  className={`relative flex flex-col items-center p-4 pt-5 rounded-2xl border-2 text-center transition-all ${
+                    isSlotted ? "border-[#D4622A] bg-orange-50" : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    isSlotted ? "border-[#D4622A] bg-[#D4622A]" : "border-gray-300"
-                  }`}>
-                    {isSlotted && (
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 8.5l3 3 5-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {isSlotted && (
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#D4622A] flex items-center justify-center">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 8.5l3 3 5-5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    )}
-                  </div>
-                  <span className="text-xl flex-shrink-0">{chef.emoji}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[#1A3A2A] truncate">{chef.name}</p>
-                    <p className="text-xs text-gray-400">{chef.country}</p>
-                  </div>
+                    </div>
+                  )}
+                  <span className="text-3xl mb-2">{chef.emoji}</span>
+                  <p className="text-sm font-semibold text-[#1A3A2A] truncate w-full">{chef.name}</p>
+                  <p className="text-xs text-gray-400">{chef.country}</p>
                 </button>
               );
             })}
@@ -213,44 +209,48 @@ export default function MyChefsMPage() {
               No custom chefs added yet — add one below.
             </p>
           ) : (
-            <div className="flex flex-col gap-2 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               {customChefs.map((chef) => {
                 const isSlotted = slotIds.includes(chef.channelId);
                 return (
                   <div
                     key={chef.channelId}
-                    className={`flex items-center gap-3 p-3 bg-white rounded-2xl border transition-all ${
-                      isSlotted ? "border-[#D4622A] bg-orange-50/50" : "border-gray-200"
+                    className={`relative flex flex-col items-center p-4 pt-5 rounded-2xl border-2 text-center transition-all ${
+                      isSlotted ? "border-[#D4622A] bg-orange-50" : "border-gray-200 bg-white"
                     }`}
                   >
+                    {/* Remove button — always visible */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleRemove(chef.channelId); }}
+                      className={`absolute top-2 w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 flex items-center justify-center transition-colors ${
+                        isSlotted ? "right-9" : "right-2"
+                      }`}
+                      aria-label={`Remove ${chef.channelName}`}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M2 2l6 6M8 2l-6 6" />
+                      </svg>
+                    </button>
+                    {/* Checkmark badge */}
+                    {isSlotted && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#D4622A] flex items-center justify-center">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                          <path d="M4 8.5l3 3 5-5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => toggleSlot(chef.channelId)}
-                      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isSlotted ? "border-[#D4622A] bg-[#D4622A]" : "border-gray-300"
-                      }`}
+                      className="flex flex-col items-center w-full"
                     >
-                      {isSlotted && (
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                          <path d="M4 8.5l3 3 5-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </button>
-                    <img
-                      src={chef.channelThumbnail}
-                      alt={chef.channelName}
-                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                    />
-                    <span className="flex-1 text-sm font-semibold text-[#1A3A2A] truncate">
-                      {chef.channelName}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(chef.channelId)}
-                      className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 text-lg leading-none"
-                      aria-label={`Remove ${chef.channelName}`}
-                    >
-                      ✕
+                      <img
+                        src={chef.channelThumbnail}
+                        alt={chef.channelName}
+                        className="w-12 h-12 rounded-full object-cover mb-2"
+                      />
+                      <p className="text-sm font-semibold text-[#1A3A2A] truncate w-full">{chef.channelName}</p>
                     </button>
                   </div>
                 );
