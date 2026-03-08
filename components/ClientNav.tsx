@@ -48,45 +48,6 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
   const showPush = hydrated && isDesktop && sidebarOpen;
   const toggleRef = useRef<HTMLButtonElement>(null);
 
-  // Swipe-from-left-edge to open sidebar on mobile
-  const edgeSwipeStartX = useRef<number | null>(null);
-  const EDGE_ZONE = 30; // px from left edge to detect swipe start
-  const OPEN_THRESHOLD = 60; // px of rightward swipe to trigger open
-
-  useEffect(() => {
-    if (isDesktop) return;
-
-    function onTouchStart(e: TouchEvent) {
-      if (sidebarOpen) return;
-      const x = e.touches[0].clientX;
-      if (x <= EDGE_ZONE) {
-        edgeSwipeStartX.current = x;
-      }
-    }
-
-    function onTouchMove(e: TouchEvent) {
-      if (edgeSwipeStartX.current === null) return;
-      const dx = e.touches[0].clientX - edgeSwipeStartX.current;
-      if (dx > OPEN_THRESHOLD) {
-        edgeSwipeStartX.current = null;
-        setSidebarOpen(true);
-      }
-    }
-
-    function onTouchEnd() {
-      edgeSwipeStartX.current = null;
-    }
-
-    document.addEventListener("touchstart", onTouchStart, { passive: true });
-    document.addEventListener("touchmove", onTouchMove, { passive: true });
-    document.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart);
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isDesktop, sidebarOpen]);
-
   const handleDragOffset = useCallback((offset: number) => {
     if (toggleRef.current) {
       if (offset > 0) {
