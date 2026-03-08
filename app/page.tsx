@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { getSessionId } from "@/lib/session";
 import { saveHistoryEntry } from "@/lib/searchHistory";
+import { saveSearchState, loadSearchState } from "@/lib/searchState";
 import { IngredientInput } from "@/components/IngredientInput";
 import { FiltersPanel } from "@/components/FiltersPanel";
 import { ChefGrid } from "@/components/ChefGrid";
@@ -112,8 +113,14 @@ function VerifiedBadge({ active }: { active: boolean }) {
 
 export default function HomePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<ActiveTab>("any-recipe");
-  const [filters, setFilters] = useState<RecipeFilters>(DEFAULT_FILTERS);
+  // Load saved search state (from sessionStorage) on mount
+  const [savedState] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return loadSearchState();
+  });
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(savedState?.activeTab ?? "any-recipe");
+  const [filters, setFilters] = useState<RecipeFilters>(savedState?.filters ?? DEFAULT_FILTERS);
   const [selectedChefIds, setSelectedChefIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -178,6 +185,13 @@ export default function HomePage() {
         }
         finalIngredients = photoResult.ingredients;
       }
+
+      // Save search state for back-navigation
+      saveSearchState({
+        activeTab,
+        ingredientText: finalIngredients.join(", "),
+        filters,
+      });
 
       if (activeTab === "chefs-table") {
         const selectedSlots = getSelectedSlots(selectedChefIds, visibleChefs);
@@ -285,7 +299,13 @@ export default function HomePage() {
             {(["any-recipe", "chefs-table"] as ActiveTab[]).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => {
+                  setActiveTab(tab);
+                  const current = loadSearchState();
+                  if (current) {
+                    saveSearchState({ ...current, activeTab: tab });
+                  }
+                }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
                   activeTab === tab
                     ? "bg-[#D4622A] text-white shadow-sm"
@@ -318,6 +338,7 @@ export default function HomePage() {
             onSubmit={handleSubmit}
             isLoading={isLoading}
             disabled={chefsTableDisabled}
+            initialText={savedState?.ingredientText}
             beforeSubmit={
               activeTab === "any-recipe" ? (
                 <FiltersPanel filters={filters} onChange={setFilters} />
