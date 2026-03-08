@@ -7,6 +7,7 @@ import type { HistoryEntry } from "@/types/recipe";
 type Props = {
   open: boolean;
   onClose: () => void;
+  isDesktop: boolean;
 };
 
 function relativeTime(timestamp: number): string {
@@ -97,17 +98,20 @@ function HistoryItem({
         className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white transition-colors"
       >
         <span className="text-sm text-[#1A3A2A] truncate flex-1">{entry.query}</span>
-        <span className="text-xs text-gray-400 flex-shrink-0">{relativeTime(entry.timestamp)}</span>
+        {/* Timestamp — visible by default, hidden on hover (swaps with three-dot) */}
+        <span className="text-xs text-gray-400 flex-shrink-0 group-hover:opacity-0 transition-opacity">
+          {relativeTime(entry.timestamp)}
+        </span>
       </button>
 
-      {/* Three-dot menu trigger (desktop hover) */}
+      {/* Three-dot menu trigger — hidden by default, visible on hover (swaps with timestamp) */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-        className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label="Entry options"
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
           <circle cx="8" cy="3" r="1.5" />
           <circle cx="8" cy="8" r="1.5" />
           <circle cx="8" cy="13" r="1.5" />
@@ -147,7 +151,7 @@ function HistoryItem({
   );
 }
 
-export function Sidebar({ open, onClose }: Props) {
+export function Sidebar({ open, onClose, isDesktop }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -166,6 +170,7 @@ export function Sidebar({ open, onClose }: Props) {
 
   // Mobile swipe-to-dismiss (swipe LEFT to close, since panel is on the left)
   function handleTouchStart(e: React.TouchEvent) {
+    if (isDesktop) return;
     isDragging.current = true;
     dragStartX.current = e.touches[0].clientX;
     currentDragX.current = 0;
@@ -173,7 +178,7 @@ export function Sidebar({ open, onClose }: Props) {
   }
 
   function handleTouchMove(e: React.TouchEvent) {
-    if (dragStartX.current === null) return;
+    if (isDesktop || dragStartX.current === null) return;
     const dx = dragStartX.current - e.touches[0].clientX;
     currentDragX.current = Math.max(0, dx);
     if (panelRef.current) {
@@ -182,6 +187,7 @@ export function Sidebar({ open, onClose }: Props) {
   }
 
   function handleTouchEnd() {
+    if (isDesktop) return;
     if (panelRef.current) panelRef.current.style.transition = "transform 0.25s ease";
     if (currentDragX.current > CLOSE_THRESHOLD) {
       onClose();
@@ -194,12 +200,12 @@ export function Sidebar({ open, onClose }: Props) {
   }
 
   function navigateTo(href: string) {
-    onClose();
+    if (!isDesktop) onClose();
     router.push(href);
   }
 
   function handleHistoryNav(entry: HistoryEntry) {
-    onClose();
+    if (!isDesktop) onClose();
     if (entry.resultType === "recipes" && entry.recipeSetId) {
       router.push(`/results/${entry.recipeSetId}`);
     } else if (entry.resultType === "chefs" && entry.videoResults) {
@@ -234,18 +240,20 @@ export function Sidebar({ open, onClose }: Props) {
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        data-testid="sidebar-backdrop"
-        onClick={onClose}
-        style={{
-          position: "fixed", inset: 0, zIndex: 90,
-          background: "rgba(0,0,0,0.3)",
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? "auto" : "none",
-          transition: "opacity 0.25s ease",
-        }}
-      />
+      {/* Backdrop — mobile only */}
+      {!isDesktop && (
+        <div
+          data-testid="sidebar-backdrop"
+          onClick={onClose}
+          style={{
+            position: "fixed", inset: 0, zIndex: 90,
+            background: "rgba(0,0,0,0.3)",
+            opacity: open ? 1 : 0,
+            pointerEvents: open ? "auto" : "none",
+            transition: "opacity 0.25s ease",
+          }}
+        />
+      )}
 
       {/* Sidebar panel */}
       <div
@@ -266,23 +274,15 @@ export function Sidebar({ open, onClose }: Props) {
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center px-5 py-4 border-b border-gray-100">
+          {/* Spacer for the fixed toggle button that sits on top */}
+          <div className="w-9 h-9 flex-shrink-0" />
           <span
-            className="text-base font-medium"
+            className="text-base font-medium ml-3"
             style={{ fontFamily: "var(--font-outfit, Outfit, sans-serif)", color: "#C5451A" }}
           >
             fridge <span style={{ fontWeight: 300, opacity: 0.4 }}>to</span> table
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close menu"
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M4 4l8 8M12 4l-8 8" />
-            </svg>
-          </button>
         </div>
 
         {/* + New Search */}

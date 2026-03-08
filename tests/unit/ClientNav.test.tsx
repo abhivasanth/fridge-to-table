@@ -18,15 +18,20 @@ vi.mock("@/lib/searchHistory", () => ({
 }));
 
 describe("ClientNav", () => {
-  it("renders the Navbar with hamburger", () => {
-    render(<ClientNav />);
-    expect(screen.getByLabelText("Open menu")).toBeInTheDocument();
+  it("renders the sidebar toggle button", () => {
+    render(<ClientNav><div>content</div></ClientNav>);
+    expect(screen.getByLabelText("Open sidebar")).toBeInTheDocument();
   });
 
-  it("opens sidebar when hamburger is clicked", () => {
-    const { container } = render(<ClientNav />);
-    fireEvent.click(screen.getByLabelText("Open menu"));
+  it("opens sidebar when toggle is clicked", () => {
+    const { container } = render(<ClientNav><div>content</div></ClientNav>);
+    fireEvent.click(screen.getByLabelText("Open sidebar"));
     const panel = container.querySelector('[data-testid="sidebar-panel"]');
     expect(panel).toHaveStyle("transform: translateX(0)");
+  });
+
+  it("renders children", () => {
+    render(<ClientNav><div>test content</div></ClientNav>);
+    expect(screen.getByText("test content")).toBeInTheDocument();
   });
 });

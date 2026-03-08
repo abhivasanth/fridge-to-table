@@ -63,14 +63,10 @@ function WordmarkLogo() {
   );
 }
 
-type NavbarProps = {
-  onMenuClick: () => void;
-};
-
-export function Navbar({ onMenuClick }: NavbarProps) {
+export function Navbar() {
   return (
     <nav
-      className="sticky top-0 z-50 animate-slide-down"
+      className="sticky top-0 z-50"
       style={{
         background: "rgba(250, 247, 242, 0.85)",
         backdropFilter: "blur(20px)",
@@ -78,23 +74,14 @@ export function Navbar({ onMenuClick }: NavbarProps) {
         borderBottom: "1px solid rgba(45, 74, 46, 0.06)",
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-        {/* Hamburger */}
-        <button
-          type="button"
-          onClick={onMenuClick}
-          aria-label="Open menu"
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M3 5h14M3 10h14M3 15h14" />
-          </svg>
-        </button>
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center">
+        {/* Spacer for the fixed toggle button */}
+        <div className="w-9 h-9 flex-shrink-0" />
 
         {/* Logo wordmark */}
         <Link
           href="/"
-          className="flex items-center"
+          className="flex items-center ml-3"
           style={{ transition: "transform 0.3s ease" }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
           onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}

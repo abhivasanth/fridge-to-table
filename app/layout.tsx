@@ -42,8 +42,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${outfit.variable} antialiased bg-[#FAF6F1]`}>
         {/* ConvexClientProvider gives all pages access to the Convex backend */}
         <ConvexClientProvider>
-          <ClientNav />
-          {children}
+          <ClientNav>{children}</ClientNav>
         </ConvexClientProvider>
       </body>
     </html>

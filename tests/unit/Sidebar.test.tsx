@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Sidebar } from "@/components/Sidebar";
 import type { HistoryEntry } from "@/types/recipe";
@@ -22,7 +22,7 @@ vi.mock("next/navigation", () => ({
 describe("Sidebar", () => {
   it("renders hidden when open is false", () => {
     const { container } = render(
-      <Sidebar open={false} onClose={vi.fn()} />
+      <Sidebar open={false} onClose={vi.fn()} isDesktop={false} />
     );
     const panel = container.querySelector('[data-testid="sidebar-panel"]');
     expect(panel).toHaveStyle("transform: translateX(-100%)");
@@ -30,47 +30,45 @@ describe("Sidebar", () => {
 
   it("renders visible when open is true", () => {
     const { container } = render(
-      <Sidebar open={true} onClose={vi.fn()} />
+      <Sidebar open={true} onClose={vi.fn()} isDesktop={false} />
     );
     const panel = container.querySelector('[data-testid="sidebar-panel"]');
     expect(panel).toHaveStyle("transform: translateX(0)");
   });
 
   it("renders nav links for Search Recipes, My Chefs, Favorites", () => {
-    render(<Sidebar open={true} onClose={vi.fn()} />);
+    render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
     expect(screen.getByText("Search Recipes")).toBeInTheDocument();
     expect(screen.getByText("My Chefs")).toBeInTheDocument();
     expect(screen.getByText("Favorites")).toBeInTheDocument();
   });
 
   it("renders New Search button", () => {
-    render(<Sidebar open={true} onClose={vi.fn()} />);
+    render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
     expect(screen.getByText(/New Search/)).toBeInTheDocument();
   });
 
   it("renders pinned entries under PINNED section", () => {
-    render(<Sidebar open={true} onClose={vi.fn()} />);
+    render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
     expect(screen.getByText("PINNED")).toBeInTheDocument();
     expect(screen.getByText("chicken steak")).toBeInTheDocument();
   });
 
   it("renders recent entries under RECENT SEARCHES section", () => {
-    render(<Sidebar open={true} onClose={vi.fn()} />);
+    render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
     expect(screen.getByText("RECENT SEARCHES")).toBeInTheDocument();
     expect(screen.getByText("eggs, milk")).toBeInTheDocument();
   });
 
-  it("calls onClose when backdrop is clicked", () => {
+  it("calls onClose when backdrop is clicked (mobile)", () => {
     const onClose = vi.fn();
-    render(<Sidebar open={true} onClose={onClose} />);
+    render(<Sidebar open={true} onClose={onClose} isDesktop={false} />);
     fireEvent.click(screen.getByTestId("sidebar-backdrop"));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("calls onClose when X button is clicked", () => {
-    const onClose = vi.fn();
-    render(<Sidebar open={true} onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText("Close menu"));
-    expect(onClose).toHaveBeenCalled();
+  it("does not render backdrop on desktop", () => {
+    render(<Sidebar open={true} onClose={vi.fn()} isDesktop={true} />);
+    expect(screen.queryByTestId("sidebar-backdrop")).not.toBeInTheDocument();
   });
 });
