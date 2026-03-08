@@ -24,6 +24,7 @@ const DEFAULT_FILTERS: RecipeFilters = {
 };
 
 const SELECTED_CHEFS_KEY = "fridgeToTable_selectedChefs";
+const HAS_VISITED_KEY = "fridgeToTable_hasVisitedHome";
 
 // ─── Feature cards data ──────────────────────────────────────────────────────
 
@@ -117,6 +118,17 @@ export default function HomePage() {
   const [savedState] = useState(() => {
     if (typeof window === "undefined") return null;
     return loadSearchState();
+  });
+
+  // Skip entrance animations on return visits (back-nav, New Search)
+  const [shouldAnimate] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const visited = sessionStorage.getItem(HAS_VISITED_KEY);
+    if (!visited) {
+      sessionStorage.setItem(HAS_VISITED_KEY, "1");
+      return true;
+    }
+    return false;
   });
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(savedState?.activeTab ?? "any-recipe");
@@ -250,7 +262,7 @@ export default function HomePage() {
           width: "500px", height: "500px",
           background: "radial-gradient(circle, rgba(196,98,42,0.07) 0%, transparent 70%)",
           filter: "blur(80px)",
-          animation: "blobFadeIn 2s ease-out 0.3s both",
+          ...(shouldAnimate ? { animation: "blobFadeIn 2s ease-out 0.3s both" } : {}),
         }} />
         {/* Bottom-left green blob */}
         <div style={{
@@ -258,7 +270,7 @@ export default function HomePage() {
           width: "600px", height: "600px",
           background: "radial-gradient(circle, rgba(45,74,46,0.05) 0%, transparent 70%)",
           filter: "blur(80px)",
-          animation: "blobFadeIn 2s ease-out 0.6s both",
+          ...(shouldAnimate ? { animation: "blobFadeIn 2s ease-out 0.6s both" } : {}),
         }} />
         {/* Center-left peach blob */}
         <div style={{
@@ -266,22 +278,22 @@ export default function HomePage() {
           width: "350px", height: "350px",
           background: "radial-gradient(circle, rgba(232,196,168,0.12) 0%, transparent 70%)",
           filter: "blur(80px)",
-          animation: "blobFadeIn 2s ease-out 0.9s both",
+          ...(shouldAnimate ? { animation: "blobFadeIn 2s ease-out 0.9s both" } : {}),
         }} />
       </div>
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="pt-16 pb-10 px-4 text-center" style={{ position: "relative", zIndex: 1 }}>
         <h1
-          className="font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4 animate-fade-up"
-          style={{ animationDelay: "0.2s" }}
+          className={`font-[family-name:var(--font-playfair)] text-5xl sm:text-6xl font-bold text-[#1A3A2A] leading-tight mb-4${shouldAnimate ? " animate-fade-up" : ""}`}
+          style={shouldAnimate ? { animationDelay: "0.2s" } : undefined}
         >
           What&apos;s in your{" "}
           <em className="text-[#D4622A]">fridge?</em>
         </h1>
         <p
-          className="text-gray-500 text-base max-w-md mx-auto animate-fade-up"
-          style={{ animationDelay: "0.35s" }}
+          className={`text-gray-500 text-base max-w-md mx-auto${shouldAnimate ? " animate-fade-up" : ""}`}
+          style={shouldAnimate ? { animationDelay: "0.35s" } : undefined}
         >
           Tell us your ingredients — we&apos;ll find you a fun recipe.
         </p>
@@ -290,8 +302,8 @@ export default function HomePage() {
       {/* ── APP PLAYGROUND ───────────────────────────────────── */}
       <section id="playground" className="px-4 pb-16" style={{ position: "relative", zIndex: 1 }}>
         <div
-          className="max-w-xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 p-6 animate-fade-up-card"
-          style={{ animationDelay: "0.5s" }}
+          className={`max-w-xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 p-6${shouldAnimate ? " animate-fade-up-card" : ""}`}
+          style={shouldAnimate ? { animationDelay: "0.5s" } : undefined}
         >
 
           {/* Tab selector */}
