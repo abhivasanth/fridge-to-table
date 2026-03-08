@@ -24,18 +24,37 @@ function relativeTime(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-amber-200/60 text-[#1A3A2A] rounded-sm px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 function HistoryItem({
   entry,
   onNavigate,
   onDelete,
   onRename,
   onTogglePin,
+  searchQuery = "",
 }: {
   entry: HistoryEntry;
   onNavigate: () => void;
   onDelete: () => void;
   onRename: (newQuery: string) => void;
   onTogglePin: () => void;
+  searchQuery?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -98,7 +117,9 @@ function HistoryItem({
         onClick={onNavigate}
         className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white transition-colors"
       >
-        <span className="text-sm text-[#1A3A2A] truncate flex-1">{entry.query}</span>
+        <span className="text-sm text-[#1A3A2A] truncate flex-1">
+          <HighlightedText text={entry.query} query={searchQuery} />
+        </span>
         {/* Timestamp — visible by default, hidden on hover (swaps with three-dot) */}
         <span className="text-xs text-gray-400 flex-shrink-0 group-hover:opacity-0 transition-opacity">
           {relativeTime(entry.timestamp)}
@@ -156,17 +177,24 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
   const currentDragX = useRef(0);
   const isDragging = useRef(false);
   const SIDEBAR_WIDTH = 320;
   const CLOSE_THRESHOLD = SIDEBAR_WIDTH * 0.4;
+  const isSearching = searchQuery.trim().length > 0;
 
   const refreshHistory = useCallback(() => setHistory(loadHistory()), []);
 
   useEffect(() => {
-    if (open) refreshHistory();
+    if (open) {
+      refreshHistory();
+    } else {
+      setSearchQuery("");
+    }
   }, [open, refreshHistory]);
 
   // Mobile swipe-to-dismiss (swipe LEFT to close, since panel is on the left)
@@ -232,11 +260,17 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
     refreshHistory();
   }
 
-  const pinned = history.filter((e) => e.pinned);
-  const recent = history.filter((e) => !e.pinned);
+  const filterEntries = (entries: HistoryEntry[]) => {
+    if (!isSearching) return entries;
+    const q = searchQuery.toLowerCase();
+    return entries.filter((e) => e.query.toLowerCase().includes(q));
+  };
+
+  const pinned = filterEntries(history.filter((e) => e.pinned));
+  const recent = filterEntries(history.filter((e) => !e.pinned));
+  const totalResults = pinned.length + recent.length;
 
   const navItems = [
-    { label: "Search Recipes", href: "/", icon: "search" },
     { label: "My Chefs", href: "/my-chefs", icon: "chef" },
     { label: "Favorites", href: "/favourites", icon: "heart" },
   ];
@@ -286,59 +320,114 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
           </span>
         </div>
 
-        {/* + New Search */}
-        <div className="px-4 py-3">
-          <button
-            type="button"
-            onClick={() => navigateTo("/")}
-            style={{
-              width: "100%", padding: "12px 16px", borderRadius: "12px",
-              background: "#C4622A", color: "white", border: "none",
-              fontSize: "14px", fontWeight: 600, cursor: "pointer",
-              display: "flex", alignItems: "center", gap: "8px",
-            }}
-          >
-            <span style={{ fontSize: "16px" }}>+</span> New Search
-          </button>
-        </div>
-
-        {/* Nav links */}
-        <div className="px-3 pb-2 space-y-0.5">
-          {navItems.map((item) => (
-            <button
-              key={item.href}
-              type="button"
-              onClick={() => navigateTo(item.href)}
-              className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                pathname === item.href
-                  ? "bg-[#F0EBE3] text-[#1A3A2A]"
-                  : "text-gray-600 hover:bg-white hover:text-[#1A3A2A]"
-              }`}
+        {/* Search input */}
+        <div className="px-4 pt-3 pb-1">
+          <div className="relative">
+            <svg
+              width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="1.5"
+              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
             >
-              {item.icon === "search" && (
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14" strokeLinecap="round"/></svg>
-              )}
-              {item.icon === "chef" && (
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 14v-1a2 2 0 012-2h4a2 2 0 012 2v1" strokeLinecap="round"/><circle cx="8" cy="6" r="2.5"/><path d="M5 4.5C4 4 3 3 3.5 1.5 5 2 5.5 3 5.5 3.5M11 4.5C12 4 13 3 12.5 1.5 11 2 10.5 3 10.5 3.5" strokeLinecap="round"/></svg>
-              )}
-              {item.icon === "heart" && (
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 13.5L2.05 7.55C1.02 6.52 1.02 4.85 2.05 3.82C3.08 2.79 4.75 2.79 5.78 3.82L8 6.04L10.22 3.82C11.25 2.79 12.92 2.79 13.95 3.82C14.98 4.85 14.98 6.52 13.95 7.55L8 13.5Z" strokeLinejoin="round"/></svg>
-              )}
-              {item.label}
-            </button>
-          ))}
+              <circle cx="7" cy="7" r="4.5"/>
+              <path d="M10.5 10.5L14 14" strokeLinecap="round"/>
+            </svg>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setSearchQuery(""); searchInputRef.current?.blur(); } }}
+              placeholder="Search past recipes..."
+              className="w-full text-sm text-[#1A3A2A] bg-white/80 border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 outline-none focus:border-[#C4622A] focus:bg-white transition-colors placeholder:text-gray-400"
+            />
+            {isSearching && (
+              <button
+                type="button"
+                onClick={() => { setSearchQuery(""); searchInputRef.current?.focus(); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                aria-label="Clear search"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M2 2l6 6M8 2l-6 6"/>
+                </svg>
+              </button>
+            )}
+          </div>
+          {isSearching && (
+            <p className="text-xs text-gray-400 mt-1.5 ml-1">
+              {totalResults} result{totalResults !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
 
-        {/* Divider */}
-        <div className="mx-4 border-t border-gray-100" />
+        {/* New Search + Nav links — hidden when searching */}
+        {!isSearching && (
+          <>
+            {/* + New Search */}
+            <div className="px-4 py-2">
+              <button
+                type="button"
+                onClick={() => navigateTo("/")}
+                style={{
+                  width: "100%", padding: "12px 16px", borderRadius: "12px",
+                  background: "#C4622A", color: "white", border: "none",
+                  fontSize: "14px", fontWeight: 600, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "8px",
+                }}
+              >
+                <span style={{ fontSize: "16px" }}>+</span> New Search
+              </button>
+            </div>
+
+            {/* Nav links */}
+            <div className="px-3 pb-2 space-y-0.5">
+              {navItems.map((item) => (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => navigateTo(item.href)}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    pathname === item.href
+                      ? "bg-[#F0EBE3] text-[#1A3A2A]"
+                      : "text-gray-600 hover:bg-white hover:text-[#1A3A2A]"
+                  }`}
+                >
+                  {item.icon === "chef" && (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 14v-1a2 2 0 012-2h4a2 2 0 012 2v1" strokeLinecap="round"/><circle cx="8" cy="6" r="2.5"/><path d="M5 4.5C4 4 3 3 3.5 1.5 5 2 5.5 3 5.5 3.5M11 4.5C12 4 13 3 12.5 1.5 11 2 10.5 3 10.5 3.5" strokeLinecap="round"/></svg>
+                  )}
+                  {item.icon === "heart" && (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 13.5L2.05 7.55C1.02 6.52 1.02 4.85 2.05 3.82C3.08 2.79 4.75 2.79 5.78 3.82L8 6.04L10.22 3.82C11.25 2.79 12.92 2.79 13.95 3.82C14.98 4.85 14.98 6.52 13.95 7.55L8 13.5Z" strokeLinejoin="round"/></svg>
+                  )}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="mx-4 border-t border-gray-100" />
+          </>
+        )}
+
+        {/* No results state when searching */}
+        {isSearching && totalResults === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+            <svg width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="#d1d5db" strokeWidth="1.2" className="mb-3">
+              <circle cx="7" cy="7" r="4.5"/>
+              <path d="M10.5 10.5L14 14" strokeLinecap="round"/>
+            </svg>
+            <p className="text-sm text-gray-400 text-center">No matches found</p>
+            <p className="text-xs text-gray-300 text-center mt-1">Try different keywords</p>
+          </div>
+        )}
 
         {/* Pinned section */}
         {pinned.length > 0 && (
           <div className="px-4 pt-4 pb-2">
-            <div className="flex items-center gap-1.5 mb-2">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="1.5"><path d="M9.5 1.5l5 5-4 4-2-1-3 3.5-1-1 3.5-3-1-2-4 4z" strokeLinejoin="round"/></svg>
-              <span className="text-xs font-semibold text-gray-400 tracking-wide">PINNED</span>
-            </div>
+            {!isSearching && (
+              <div className="flex items-center gap-1.5 mb-2">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="1.5"><path d="M9.5 1.5l5 5-4 4-2-1-3 3.5-1-1 3.5-3-1-2-4 4z" strokeLinejoin="round"/></svg>
+                <span className="text-xs font-semibold text-gray-400 tracking-wide">PINNED</span>
+              </div>
+            )}
             {pinned.map((entry) => (
               <HistoryItem
                 key={entry.id}
@@ -347,31 +436,37 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
                 onDelete={() => handleDelete(entry.id)}
                 onRename={(q) => handleRename(entry.id, q)}
                 onTogglePin={() => handleTogglePin(entry.id, !!entry.pinned)}
+                searchQuery={searchQuery}
               />
             ))}
           </div>
         )}
 
         {/* Recent searches */}
-        <div className="flex-1 px-4 pt-4 pb-4 overflow-y-auto">
-          <div className="flex items-center gap-1.5 mb-2">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="text-xs font-semibold text-gray-400 tracking-wide">RECENT SEARCHES</span>
+        {(recent.length > 0 || (!isSearching && pinned.length === 0)) && (
+          <div className="flex-1 px-4 pt-4 pb-4 overflow-y-auto">
+            {!isSearching && (
+              <div className="flex items-center gap-1.5 mb-2">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span className="text-xs font-semibold text-gray-400 tracking-wide">RECENT SEARCHES</span>
+              </div>
+            )}
+            {recent.length === 0 && pinned.length === 0 && !isSearching && (
+              <p className="text-xs text-gray-400 text-center pt-6">No search history yet</p>
+            )}
+            {recent.map((entry) => (
+              <HistoryItem
+                key={entry.id}
+                entry={entry}
+                onNavigate={() => handleHistoryNav(entry)}
+                onDelete={() => handleDelete(entry.id)}
+                onRename={(q) => handleRename(entry.id, q)}
+                onTogglePin={() => handleTogglePin(entry.id, !!entry.pinned)}
+                searchQuery={searchQuery}
+              />
+            ))}
           </div>
-          {recent.length === 0 && pinned.length === 0 && (
-            <p className="text-xs text-gray-400 text-center pt-6">No search history yet</p>
-          )}
-          {recent.map((entry) => (
-            <HistoryItem
-              key={entry.id}
-              entry={entry}
-              onNavigate={() => handleHistoryNav(entry)}
-              onDelete={() => handleDelete(entry.id)}
-              onRename={(q) => handleRename(entry.id, q)}
-              onTogglePin={() => handleTogglePin(entry.id, !!entry.pinned)}
-            />
-          ))}
-        </div>
+        )}
       </div>
     </>
   );
