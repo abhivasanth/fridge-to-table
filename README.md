@@ -8,7 +8,9 @@ A recipe suggestion web app that generates personalised recipes from the ingredi
 
 ## Overview
 
-Fridge to Table lets users input their available ingredients — either by typing a comma-separated list or uploading a fridge photo — and instantly receive three tailored recipe suggestions. Users can filter by diet (vegetarian, vegan, non-vegetarian), cuisine style, cooking time, and difficulty. Recipes include step-by-step instructions, an ingredients list (flagging what you already have), and a shopping list for anything missing. Favourites can be saved and revisited — no account required.
+Fridge to Table lets users input their available ingredients — either by typing a comma-separated list or uploading a fridge photo — and instantly receive three tailored recipe suggestions. Users can filter by diet (vegetarian, vegan, non-vegetarian), cuisine style, cooking time, and difficulty. Recipes include step-by-step instructions, an ingredients list (flagging what you already have), and a shopping list for anything missing.
+
+The app features a **Chef's Table** mode where users can get recipes styled after popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, and new searches. Favourites can be saved and revisited — no account required.
 
 ---
 
@@ -42,6 +44,8 @@ Fridge to Table lets users input their available ingredients — either by typin
 - **Anonymous sessions.** A UUID is generated on first visit and stored in `localStorage`. No login required. Favourites are scoped to this session ID.
 - **Server components for data pages.** The results and recipe detail pages are Next.js Server Components using `fetchQuery` — data is fetched before the page renders, eliminating loading spinners.
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
+- **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
+- **YouTube channel resolution.** Custom chefs are resolved via YouTube Data API (called from Convex Action) — the client never touches external APIs directly.
 
 ---
 
@@ -56,6 +60,7 @@ Fridge to Table lets users input their available ingredients — either by typin
 | AI | Claude Sonnet 4.6 via `@anthropic-ai/sdk` |
 | Unit/Integration Tests | Vitest, React Testing Library, `convex-test` |
 | E2E Tests | Playwright |
+| External APIs | YouTube Data API v3 (channel resolution for custom chefs) |
 | Hosting | Vercel (frontend) + Convex (backend) |
 
 ---
@@ -66,27 +71,45 @@ Fridge to Table lets users input their available ingredients — either by typin
 fridge_to_table/
 ├── app/
 │   ├── layout.tsx                          # Root layout with ConvexClientProvider
-│   ├── page.tsx                            # Home page (ingredient input + filters)
+│   ├── page.tsx                            # Home page (ingredients, filters, Chef's Table)
 │   ├── results/[recipeSetId]/page.tsx      # Results page (3 recipe cards)
 │   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page
-│   └── favourites/page.tsx                 # Saved favourites page
+│   ├── chef-results/[recipeSetId]/page.tsx # Chef's Table results page
+│   ├── favourites/page.tsx                 # Saved favourites page
+│   └── my-chefs/page.tsx                   # Manage chef roster (featured + custom)
 ├── components/
 │   ├── ConvexClientProvider.tsx            # Wraps app with Convex context
+│   ├── ClientNav.tsx                       # Top nav + collapsed icon rail (desktop)
+│   ├── Sidebar.tsx                         # Slide-out sidebar (history, favourites, new search)
 │   ├── IngredientInput.tsx                 # Text/photo input + diet filter
 │   ├── FiltersPanel.tsx                    # Collapsible cuisine/time/difficulty filters
+│   ├── ChefGrid.tsx                        # Multi-select grid of chefs for Chef's Table tab
+│   ├── ChefVideoCard.tsx                   # Video card for chef-style results
+│   ├── VideoModal.tsx                      # Inline YouTube player modal overlay
+│   ├── CustomChefCard.tsx                  # Preview card when adding a custom YouTube chef
 │   ├── RecipeCard.tsx                      # Recipe summary card (links to detail)
 │   ├── FavouriteButton.tsx                 # Heart toggle (save/remove)
-│   └── FavouritesGrid.tsx                  # Grid of saved recipes
+│   ├── FavouritesGrid.tsx                  # Grid of saved recipes
+│   ├── LoadingChef.tsx                     # Loading animation for chef searches
+│   ├── BottomNav.tsx                       # Mobile bottom navigation bar
+│   └── Navbar.tsx                          # Legacy top navbar
 ├── convex/
-│   ├── schema.ts                           # Database schema (recipes + favourites)
+│   ├── schema.ts                           # Database schema (recipes, favourites, customChefs)
 │   ├── recipes.ts                          # generateRecipes action + getRecipeSet query
+│   ├── chefs.ts                            # Chef's Table recipe generation action
+│   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution
 │   ├── photos.ts                           # analyzePhoto action (Claude vision)
 │   ├── favourites.ts                       # save/remove/get favourites
 │   └── _generated/                         # Auto-generated Convex bindings (committed)
 ├── lib/
 │   ├── session.ts                          # Anonymous session ID (localStorage)
+│   ├── chefs.ts                            # Featured chef definitions + ChefSlot adapters
+│   ├── chefSlots.ts                        # Chef's Table slot management (localStorage)
+│   ├── searchHistory.ts                    # Search history storage (localStorage)
 │   ├── ingredientParser.ts                 # Parses comma-separated ingredient text
-│   └── imageCompression.ts                 # Client-side Canvas image compression
+│   ├── imageCompression.ts                 # Client-side Canvas image compression
+│   ├── parseYouTubeUrl.ts                  # YouTube URL/handle parser
+│   └── voiceInput.ts                       # Voice input utility
 ├── types/
 │   └── recipe.ts                           # Shared Recipe and RecipeFilters types
 └── tests/
@@ -118,9 +141,10 @@ npx convex dev
 ```
 This creates `.env.local` with `NEXT_PUBLIC_CONVEX_URL` automatically.
 
-**3. Set the Anthropic API key in Convex**
+**3. Set API keys in Convex**
 ```bash
 npx convex env set ANTHROPIC_API_KEY sk-ant-your-key-here
+npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here
 ```
 
 **4. Start the Next.js dev server (separate terminal)**
@@ -129,17 +153,6 @@ npm run dev
 ```
 
 Open http://localhost:3000.
-
----
-
-## Environment Variables
-
-| Variable | Where | Description |
-|---|---|---|
-| `NEXT_PUBLIC_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-created by `npx convex dev`) |
-| `ANTHROPIC_API_KEY` | Convex environment | Anthropic API key — set via `npx convex env set` |
-
-> The Anthropic API key is **never** exposed to the browser. It lives exclusively in Convex's secure environment and is only accessed inside Convex Actions.
 
 ---
 
@@ -165,6 +178,15 @@ Tracks which recipes a session has saved.
 | `recipeSetId` | `Id<"recipes">` | References the recipes table |
 | `recipeIndex` | `number` | 0, 1, or 2 — which of the 3 recipes |
 | `savedAt` | `number` | `Date.now()` timestamp |
+
+### `customChefs` table
+Stores custom YouTube chefs added by a session.
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `string` | Anonymous user UUID |
+| `chefs` | `array` | Array of `{ channelId, channelName, channelThumbnail, addedAt, resolvedAt }` |
+| `updatedAt` | `number` | Last modification timestamp |
 
 ---
 
@@ -214,10 +236,11 @@ This deploys Convex functions first (regenerating `_generated/` bindings), then 
 | `NEXT_PUBLIC_CONVEX_URL` | Your production Convex URL (e.g. `https://helpful-loris-385.convex.cloud`) |
 | `CONVEX_DEPLOY_KEY` | Production deploy key from Convex dashboard → Settings → Deploy Keys |
 
-### Set Anthropic API key in production Convex
+### Set API keys in production Convex
 
 ```bash
 npx convex env set ANTHROPIC_API_KEY sk-ant-your-key-here --prod
+npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 ```
 
 ---
@@ -238,26 +261,74 @@ npx convex env set ANTHROPIC_API_KEY sk-ant-your-key-here --prod
 2. `analyzePhoto` Convex Action sends image to Claude Vision → returns ingredient list
 3. Extracted ingredients feed into `generateRecipes` (same flow as above)
 
-### 3. Favourites flow
+### 3. Chef's Table flow
+1. User switches to the **Chef's Table** tab on the home page
+2. A grid of slotted chefs appears (up to 8, from featured + custom)
+3. User toggles which chefs to include in the current search
+4. Enters ingredients and clicks **Find Recipes**
+5. Recipes are generated in the style of the selected chefs
+6. Results appear on `/chef-results` as video cards
+7. Tapping a card opens an **inline video modal** — the video plays in-app via YouTube embed (autoplay, 16:9, responsive sizing)
+8. Modal includes a **Copy link** button to share the YouTube URL and a "Watch on YouTube" fallback link
+9. Close via X button, backdrop click, or Escape key — then pick another video
+
+### 4. My Chefs flow (roster management)
+1. User navigates to `/my-chefs` (via "Edit chefs" link on Chef's Table)
+2. **Featured Chefs** section shows 8 built-in chefs in a 2×4 grid (mobile: 2-col, desktop: 4-col)
+3. Tapping a card toggles it in/out of Chef's Table slots (max 8 total)
+4. **Your Chefs** section shows custom YouTube chefs with remove buttons
+5. User pastes a YouTube channel URL or @handle → "Find" resolves it via YouTube Data API
+6. Preview card shown → "Add" saves to Convex and auto-adds to slots if under limit
+7. Duplicate detection prevents adding a chef that's already in featured or custom lists
+
+### 5. Favourites flow
 1. On recipe detail page, user clicks the heart button
 2. `saveFavourite` mutation writes to DB; Convex real-time query updates the button instantly
 3. `/favourites` page lists all saved recipes via `useQuery` (live updates)
 4. Clicking the heart again calls `removeFavourite` — card disappears immediately
 
+### 6. Sidebar navigation
+1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
+2. Sidebar shows: **New Search** button, searchable **Recent Searches** list, **Favourites** link
+3. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, Recent Searches, and Favourites
+4. On mobile, sidebar overlays the page with scroll isolation (main page doesn't scroll underneath)
+
 ---
 
 ## Known Limitations
 
-- **Photo upload occasionally fails** — the Claude Vision → ingredient extraction flow can time out or return empty results on some images. Typing ingredients directly is more reliable. (To be investigated.)
-- **Session-scoped favourites** — clearing `localStorage` or switching browsers loses saved recipes. A future auth layer would persist these across devices.
+- **Photo upload occasionally fails** — the Claude Vision → ingredient extraction flow can time out or return empty results on some images. Typing ingredients directly is more reliable.
+- **Session-scoped data** — clearing `localStorage` or switching browsers loses favourites, chef slots, and search history. A future auth layer would persist these across devices.
 - **No pagination** — the results page always shows exactly 3 recipes per search.
+- **Custom chef limit** — max 6 custom YouTube chefs per session (in addition to 8 featured chefs).
+- **Chef's Table slot limit** — max 8 chefs can be active on Chef's Table at a time.
+
+---
+
+## Environment Variables
+
+| Variable | Where | Description |
+|---|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-created by `npx convex dev`) |
+| `ANTHROPIC_API_KEY` | Convex environment | Anthropic API key — set via `npx convex env set` |
+| `YOUTUBE_API_KEY` | Convex environment | YouTube Data API v3 key — used for custom chef channel resolution |
+
+> The Anthropic and YouTube API keys are **never** exposed to the browser. They live exclusively in Convex's secure environment and are only accessed inside Convex Actions.
+
+---
+
+## Post-Deployment Checklist
+
+After every production deployment, update the following to reflect any changes:
+
+1. **README.md** — Overview, project structure, user flows, known limitations
+2. **Data Model** — Schema tables, fields, and indexes
+3. **Architecture diagrams** — System architecture, data flow, and component relationships
 
 ---
 
 ## Future Work
 
-- Investigate and fix photo upload reliability issue
-- Add user authentication to persist favourites across devices/browsers
-- Recipe history page (view past searches)
+- Add user authentication to persist data across devices/browsers
 - Share a recipe via URL
 - Nutritional information per recipe
