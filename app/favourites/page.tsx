@@ -8,7 +8,7 @@ export default function FavouritesPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-[#D4622A] text-sm hover:underline mb-4 inline-block"
+            className="text-[#D4622A] text-sm hover:underline mb-4 inline-block mt-6 sm:mt-0"
           >
             ← Back to search
           </Link>
