@@ -103,7 +103,7 @@ export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onC
             <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
           <iframe
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&iv_load_policy=3&modestbranding=1`}
             title={title}
             allow="autoplay; encrypted-media"
             allowFullScreen

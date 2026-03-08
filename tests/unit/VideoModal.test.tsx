@@ -17,7 +17,7 @@ describe("VideoModal", () => {
     const iframe = screen.getByTitle(props.title);
     expect(iframe).toHaveAttribute(
       "src",
-      "https://www.youtube.com/embed/abc123?autoplay=1&rel=0"
+      "https://www.youtube.com/embed/abc123?autoplay=1&rel=0&iv_load_policy=3&modestbranding=1"
     );
   });
 
