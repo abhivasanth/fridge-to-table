@@ -35,8 +35,8 @@ export default function ChefResultsPage() {
   return (
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link href="/" className="text-[#D4622A] text-sm mb-6 block hover:underline">
-          ← New search
+        <Link href="/" className="text-[#D4622A] text-sm mb-6 block hover:underline mt-6 sm:mt-0">
+          ← Back
         </Link>
 
         <h1 className="text-2xl font-bold text-[#1A3A2A] mb-1">

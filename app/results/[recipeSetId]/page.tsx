@@ -38,9 +38,9 @@ export default async function ResultsPage({ params }: Props) {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-[#D4622A] text-sm hover:underline mb-4 inline-block"
+            className="text-[#D4622A] text-sm hover:underline mb-4 inline-block mt-6 sm:mt-0"
           >
-            ← New search
+            ← Back
           </Link>
           <h2 className="text-2xl font-bold text-[#1A3A2A]">
             Here&apos;s what we found
