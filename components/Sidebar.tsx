@@ -275,10 +275,8 @@ export function Sidebar({ open, onClose, isDesktop }: Props) {
       >
         {/* Header */}
         <div className="flex items-center px-5 py-4 border-b border-gray-100">
-          {/* Spacer for the fixed toggle button that sits on top */}
-          <div className="w-9 h-9 flex-shrink-0" />
           <span
-            className="text-base font-medium ml-3"
+            className="text-base font-medium"
             style={{ fontFamily: "var(--font-outfit, Outfit, sans-serif)", color: "#C5451A" }}
           >
             fridge <span style={{ fontWeight: 300, opacity: 0.4 }}>to</span> table
