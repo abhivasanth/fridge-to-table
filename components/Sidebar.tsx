@@ -212,9 +212,9 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
 
   const refreshHistory = useCallback(() => setHistory(loadHistory()), []);
 
-  // Lock body scroll when sidebar is open to prevent background scrolling
+  // Lock body scroll when sidebar is open (mobile only — desktop allows independent scrolling)
   useEffect(() => {
-    if (open) {
+    if (open && !isDesktop) {
       const scrollY = window.scrollY;
       document.body.style.overflow = "hidden";
       document.body.style.position = "fixed";
@@ -228,7 +228,7 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
         window.scrollTo(0, scrollY);
       };
     }
-  }, [open]);
+  }, [open, isDesktop]);
 
   useEffect(() => {
     if (open) {
