@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getSessionId } from "@/lib/session";
+import { CHEFS } from "@/lib/chefs";
+import { getSlotIds, setSlotIds, MAX_CHEF_TABLE_SLOTS } from "@/lib/chefSlots";
 import { CustomChefCard } from "@/components/CustomChefCard";
 
-const MAX_CHEFS = 6;
+const MAX_CUSTOM_CHEFS = 6;
 
 type PreviewChef = {
   channelId: string;
@@ -26,7 +28,7 @@ const RESOLVE_ERROR_MESSAGES: Record<NonNullable<ResolveError>, string> = {
 
 export default function MyChefsMPage() {
   const sessionId = getSessionId();
-  const chefs =
+  const customChefs =
     useQuery(
       api.customChefs.listCustomChefs,
       sessionId ? { sessionId } : "skip"
@@ -41,8 +43,31 @@ export default function MyChefsMPage() {
   const [resolveError, setResolveError] = useState<ResolveError>(null);
   const [isResolving, setIsResolving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [slotIds, setSlotIdsState] = useState<string[]>([]);
+  const [slotWarning, setSlotWarning] = useState(false);
 
-  const atLimit = chefs.length >= MAX_CHEFS;
+  useEffect(() => {
+    setSlotIdsState(getSlotIds());
+  }, []);
+
+  const atCustomLimit = customChefs.length >= MAX_CUSTOM_CHEFS;
+
+  function toggleSlot(id: string) {
+    setSlotWarning(false);
+    if (slotIds.includes(id)) {
+      const next = slotIds.filter((s) => s !== id);
+      setSlotIdsState(next);
+      setSlotIds(next);
+    } else {
+      if (slotIds.length >= MAX_CHEF_TABLE_SLOTS) {
+        setSlotWarning(true);
+        return;
+      }
+      const next = [...slotIds, id];
+      setSlotIdsState(next);
+      setSlotIds(next);
+    }
+  }
 
   async function handleResolve() {
     if (!input.trim()) return;
@@ -54,6 +79,14 @@ export default function MyChefsMPage() {
     const result = await resolveYouTubeChannel({ input: input.trim() });
 
     if (result.ok) {
+      const isDuplicateDefault = CHEFS.some(
+        (c) => c.youtubeChannelId === result.channelId
+      );
+      if (isDuplicateDefault) {
+        setAddError("This chef is already in Featured Chefs.");
+        setIsResolving(false);
+        return;
+      }
       setPreview({
         channelId: result.channelId,
         channelName: result.channelName,
@@ -79,14 +112,19 @@ export default function MyChefsMPage() {
         channelThumbnail: preview.channelThumbnail,
         resolvedAt: preview.resolvedAt,
       });
+      if (slotIds.length < MAX_CHEF_TABLE_SLOTS) {
+        const next = [...slotIds, preview.channelId];
+        setSlotIdsState(next);
+        setSlotIds(next);
+      }
       setInput("");
       setPreview(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.toLowerCase().includes("duplicate") || chefs.some((c) => c.channelId === preview.channelId)) {
+      if (message.toLowerCase().includes("duplicate") || customChefs.some((c) => c.channelId === preview.channelId)) {
         setAddError("This chef is already in your list.");
       } else if (message.toLowerCase().includes("limit")) {
-        setAddError(`You've reached the ${MAX_CHEFS}-chef limit.`);
+        setAddError(`You've reached the ${MAX_CUSTOM_CHEFS}-chef limit.`);
       } else {
         setAddError("Something went wrong — try again.");
       }
@@ -96,7 +134,12 @@ export default function MyChefsMPage() {
   async function handleRemove(channelId: string) {
     if (!sessionId) return;
     await removeCustomChef({ sessionId, channelId });
+    const next = slotIds.filter((id) => id !== channelId);
+    setSlotIdsState(next);
+    setSlotIds(next);
   }
+
+  const selectedCount = slotIds.length;
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
@@ -106,78 +149,167 @@ export default function MyChefsMPage() {
         </Link>
 
         <h1 className="text-2xl font-bold text-[#1A3A2A] mb-1">My Chefs</h1>
-        <p className="text-gray-500 text-sm mb-6">
-          Up to {MAX_CHEFS} YouTube cooking channels
+        <p className="text-gray-500 text-sm mb-2">
+          Manage your Chef&apos;s Table lineup
+        </p>
+        <p className="text-xs text-gray-400 mb-6">
+          {selectedCount} of {MAX_CHEF_TABLE_SLOTS} selected for Chef&apos;s Table
         </p>
 
-        {/* Saved chefs list */}
-        {chefs.length === 0 ? (
-          <p className="text-gray-400 text-sm mb-6">
-            No chefs added yet — add one below.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3 mb-6">
-            {chefs.map((chef) => (
-              <CustomChefCard
-                key={chef.channelId}
-                chef={chef}
-                onRemove={() => handleRemove(chef.channelId)}
-              />
-            ))}
+        {slotWarning && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <p className="text-amber-700 text-sm">
+              You can show up to {MAX_CHEF_TABLE_SLOTS} chefs on Chef&apos;s Table. Uncheck one to add another.
+            </p>
           </div>
         )}
 
-        {/* Add section */}
-        {atLimit ? (
-          <p className="text-gray-500 text-sm bg-white rounded-2xl border border-gray-200 p-4">
-            You've reached the {MAX_CHEFS}-chef limit. Remove a chef to add another.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setResolveError(null);
-                  setPreview(null);
-                  setAddError(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleResolve();
-                }}
-                placeholder="YouTube channel URL or @handle"
-                className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#D4622A] bg-white"
-              />
-              <button
-                type="button"
-                onClick={handleResolve}
-                disabled={isResolving || !input.trim()}
-                className="bg-[#D4622A] text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50 hover:bg-[#bf5724] transition-colors"
-              >
-                {isResolving ? "Finding…" : "Find"}
-              </button>
+        {/* Featured Chefs section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="text-xs font-semibold text-gray-400 tracking-wide uppercase">Featured Chefs</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {CHEFS.map((chef) => {
+              const isSlotted = slotIds.includes(chef.id);
+              return (
+                <button
+                  key={chef.id}
+                  type="button"
+                  onClick={() => toggleSlot(chef.id)}
+                  className={`flex items-center gap-3 p-3 bg-white rounded-2xl border text-left transition-all ${
+                    isSlotted ? "border-[#D4622A] bg-orange-50/50" : "border-gray-200"
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    isSlotted ? "border-[#D4622A] bg-[#D4622A]" : "border-gray-300"
+                  }`}>
+                    {isSlotted && (
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 8.5l3 3 5-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-xl flex-shrink-0">{chef.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#1A3A2A] truncate">{chef.name}</p>
+                    <p className="text-xs text-gray-400">{chef.country}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Your Chefs section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="text-xs font-semibold text-gray-400 tracking-wide uppercase">Your Chefs</span>
+            <span className="text-xs text-gray-300">({customChefs.length}/{MAX_CUSTOM_CHEFS})</span>
+          </div>
+
+          {customChefs.length === 0 ? (
+            <p className="text-gray-400 text-sm mb-4">
+              No custom chefs added yet — add one below.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2 mb-4">
+              {customChefs.map((chef) => {
+                const isSlotted = slotIds.includes(chef.channelId);
+                return (
+                  <div
+                    key={chef.channelId}
+                    className={`flex items-center gap-3 p-3 bg-white rounded-2xl border transition-all ${
+                      isSlotted ? "border-[#D4622A] bg-orange-50/50" : "border-gray-200"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleSlot(chef.channelId)}
+                      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isSlotted ? "border-[#D4622A] bg-[#D4622A]" : "border-gray-300"
+                      }`}
+                    >
+                      {isSlotted && (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                          <path d="M4 8.5l3 3 5-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <img
+                      src={chef.channelThumbnail}
+                      alt={chef.channelName}
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    />
+                    <span className="flex-1 text-sm font-semibold text-[#1A3A2A] truncate">
+                      {chef.channelName}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(chef.channelId)}
+                      className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 text-lg leading-none"
+                      aria-label={`Remove ${chef.channelName}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+          )}
 
-            {resolveError && (
-              <p className="text-red-500 text-sm">
-                {RESOLVE_ERROR_MESSAGES[resolveError]}
-              </p>
-            )}
+          {/* Add custom chef section */}
+          {atCustomLimit ? (
+            <p className="text-gray-500 text-sm bg-white rounded-2xl border border-gray-200 p-4">
+              You&apos;ve reached the {MAX_CUSTOM_CHEFS}-chef limit. Remove a chef to add another.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setResolveError(null);
+                    setPreview(null);
+                    setAddError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleResolve();
+                  }}
+                  placeholder="YouTube channel URL or @handle"
+                  className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#D4622A] bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={handleResolve}
+                  disabled={isResolving || !input.trim()}
+                  className="bg-[#D4622A] text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50 hover:bg-[#bf5724] transition-colors"
+                >
+                  {isResolving ? "Finding…" : "Find"}
+                </button>
+              </div>
 
-            {addError && (
-              <p className="text-red-500 text-sm">{addError}</p>
-            )}
+              {resolveError && (
+                <p className="text-red-500 text-sm">
+                  {RESOLVE_ERROR_MESSAGES[resolveError]}
+                </p>
+              )}
 
-            {preview && (
-              <CustomChefCard
-                chef={preview}
-                onAdd={handleAdd}
-              />
-            )}
-          </div>
-        )}
+              {addError && (
+                <p className="text-red-500 text-sm">{addError}</p>
+              )}
+
+              {preview && (
+                <CustomChefCard
+                  chef={preview}
+                  onAdd={handleAdd}
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
