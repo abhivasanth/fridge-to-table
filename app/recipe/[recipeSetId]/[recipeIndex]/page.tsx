@@ -39,7 +39,7 @@ export default async function RecipeDetailPage({ params }: Props) {
         {/* Back link */}
         <Link
           href={`/results/${recipeSetId}`}
-          className="text-[#D4622A] text-sm hover:underline mb-6 inline-block"
+          className="text-[#D4622A] text-sm hover:underline mb-6 inline-block mt-6 sm:mt-0"
         >
           ← Back to results
         </Link>
