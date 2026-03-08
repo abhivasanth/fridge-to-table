@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ChefVideoCard } from "@/components/ChefVideoCard";
 import type { ChefVideoResult } from "@/types/recipe";
 
@@ -24,7 +24,7 @@ const notFoundResult: ChefVideoResult = {
 
 describe("ChefVideoCard", () => {
   it("renders video thumbnail and title when found", () => {
-    render(<ChefVideoCard result={foundResult} />);
+    render(<ChefVideoCard result={foundResult} onPlay={vi.fn()} />);
     expect(screen.getByText("Gordon's Perfect Pasta")).toBeInTheDocument();
     expect(screen.getByRole("img")).toHaveAttribute(
       "src",
@@ -32,20 +32,27 @@ describe("ChefVideoCard", () => {
     );
   });
 
-  it("links to YouTube when found", () => {
-    render(<ChefVideoCard result={foundResult} />);
-    const link = screen.getByRole("link");
-    expect(link).toHaveAttribute(
-      "href",
-      "https://www.youtube.com/watch?v=abc123"
-    );
-    expect(link).toHaveAttribute("target", "_blank");
+  it("calls onPlay with the result when clicked", () => {
+    const onPlay = vi.fn();
+    render(<ChefVideoCard result={foundResult} onPlay={onPlay} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(onPlay).toHaveBeenCalledWith(foundResult);
+  });
+
+  it("does not render a link to YouTube", () => {
+    render(<ChefVideoCard result={foundResult} onPlay={vi.fn()} />);
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("shows play icon overlay on thumbnail", () => {
+    render(<ChefVideoCard result={foundResult} onPlay={vi.fn()} />);
+    expect(screen.getByLabelText("Play video")).toBeInTheDocument();
   });
 
   it("shows no result state when not found", () => {
-    render(<ChefVideoCard result={notFoundResult} />);
+    render(<ChefVideoCard result={notFoundResult} onPlay={vi.fn()} />);
     expect(screen.getByText("Jamie Oliver")).toBeInTheDocument();
     expect(screen.getByText(/no video found/i)).toBeInTheDocument();
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });
