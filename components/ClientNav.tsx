@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 
 const SIDEBAR_STATE_KEY = "ftt_sidebar_open";
@@ -50,12 +49,16 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Toggle button — fixed top-left, always visible */}
+      {/* Toggle button — when closed: fixed top-left; when open: at right edge of sidebar */}
       <button
         type="button"
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-        className="fixed top-3 left-4 z-[100] w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-black/5 transition-colors"
+        className="fixed top-3 z-[100] w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-black/5 transition-all"
+        style={{
+          left: sidebarOpen && hydrated ? "284px" : "16px",
+          transition: "left 0.25s ease",
+        }}
       >
         {sidebarOpen ? (
           /* Sidebar close icon — panel with arrow left */
@@ -87,7 +90,6 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
           transition: "margin-left 0.25s ease",
         }}
       >
-        <Navbar />
         {children}
       </div>
     </>
