@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Navbar } from "@/components/Navbar";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -21,25 +20,9 @@ describe("Navbar", () => {
     expect(logoLink).toHaveAttribute("href", "/");
   });
 
-  it("Favorites link points to /favourites", () => {
+  it("does not render My Chefs or Favorites nav links", () => {
     render(<Navbar />);
-    const favLink = screen.getByRole("link", { name: /favorites/i });
-    expect(favLink).toHaveAttribute("href", "/favourites");
-  });
-
-  it("does not render a Home nav link", () => {
-    render(<Navbar />);
-    expect(screen.queryByRole("link", { name: /^home$/i })).not.toBeInTheDocument();
-  });
-
-  it("does not render a Try Free button", () => {
-    render(<Navbar />);
-    expect(screen.queryByText(/try free/i)).not.toBeInTheDocument();
-  });
-
-  it("My Chefs link points to /my-chefs", () => {
-    render(<Navbar />);
-    const link = screen.getByRole("link", { name: /my chefs/i });
-    expect(link).toHaveAttribute("href", "/my-chefs");
+    expect(screen.queryByText("My Chefs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Favorites")).not.toBeInTheDocument();
   });
 });

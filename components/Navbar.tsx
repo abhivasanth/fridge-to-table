@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 function WordmarkLogo() {
   return (
@@ -65,11 +64,9 @@ function WordmarkLogo() {
 }
 
 export function Navbar() {
-  const pathname = usePathname();
-
   return (
     <nav
-      className="sticky top-0 z-50 animate-slide-down"
+      className="sticky top-0 z-50"
       style={{
         background: "rgba(250, 247, 242, 0.85)",
         backdropFilter: "blur(20px)",
@@ -77,75 +74,20 @@ export function Navbar() {
         borderBottom: "1px solid rgba(45, 74, 46, 0.06)",
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center">
+        {/* Spacer for the fixed toggle button */}
+        <div className="w-9 h-9 flex-shrink-0" />
+
         {/* Logo wordmark */}
         <Link
           href="/"
-          className="flex items-center"
-          style={{
-            transition: "transform 0.3s ease",
-          }}
+          className="flex items-center ml-3"
+          style={{ transition: "transform 0.3s ease" }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
           onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
           <WordmarkLogo />
         </Link>
-
-        {/* Right-side nav links */}
-        <div className="flex items-center gap-1">
-          {/* My Chefs link */}
-          <Link
-            href="/my-chefs"
-            className="flex items-center gap-1.5 text-sm font-medium"
-            style={{
-              color: pathname === "/my-chefs" ? "#2D4A2E" : "#6b7280",
-              padding: "8px 16px",
-              borderRadius: "100px",
-              transition: "all 0.25s ease",
-              background: pathname === "/my-chefs" ? "rgba(45, 74, 46, 0.05)" : "transparent",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#2D4A2E";
-              e.currentTarget.style.background = "rgba(45, 74, 46, 0.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = pathname === "/my-chefs" ? "#2D4A2E" : "#6b7280";
-              e.currentTarget.style.background = pathname === "/my-chefs" ? "rgba(45, 74, 46, 0.05)" : "transparent";
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <circle cx="8" cy="5" r="3"/>
-              <path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" strokeLinecap="round"/>
-            </svg>
-            <span>My Chefs</span>
-          </Link>
-
-          {/* Favorites link */}
-          <Link
-            href="/favourites"
-            className="flex items-center gap-1.5 text-sm font-medium"
-            style={{
-              color: pathname === "/favourites" ? "#2D4A2E" : "#6b7280",
-              padding: "8px 16px",
-              borderRadius: "100px",
-              transition: "all 0.25s ease",
-              background: pathname === "/favourites" ? "rgba(45, 74, 46, 0.05)" : "transparent",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#2D4A2E";
-              e.currentTarget.style.background = "rgba(45, 74, 46, 0.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = pathname === "/favourites" ? "#2D4A2E" : "#6b7280";
-              e.currentTarget.style.background = pathname === "/favourites" ? "rgba(45, 74, 46, 0.05)" : "transparent";
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <path d="M8 13.5L2.05 7.55C1.02 6.52 1.02 4.85 2.05 3.82C3.08 2.79 4.75 2.79 5.78 3.82L8 6.04L10.22 3.82C11.25 2.79 12.92 2.79 13.95 3.82C14.98 4.85 14.98 6.52 13.95 7.55L8 13.5Z" strokeLinejoin="round"/>
-            </svg>
-            <span>Favorites</span>
-          </Link>
-        </div>
       </div>
     </nav>
   );

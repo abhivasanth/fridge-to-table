@@ -36,3 +36,13 @@ export type ChefVideoResult = {
     videoId: string;
   };
 };
+
+export type HistoryEntry = {
+  id: string;
+  query: string;
+  timestamp: number;
+  resultType: "recipes" | "chefs";
+  recipeSetId?: string;
+  videoResults?: ChefVideoResult[];
+  pinned?: boolean;
+};

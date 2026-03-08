@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { getSessionId } from "@/lib/session";
+import { saveHistoryEntry } from "@/lib/searchHistory";
 import { IngredientInput } from "@/components/IngredientInput";
 import { FiltersPanel } from "@/components/FiltersPanel";
 import { ChefGrid } from "@/components/ChefGrid";
@@ -11,7 +12,7 @@ import { LoadingChef } from "@/components/LoadingChef";
 import { getSelectedChefs } from "@/lib/chefs";
 import type { RecipeFilters } from "@/types/recipe";
 
-type ActiveTab = "any-recipe" | "chefs-table" | "my-chefs";
+type ActiveTab = "any-recipe" | "chefs-table";
 
 const DEFAULT_FILTERS: RecipeFilters = {
   cuisine: "",
@@ -135,12 +136,6 @@ export default function HomePage() {
   const analyzePhoto = useAction(api.photos.analyzePhoto);
   const generateRecipes = useAction(api.recipes.generateRecipes);
   const searchChefVideos = useAction(api.chefs.searchChefVideos);
-  const sessionId = getSessionId();
-  const customChefs = useQuery(
-    api.customChefs.listCustomChefs,
-    sessionId ? { sessionId } : "skip"
-  ) ?? [];
-
   async function handleSubmit(ingredients: string[], imageBase64?: string) {
     setIsLoading(true);
     setError(null);
@@ -171,16 +166,13 @@ export default function HomePage() {
         });
         localStorage.setItem("chefTableResults", JSON.stringify(results));
         router.push("/chef-results");
-      } else if (activeTab === "my-chefs") {
-        const chefs = customChefs.map((c) => ({
-          id: c.channelId,
-          name: c.channelName,
-          emoji: "📺",
-          youtubeChannelId: c.channelId,
-        }));
-        const results = await searchChefVideos({ ingredients: finalIngredients, chefs });
-        localStorage.setItem("chefTableResults", JSON.stringify(results));
-        router.push("/chef-results");
+        saveHistoryEntry({
+          id: crypto.randomUUID(),
+          query: finalIngredients.join(", "),
+          timestamp: Date.now(),
+          resultType: "chefs",
+          videoResults: results,
+        });
       } else {
         const sessionId = getSessionId();
         const recipeSetId = await generateRecipes({
@@ -189,6 +181,13 @@ export default function HomePage() {
           filters,
         });
         router.push(`/results/${recipeSetId}`);
+        saveHistoryEntry({
+          id: crypto.randomUUID(),
+          query: finalIngredients.join(", "),
+          timestamp: Date.now(),
+          resultType: "recipes",
+          recipeSetId,
+        });
       }
     } catch {
       setError("Our chef is taking a break — please try again in a moment.");
@@ -198,8 +197,7 @@ export default function HomePage() {
   }
 
   const chefsTableDisabled =
-    (activeTab === "chefs-table" && selectedChefIds.length === 0) ||
-    (activeTab === "my-chefs" && customChefs.length === 0);
+    activeTab === "chefs-table" && selectedChefIds.length === 0;
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] relative overflow-x-hidden">
@@ -258,7 +256,7 @@ export default function HomePage() {
 
           {/* Tab selector */}
           <div className="flex gap-1 bg-gray-50 rounded-2xl p-1 mb-6">
-            {(["any-recipe", "chefs-table", "my-chefs"] as ActiveTab[]).map((tab) => (
+            {(["any-recipe", "chefs-table"] as ActiveTab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -275,7 +273,6 @@ export default function HomePage() {
                     <VerifiedBadge active={activeTab === "chefs-table"} />
                   </>
                 )}
-                {tab === "my-chefs" && "My Chefs"}
               </button>
             ))}
           </div>
@@ -287,45 +284,6 @@ export default function HomePage() {
                 selectedIds={selectedChefIds}
                 onChange={handleChefSelectionChange}
               />
-            </div>
-          )}
-
-          {/* My Chefs tab content */}
-          {activeTab === "my-chefs" && (
-            <div className="mb-6">
-              {customChefs.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-8 text-center">
-                  <span className="text-4xl">👨‍🍳</span>
-                  <p className="text-sm text-gray-500">You haven&apos;t added any chefs yet</p>
-                  <a
-                    href="/my-chefs"
-                    className="text-[#D4622A] text-sm font-semibold hover:underline"
-                  >
-                    Set up My Chefs →
-                  </a>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-semibold text-[#1A3A2A]">Your chefs</p>
-                    <a href="/my-chefs" className="text-xs text-[#D4622A] font-medium hover:underline">
-                      Edit list →
-                    </a>
-                  </div>
-                  {customChefs.map((chef) => (
-                    <div key={chef.channelId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
-                      <img
-                        src={chef.channelThumbnail}
-                        alt={chef.channelName}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                      <span className="text-sm font-semibold text-[#1A3A2A] truncate">
-                        {chef.channelName}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
