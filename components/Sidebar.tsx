@@ -145,7 +145,7 @@ function HistoryItem({
       <button
         type="button"
         onClick={() => { if (justClosedMenu.current || menuOpen) { setMenuOpen(false); justClosedMenu.current = false; } else { onNavigate(); } }}
-        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white transition-colors"
+        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white transition-colors cursor-pointer"
       >
         <span className="text-sm text-[#1A3A2A] truncate flex-1">
           <HighlightedText text={entry.query} query={searchQuery} />
@@ -435,7 +435,7 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
                   key={item.href}
                   type="button"
                   onClick={() => navigateTo(item.href)}
-                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
                     pathname === item.href
                       ? "bg-[#F0EBE3] text-[#1A3A2A]"
                       : "text-gray-600 hover:bg-white hover:text-[#1A3A2A]"
