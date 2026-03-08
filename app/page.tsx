@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { getSessionId } from "@/lib/session";
@@ -9,7 +9,9 @@ import { IngredientInput } from "@/components/IngredientInput";
 import { FiltersPanel } from "@/components/FiltersPanel";
 import { ChefGrid } from "@/components/ChefGrid";
 import { LoadingChef } from "@/components/LoadingChef";
-import { getSelectedChefs } from "@/lib/chefs";
+import { CHEFS, defaultToSlot, customToSlot, getSelectedSlots } from "@/lib/chefs";
+import type { ChefSlot } from "@/lib/chefs";
+import { getSlotIds, validateSelectedChefs } from "@/lib/chefSlots";
 import type { RecipeFilters } from "@/types/recipe";
 
 type ActiveTab = "any-recipe" | "chefs-table";
@@ -116,12 +118,36 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const sessionId = getSessionId();
+  const customChefsRaw = useQuery(
+    api.customChefs.listCustomChefs,
+    sessionId ? { sessionId } : "skip"
+  ) ?? [];
+
+  // Build merged chef list: defaults (always) + customs
+  const allSlots: ChefSlot[] = [
+    ...CHEFS.map(defaultToSlot),
+    ...customChefsRaw.map(customToSlot),
+  ];
+
+  // Which chefs appear on Chef's Table (max 8, from My Chefs page)
+  const [chefTableSlotIds, setChefTableSlotIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setChefTableSlotIds(getSlotIds());
+  }, []);
+
+  const visibleChefs = allSlots.filter((s) => chefTableSlotIds.includes(s.id));
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(SELECTED_CHEFS_KEY);
     if (saved) {
       try {
-        setSelectedChefIds(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        const slots = getSlotIds();
+        setSelectedChefIds(validateSelectedChefs(parsed, slots));
       } catch {
         // ignore malformed data
       }
@@ -154,10 +180,10 @@ export default function HomePage() {
       }
 
       if (activeTab === "chefs-table") {
-        const selectedChefs = getSelectedChefs(selectedChefIds);
+        const selectedSlots = getSelectedSlots(selectedChefIds, visibleChefs);
         const results = await searchChefVideos({
           ingredients: finalIngredients,
-          chefs: selectedChefs.map((c) => ({
+          chefs: selectedSlots.map((c) => ({
             id: c.id,
             name: c.name,
             emoji: c.emoji,
@@ -281,6 +307,7 @@ export default function HomePage() {
           {activeTab === "chefs-table" && (
             <div className="mb-6">
               <ChefGrid
+                chefs={visibleChefs}
                 selectedIds={selectedChefIds}
                 onChange={handleChefSelectionChange}
               />

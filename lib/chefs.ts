@@ -25,3 +25,48 @@ export const CHEFS: Chef[] = [
 export function getSelectedChefs(ids: string[]): Chef[] {
   return CHEFS.filter((chef) => ids.includes(chef.id));
 }
+
+// Unified type for Chef's Table grid — normalizes default and custom chefs.
+export type ChefSlot = {
+  id: string;                    // default: "gordon-ramsay", custom: channelId
+  name: string;
+  youtubeChannelId: string;
+  isDefault: boolean;
+  emoji: string;                 // defaults have unique emoji, customs get "👨‍🍳"
+  country?: string;              // only defaults
+  thumbnail?: string;            // YouTube avatar URL — only custom
+};
+
+export const DEFAULT_CHEF_IDS = CHEFS.map((c) => c.id);
+
+export function defaultToSlot(chef: Chef): ChefSlot {
+  return {
+    id: chef.id,
+    name: chef.name,
+    youtubeChannelId: chef.youtubeChannelId,
+    isDefault: true,
+    emoji: chef.emoji,
+    country: chef.country,
+  };
+}
+
+export type CustomChefData = {
+  channelId: string;
+  channelName: string;
+  channelThumbnail: string;
+};
+
+export function customToSlot(chef: CustomChefData): ChefSlot {
+  return {
+    id: chef.channelId,
+    name: chef.channelName,
+    youtubeChannelId: chef.channelId,
+    isDefault: false,
+    emoji: "👨‍🍳",
+    thumbnail: chef.channelThumbnail,
+  };
+}
+
+export function getSelectedSlots(ids: string[], allSlots: ChefSlot[]): ChefSlot[] {
+  return allSlots.filter((slot) => ids.includes(slot.id));
+}
