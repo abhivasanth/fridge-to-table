@@ -8,6 +8,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   isDesktop: boolean;
+  onDragOffset?: (offset: number) => void;
 };
 
 function relativeTime(timestamp: number): string {
@@ -151,7 +152,7 @@ function HistoryItem({
   );
 }
 
-export function Sidebar({ open, onClose, isDesktop }: Props) {
+export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -184,6 +185,7 @@ export function Sidebar({ open, onClose, isDesktop }: Props) {
     if (panelRef.current) {
       panelRef.current.style.transform = `translateX(-${currentDragX.current}px)`;
     }
+    onDragOffset?.(currentDragX.current);
   }
 
   function handleTouchEnd() {
@@ -194,6 +196,7 @@ export function Sidebar({ open, onClose, isDesktop }: Props) {
     } else if (panelRef.current) {
       panelRef.current.style.transform = "translateX(0)";
     }
+    onDragOffset?.(0);
     dragStartX.current = null;
     currentDragX.current = 0;
     isDragging.current = false;

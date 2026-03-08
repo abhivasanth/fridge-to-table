@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 
 const SIDEBAR_STATE_KEY = "ftt_sidebar_open";
@@ -46,11 +46,25 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
   }
 
   const showPush = hydrated && isDesktop && sidebarOpen;
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  const handleDragOffset = useCallback((offset: number) => {
+    if (toggleRef.current) {
+      if (offset > 0) {
+        toggleRef.current.style.transition = "none";
+        toggleRef.current.style.left = `${284 - offset}px`;
+      } else {
+        toggleRef.current.style.transition = "left 0.25s ease";
+        toggleRef.current.style.left = sidebarOpen ? "284px" : "16px";
+      }
+    }
+  }, [sidebarOpen]);
 
   return (
     <>
       {/* Toggle button — when closed: fixed top-left; when open: at right edge of sidebar */}
       <button
+        ref={toggleRef}
         type="button"
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
@@ -81,6 +95,7 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
         open={sidebarOpen}
         onClose={closeSidebar}
         isDesktop={isDesktop}
+        onDragOffset={handleDragOffset}
       />
 
       {/* Main content wrapper */}
