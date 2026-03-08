@@ -144,11 +144,15 @@ export default function MyChefsMPage() {
   return (
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/" className="text-[#D4622A] text-sm mb-6 block hover:underline mt-6 sm:mt-0">
-          ← Back to search
-        </Link>
-
-        <h1 className="text-2xl font-bold text-[#1A3A2A] mb-1">My Chefs</h1>
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="text-[#D4622A] text-sm hover:underline mb-4 inline-block mt-6 sm:mt-0"
+          >
+            ← Back to search
+          </Link>
+          <h1 className="text-2xl font-bold text-[#1A3A2A] mb-1">My Chefs</h1>
+        </div>
         <p className="text-gray-500 text-sm mb-2">
           Manage your Chef&apos;s Table lineup
         </p>
