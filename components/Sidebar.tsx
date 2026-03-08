@@ -212,6 +212,24 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
 
   const refreshHistory = useCallback(() => setHistory(loadHistory()), []);
 
+  // Lock body scroll when sidebar is open to prevent background scrolling
+  useEffect(() => {
+    if (open) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      return () => {
+        document.body.style.overflow = "";
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [open]);
+
   useEffect(() => {
     if (open) {
       refreshHistory();
@@ -331,6 +349,7 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
           transition: "transform 0.25s ease",
           display: "flex", flexDirection: "column",
           overflowY: "auto",
+          overscrollBehavior: "contain",
         }}
       >
         {/* Header */}
