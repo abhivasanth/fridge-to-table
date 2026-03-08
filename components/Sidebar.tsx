@@ -63,13 +63,19 @@ function HistoryItem({
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     }
-    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [menuOpen]);
 
   function handleTouchStart() {
@@ -114,7 +120,7 @@ function HistoryItem({
     >
       <button
         type="button"
-        onClick={onNavigate}
+        onClick={() => { if (menuOpen) { setMenuOpen(false); } else { onNavigate(); } }}
         className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white transition-colors"
       >
         <span className="text-sm text-[#1A3A2A] truncate flex-1">
