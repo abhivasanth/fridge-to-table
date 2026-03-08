@@ -39,10 +39,11 @@ describe("VideoModal", () => {
   });
 
   it("calls onClose when close button is clicked", () => {
-    render(<VideoModal {...props} />);
+    const onClose = vi.fn();
+    render(<VideoModal {...props} onClose={onClose} />);
     const closeBtn = screen.getByLabelText("Close video");
     fireEvent.click(closeBtn);
-    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("calls onClose when backdrop is clicked", () => {
