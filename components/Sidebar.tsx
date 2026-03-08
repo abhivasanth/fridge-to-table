@@ -133,12 +133,13 @@ function HistoryItem({
 
   return (
     <div
-      className="relative group"
+      className="relative group select-none"
       ref={menuRef}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <button
         type="button"
