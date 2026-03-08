@@ -4,10 +4,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChefVideoCard } from "@/components/ChefVideoCard";
+import { VideoModal } from "@/components/VideoModal";
 import type { ChefVideoResult } from "@/types/recipe";
 
 export default function ChefResultsPage() {
   const [results, setResults] = useState<ChefVideoResult[] | null>(null);
+  const [activeVideo, setActiveVideo] = useState<ChefVideoResult | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("chefTableResults");
@@ -58,11 +60,26 @@ export default function ChefResultsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {results.map((result) => (
-              <ChefVideoCard key={result.chefId} result={result} />
+              <ChefVideoCard
+                key={result.chefId}
+                result={result}
+                onPlay={setActiveVideo}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {activeVideo?.video && (
+        <VideoModal
+          videoId={activeVideo.video.videoId}
+          title={activeVideo.video.title}
+          chefName={activeVideo.chefName}
+          chefEmoji={activeVideo.chefEmoji}
+          thumbnail={activeVideo.video.thumbnail}
+          onClose={() => setActiveVideo(null)}
+        />
+      )}
     </div>
   );
 }
