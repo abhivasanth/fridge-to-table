@@ -27,6 +27,14 @@ describe("IngredientInput — voice button", () => {
     expect(screen.queryByLabelText("Start voice input")).not.toBeInTheDocument();
   });
 
+  it("initializes text from initialText prop", () => {
+    render(
+      <IngredientInput onSubmit={vi.fn()} isLoading={false} initialText="chicken, rice" />
+    );
+    const textarea = screen.getByPlaceholderText(/type your ingredients/i);
+    expect(textarea).toHaveValue("chicken, rice");
+  });
+
   it("shows Listening text when recording starts", () => {
     render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
     const dictateBtn = screen.getByRole("button", { name: /dictate your ingredients/i });
