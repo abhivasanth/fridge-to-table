@@ -62,17 +62,22 @@ function HistoryItem({
   const menuRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const justClosedMenu = useRef(false);
   const MOVE_THRESHOLD = 10; // px — cancel long-press if finger moves more than this
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        e.preventDefault();
+        e.stopPropagation();
         setMenuOpen(false);
+        justClosedMenu.current = true;
+        setTimeout(() => { justClosedMenu.current = false; }, 300);
       }
     }
     if (menuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside, { passive: true });
+      document.addEventListener("touchstart", handleClickOutside, { passive: false });
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -137,7 +142,7 @@ function HistoryItem({
     >
       <button
         type="button"
-        onClick={() => { if (menuOpen) { setMenuOpen(false); } else { onNavigate(); } }}
+        onClick={() => { if (justClosedMenu.current || menuOpen) { setMenuOpen(false); justClosedMenu.current = false; } else { onNavigate(); } }}
         className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white transition-colors"
       >
         <span className="text-sm text-[#1A3A2A] truncate flex-1">
