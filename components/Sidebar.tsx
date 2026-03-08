@@ -61,6 +61,8 @@ function HistoryItem({
   const [editValue, setEditValue] = useState(entry.query);
   const menuRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const MOVE_THRESHOLD = 10; // px — cancel long-press if finger moves more than this
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent | TouchEvent) {
@@ -78,12 +80,26 @@ function HistoryItem({
     };
   }, [menuOpen]);
 
-  function handleTouchStart() {
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     longPressTimer.current = setTimeout(() => setMenuOpen(true), 500);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!touchStartPos.current || !longPressTimer.current) return;
+    const dx = e.touches[0].clientX - touchStartPos.current.x;
+    const dy = e.touches[0].clientY - touchStartPos.current.y;
+    if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+      touchStartPos.current = null;
+    }
   }
 
   function handleTouchEnd() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = null;
+    touchStartPos.current = null;
   }
 
   function handleRenameConfirm() {
@@ -115,6 +131,7 @@ function HistoryItem({
       className="relative group"
       ref={menuRef}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
