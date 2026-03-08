@@ -45,6 +45,8 @@ The app features a **Chef's Table** mode where users can get recipes styled afte
 - **Server components for data pages.** The results and recipe detail pages are Next.js Server Components using `fetchQuery` — data is fetched before the page renders, eliminating loading spinners.
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
 - **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
+- **Search state persistence.** Ingredients, tab, and filters are saved to `sessionStorage` on submit. Back-navigation restores them; "New Search" and new tabs/windows start fresh.
+- **Conditional entrance animations.** Hero and card animations play only on the first visit per session. Return visits (back-nav, New Search) load instantly without animation delays.
 - **YouTube channel resolution.** Custom chefs are resolved via YouTube Data API (called from Convex Action) — the client never touches external APIs directly.
 
 ---
@@ -108,6 +110,7 @@ fridge_to_table/
 │   ├── searchHistory.ts                    # Search history storage (localStorage)
 │   ├── ingredientParser.ts                 # Parses comma-separated ingredient text
 │   ├── imageCompression.ts                 # Client-side Canvas image compression
+│   ├── searchState.ts                      # Search state persistence (sessionStorage)
 │   ├── parseYouTubeUrl.ts                  # YouTube URL/handle parser
 │   └── voiceInput.ts                       # Voice input utility
 ├── types/
@@ -287,7 +290,14 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 3. `/favourites` page lists all saved recipes via `useQuery` (live updates)
 4. Clicking the heart again calls `removeFavourite` — card disappears immediately
 
-### 6. Sidebar navigation
+### 6. Back-navigation
+1. User searches for recipes and lands on a results page
+2. Hitting browser back returns to the home page with ingredients, tab, and filters restored from `sessionStorage`
+3. Entrance animations are skipped — the page loads instantly
+4. Clicking **New Search** (sidebar or icon rail) clears the saved state and shows a clean home page
+5. Closing the browser tab or opening a new tab always starts fresh (`sessionStorage` is tab-scoped)
+
+### 7. Sidebar navigation
 1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
 2. Sidebar shows: **New Search** button, searchable **Recent Searches** list, **Favourites** link
 3. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, Recent Searches, and Favourites
