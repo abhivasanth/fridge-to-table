@@ -36,9 +36,9 @@ describe("Sidebar", () => {
     expect(panel).toHaveStyle("transform: translateX(0)");
   });
 
-  it("renders nav links for Search Recipes, My Chefs, Favorites", () => {
+  it("renders search input and nav links for My Chefs, Favorites", () => {
     render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
-    expect(screen.getByText("Search Recipes")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search past recipes...")).toBeInTheDocument();
     expect(screen.getByText("My Chefs")).toBeInTheDocument();
     expect(screen.getByText("Favorites")).toBeInTheDocument();
   });
