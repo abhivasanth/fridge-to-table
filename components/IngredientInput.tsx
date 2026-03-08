@@ -9,10 +9,11 @@ type Props = {
   isLoading: boolean;
   disabled?: boolean;
   beforeSubmit?: React.ReactNode;
+  initialText?: string;
 };
 
-export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit }: Props) {
-  const [text, setText] = useState("");
+export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, initialText }: Props) {
+  const [text, setText] = useState(initialText ?? "");
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
   const [preview, setPreview] = useState<string | null>(null);

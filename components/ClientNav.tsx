@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
+import { clearSearchState } from "@/lib/searchState";
 
 const SIDEBAR_STATE_KEY = "ftt_sidebar_open";
 const DESKTOP_BREAKPOINT = 768;
@@ -114,7 +115,10 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
         >
           <button
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => {
+              clearSearchState();
+              router.push("/");
+            }}
             title="New Search"
             className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-black/5 transition-colors"
           >
