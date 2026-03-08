@@ -23,7 +23,7 @@ export function ChefVideoCard({ result, onPlay }: Props) {
     <button
       type="button"
       onClick={() => onPlay(result)}
-      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-left w-full"
+      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-left w-full cursor-pointer"
     >
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
