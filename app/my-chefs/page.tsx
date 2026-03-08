@@ -193,7 +193,7 @@ export default function MyChefsMPage() {
                     </div>
                   )}
                   <span className="text-3xl mb-2">{chef.emoji}</span>
-                  <p className="text-sm font-semibold text-[#1A3A2A] truncate w-full">{chef.name}</p>
+                  <p className="text-sm font-semibold text-[#1A3A2A] line-clamp-2 w-full">{chef.name}</p>
                   <p className="text-xs text-gray-400">{chef.country}</p>
                 </button>
               );
@@ -254,7 +254,7 @@ export default function MyChefsMPage() {
                         alt={chef.channelName}
                         className="w-12 h-12 rounded-full object-cover mb-2"
                       />
-                      <p className="text-sm font-semibold text-[#1A3A2A] truncate w-full">{chef.channelName}</p>
+                      <p className="text-sm font-semibold text-[#1A3A2A] line-clamp-2 w-full">{chef.channelName}</p>
                     </button>
                   </div>
                 );

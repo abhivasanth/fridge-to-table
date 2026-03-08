@@ -61,7 +61,7 @@ export function ChefGrid({ chefs, selectedIds, onChange }: Props) {
                 <span className="text-2xl flex-shrink-0">{chef.emoji}</span>
               )}
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#1A3A2A] truncate">{chef.name}</p>
+                <p className="text-sm font-semibold text-[#1A3A2A] line-clamp-2">{chef.name}</p>
                 {chef.country && (
                   <p className="text-xs text-gray-400">{chef.country}</p>
                 )}
