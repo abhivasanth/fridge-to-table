@@ -120,6 +120,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("any-recipe");
   const [filters, setFilters] = useState<RecipeFilters>(DEFAULT_FILTERS);
   const [initialText, setInitialText] = useState<string | undefined>(undefined);
+  const [hydrated, setHydrated] = useState(false);
 
   useLayoutEffect(() => {
     // Restore search state from sessionStorage (back-navigation)
@@ -137,6 +138,8 @@ export default function HomePage() {
     } else {
       sessionStorage.setItem(HAS_VISITED_KEY, "1");
     }
+
+    setHydrated(true);
   }, []);
   const [selectedChefIds, setSelectedChefIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -308,7 +311,10 @@ export default function HomePage() {
       <section id="playground" className="px-4 pb-16" style={{ position: "relative", zIndex: 1 }}>
         <div
           className={`max-w-xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 p-6${shouldAnimate ? " animate-fade-up-card" : ""}`}
-          style={shouldAnimate ? { animationDelay: "0.5s" } : undefined}
+          style={{
+            ...(shouldAnimate ? { animationDelay: "0.5s" } : {}),
+            ...(hydrated ? {} : { visibility: "hidden" as const }),
+          }}
         >
 
           {/* Tab selector */}
