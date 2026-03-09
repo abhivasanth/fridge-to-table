@@ -47,6 +47,7 @@ The app features a **Chef's Table** mode where users can get recipes styled afte
 - **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
 - **Search state persistence.** Ingredients, tab, and filters are saved to `sessionStorage` on submit. Back-navigation restores them; "New Search" and new tabs/windows start fresh.
 - **Conditional entrance animations.** Hero and card animations play only on the first visit per session. Return visits (back-nav, New Search) load instantly without animation delays.
+- **Gesture intent lock (mobile sidebar).** Swipe-to-dismiss uses a 12px dead zone to disambiguate scroll vs swipe. Once the dominant axis is determined, the gesture locks — vertical scrolling never triggers horizontal panel movement.
 - **YouTube channel resolution.** Custom chefs are resolved via YouTube Data API (called from Convex Action) — the client never touches external APIs directly.
 
 ---
@@ -299,9 +300,11 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 
 ### 7. Sidebar navigation
 1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
-2. Sidebar shows: **New Search** button, searchable **Recent Searches** list, **Favourites** link
-3. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, Recent Searches, and Favourites
-4. On mobile, sidebar overlays the page with scroll isolation (main page doesn't scroll underneath)
+2. **"fridge to table" logo** in the sidebar header is clickable — navigates to the home page
+3. Sidebar shows: **New Search**, **My Chefs**, **Favorites** nav links, searchable **Recent Searches** list
+4. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, Recent Searches, and Favourites
+5. On mobile, sidebar overlays the page with scroll isolation (main page doesn't scroll underneath)
+6. On mobile, **swipe left to dismiss** with gesture intent lock — vertical scrolling through history items does not trigger horizontal swipe
 
 ---
 
