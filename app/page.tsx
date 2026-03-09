@@ -114,19 +114,23 @@ function VerifiedBadge({ active }: { active: boolean }) {
 
 export default function HomePage() {
   const router = useRouter();
-  // Load saved search state (from sessionStorage) on mount
-  const [savedState] = useState(() => {
-    if (typeof window === "undefined") return null;
-    return loadSearchState();
-  });
-
-  // Skip entrance animations on return visits (back-nav, New Search).
-  // Start true so server and client HTML match (avoids hydration mismatch).
-  // useLayoutEffect fires before paint, so return visitors never see the
-  // opacity-0 animation start state.
+  // All sessionStorage reads happen in useLayoutEffect (fires before paint)
+  // to avoid hydration mismatches between server and client.
   const [shouldAnimate, setShouldAnimate] = useState(true);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("any-recipe");
+  const [filters, setFilters] = useState<RecipeFilters>(DEFAULT_FILTERS);
+  const [initialText, setInitialText] = useState<string | undefined>(undefined);
 
   useLayoutEffect(() => {
+    // Restore search state from sessionStorage (back-navigation)
+    const saved = loadSearchState();
+    if (saved) {
+      setActiveTab(saved.activeTab);
+      setFilters(saved.filters);
+      setInitialText(saved.ingredientText);
+    }
+
+    // Skip entrance animations on return visits
     const visited = sessionStorage.getItem(HAS_VISITED_KEY);
     if (visited) {
       setShouldAnimate(false);
@@ -134,9 +138,6 @@ export default function HomePage() {
       sessionStorage.setItem(HAS_VISITED_KEY, "1");
     }
   }, []);
-
-  const [activeTab, setActiveTab] = useState<ActiveTab>(savedState?.activeTab ?? "any-recipe");
-  const [filters, setFilters] = useState<RecipeFilters>(savedState?.filters ?? DEFAULT_FILTERS);
   const [selectedChefIds, setSelectedChefIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -356,7 +357,7 @@ export default function HomePage() {
             onSubmit={handleSubmit}
             isLoading={isLoading}
             disabled={chefsTableDisabled}
-            initialText={savedState?.ingredientText}
+            initialText={initialText}
             beforeSubmit={
               activeTab === "any-recipe" ? (
                 <FiltersPanel filters={filters} onChange={setFilters} />
