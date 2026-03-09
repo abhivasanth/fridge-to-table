@@ -314,9 +314,11 @@ export default function HomePage() {
                 onClick={() => {
                   setActiveTab(tab);
                   const current = loadSearchState();
-                  if (current) {
-                    saveSearchState({ ...current, activeTab: tab });
-                  }
+                  saveSearchState({
+                    activeTab: tab,
+                    ingredientText: current?.ingredientText ?? "",
+                    filters: current?.filters ?? DEFAULT_FILTERS,
+                  });
                 }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
                   activeTab === tab
