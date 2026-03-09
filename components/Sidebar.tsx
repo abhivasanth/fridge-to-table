@@ -331,9 +331,6 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
         <div
           data-testid="sidebar-backdrop"
           onClick={onClose}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           style={{
             position: "fixed", inset: 0, zIndex: 90,
             background: "rgba(0,0,0,0.3)",
