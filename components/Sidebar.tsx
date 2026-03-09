@@ -211,10 +211,13 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
+  const dragStartY = useRef<number | null>(null);
   const currentDragX = useRef(0);
   const isDragging = useRef(false);
+  const gestureIntent = useRef<"undecided" | "swipe" | "scroll">("undecided");
   const SIDEBAR_WIDTH = 320;
   const CLOSE_THRESHOLD = SIDEBAR_WIDTH * 0.4;
+  const INTENT_THRESHOLD = 12; // px — dead zone before locking gesture intent
   const isSearching = searchQuery.trim().length > 0;
 
   const refreshHistory = useCallback(() => setHistory(loadHistory()), []);
@@ -245,18 +248,43 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
     }
   }, [open, refreshHistory]);
 
-  // Mobile swipe-to-dismiss (swipe LEFT to close, since panel is on the left)
+  // Mobile swipe-to-dismiss with gesture intent lock.
+  // First ~12px of movement is a dead zone. Once intent is determined
+  // (swipe vs scroll), it locks for the entire gesture.
   function handleTouchStart(e: React.TouchEvent) {
     if (isDesktop) return;
     isDragging.current = true;
     dragStartX.current = e.touches[0].clientX;
+    dragStartY.current = e.touches[0].clientY;
     currentDragX.current = 0;
-    if (panelRef.current) panelRef.current.style.transition = "none";
+    gestureIntent.current = "undecided";
   }
 
   function handleTouchMove(e: React.TouchEvent) {
-    if (isDesktop || dragStartX.current === null) return;
+    if (isDesktop || dragStartX.current === null || dragStartY.current === null) return;
+
     const dx = dragStartX.current - e.touches[0].clientX;
+    const dy = e.touches[0].clientY - dragStartY.current;
+
+    // Still in dead zone — determine intent
+    if (gestureIntent.current === "undecided") {
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      if (absDx < INTENT_THRESHOLD && absDy < INTENT_THRESHOLD) return;
+      // Lock intent based on dominant axis
+      if (absDx > absDy) {
+        gestureIntent.current = "swipe";
+        if (panelRef.current) panelRef.current.style.transition = "none";
+      } else {
+        gestureIntent.current = "scroll";
+        return;
+      }
+    }
+
+    // Locked to scroll — let browser handle it
+    if (gestureIntent.current === "scroll") return;
+
+    // Locked to swipe — drive the panel transform
     currentDragX.current = Math.max(0, dx);
     if (panelRef.current) {
       panelRef.current.style.transform = `translateX(-${currentDragX.current}px)`;
@@ -266,16 +294,20 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
 
   function handleTouchEnd() {
     if (isDesktop) return;
-    if (panelRef.current) panelRef.current.style.transition = "transform 0.25s ease";
-    if (currentDragX.current > CLOSE_THRESHOLD) {
-      onClose();
-    } else if (panelRef.current) {
-      panelRef.current.style.transform = "translateX(0)";
+    if (gestureIntent.current === "swipe") {
+      if (panelRef.current) panelRef.current.style.transition = "transform 0.25s ease";
+      if (currentDragX.current > CLOSE_THRESHOLD) {
+        onClose();
+      } else if (panelRef.current) {
+        panelRef.current.style.transform = "translateX(0)";
+      }
+      onDragOffset?.(0);
     }
-    onDragOffset?.(0);
     dragStartX.current = null;
+    dragStartY.current = null;
     currentDragX.current = 0;
     isDragging.current = false;
+    gestureIntent.current = "undecided";
   }
 
   function navigateTo(href: string) {
