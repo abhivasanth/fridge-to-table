@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useAction, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
@@ -120,16 +120,20 @@ export default function HomePage() {
     return loadSearchState();
   });
 
-  // Skip entrance animations on return visits (back-nav, New Search)
-  const [shouldAnimate] = useState(() => {
-    if (typeof window === "undefined") return true;
+  // Skip entrance animations on return visits (back-nav, New Search).
+  // Start true so server and client HTML match (avoids hydration mismatch).
+  // useLayoutEffect fires before paint, so return visitors never see the
+  // opacity-0 animation start state.
+  const [shouldAnimate, setShouldAnimate] = useState(true);
+
+  useLayoutEffect(() => {
     const visited = sessionStorage.getItem(HAS_VISITED_KEY);
-    if (!visited) {
+    if (visited) {
+      setShouldAnimate(false);
+    } else {
       sessionStorage.setItem(HAS_VISITED_KEY, "1");
-      return true;
     }
-    return false;
-  });
+  }, []);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(savedState?.activeTab ?? "any-recipe");
   const [filters, setFilters] = useState<RecipeFilters>(savedState?.filters ?? DEFAULT_FILTERS);
