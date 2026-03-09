@@ -14,9 +14,14 @@ type Props = {
 
 export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, initialText }: Props) {
   const [text, setText] = useState(initialText ?? "");
-  // Sync text when initialText arrives after hydration (from useLayoutEffect in parent)
+  // Sync text when initialText arrives after hydration (from useLayoutEffect in parent).
+  // One-shot guard ensures this never overwrites user edits on subsequent re-renders.
+  const initialTextApplied = useRef(false);
   useEffect(() => {
-    if (initialText !== undefined) setText(initialText);
+    if (initialText !== undefined && !initialTextApplied.current) {
+      setText(initialText);
+      initialTextApplied.current = true;
+    }
   }, [initialText]);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
