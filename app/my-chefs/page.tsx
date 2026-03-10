@@ -146,7 +146,7 @@ export default function MyChefsMPage() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="mb-8">
           <Link
-            href="/"
+            href="/?tab=chefs-table"
             className="text-[#D4622A] text-sm hover:underline mb-4 inline-block mt-6 sm:mt-0"
           >
             ← Back to search
