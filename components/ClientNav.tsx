@@ -129,6 +129,18 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
           </button>
           <button
             type="button"
+            onClick={() => router.push("/my-chefs")}
+            title="My Chefs"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-black/5 transition-colors cursor-pointer"
+          >
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 14v-1a2 2 0 012-2h4a2 2 0 012 2v1" />
+              <circle cx="8" cy="7" r="2" />
+              <path d="M5 7C5 4.5 6 3 8 2c2 1 3 2.5 3 5" />
+            </svg>
+          </button>
+          <button
+            type="button"
             onClick={toggleSidebar}
             title="Recent Searches"
             className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-black/5 transition-colors cursor-pointer"
