@@ -46,7 +46,8 @@ The app features a **Chef's Table** mode where users can get recipes styled afte
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
 - **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
 - **Search state persistence.** Ingredients, tab, and filters are saved to `sessionStorage` on submit. Back-navigation restores them; "New Search" and new tabs/windows start fresh.
-- **Conditional entrance animations.** Hero and card animations play only on the first visit per session. Return visits (back-nav, New Search) load instantly without animation delays.
+- **Server/Client Component split for hydration safety.** The home page (`app/page.tsx`) is a Server Component that reads `searchParams` and passes `initialTab` as a prop to the Client Component (`components/HomePage.tsx`). This ensures the first render is deterministic — no hydration mismatches from client-only state like `sessionStorage` or `useSearchParams`.
+- **Conditional entrance animations.** Hero and card animations play only on the first visit per session. Animation state is deferred to `useEffect` (initialized as `false`, enabled after mount) to prevent server/client markup divergence. Return visits (back-nav, New Search) load instantly without animation delays.
 - **Gesture intent lock (mobile sidebar).** Swipe-to-dismiss uses a 12px dead zone to disambiguate scroll vs swipe. Once the dominant axis is determined, the gesture locks — vertical scrolling never triggers horizontal panel movement.
 - **YouTube channel resolution.** Custom chefs are resolved via YouTube Data API (called from Convex Action) — the client never touches external APIs directly.
 
@@ -74,13 +75,14 @@ The app features a **Chef's Table** mode where users can get recipes styled afte
 fridge_to_table/
 ├── app/
 │   ├── layout.tsx                          # Root layout with ConvexClientProvider
-│   ├── page.tsx                            # Home page (ingredients, filters, Chef's Table)
+│   ├── page.tsx                            # Server Component — derives initialTab from searchParams
 │   ├── results/[recipeSetId]/page.tsx      # Results page (3 recipe cards)
 │   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page
 │   ├── chef-results/[recipeSetId]/page.tsx # Chef's Table results page
 │   ├── favourites/page.tsx                 # Saved favourites page
 │   └── my-chefs/page.tsx                   # Manage chef roster (featured + custom)
 ├── components/
+│   ├── HomePage.tsx                        # Client Component — home page (ingredients, filters, Chef's Table)
 │   ├── ConvexClientProvider.tsx            # Wraps app with Convex context
 │   ├── ClientNav.tsx                       # Top nav + collapsed icon rail (desktop)
 │   ├── Sidebar.tsx                         # Slide-out sidebar (history, favourites, new search)
@@ -277,13 +279,14 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 9. Close via X button, backdrop click, or Escape key — then pick another video
 
 ### 4. My Chefs flow (roster management)
-1. User navigates to `/my-chefs` (via "Edit chefs" link on Chef's Table)
+1. User navigates to `/my-chefs` (via "Edit chefs" link on Chef's Table, My Chefs icon in collapsed sidebar rail, or My Chefs link in the sidebar)
 2. **Featured Chefs** section shows 8 built-in chefs in a 2×4 grid (mobile: 2-col, desktop: 4-col)
 3. Tapping a card toggles it in/out of Chef's Table slots (max 8 total)
 4. **Your Chefs** section shows custom YouTube chefs with remove buttons
 5. User pastes a YouTube channel URL or @handle → "Find" resolves it via YouTube Data API
 6. Preview card shown → "Add" saves to Convex and auto-adds to slots if under limit
 7. Duplicate detection prevents adding a chef that's already in featured or custom lists
+8. "← Back to search" navigates to `/?tab=chefs-table`, returning directly to the Chef's Table tab
 
 ### 5. Favourites flow
 1. On recipe detail page, user clicks the heart button
@@ -302,7 +305,7 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
 2. **"fridge to table" logo** in the sidebar header is clickable — navigates to the home page
 3. Sidebar shows: **New Search**, **My Chefs**, **Favorites** nav links, searchable **Recent Searches** list
-4. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, Recent Searches, and Favourites
+4. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, My Chefs, Recent Searches, and Favourites
 5. On mobile, sidebar overlays the page with scroll isolation (main page doesn't scroll underneath)
 6. On mobile, **swipe left to dismiss** with gesture intent lock — vertical scrolling through history items does not trigger horizontal swipe
 
