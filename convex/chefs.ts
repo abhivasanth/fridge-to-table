@@ -26,6 +26,7 @@ export const searchChefVideos = action({
         chefId: chef.id,
         chefName: chef.name,
         chefEmoji: chef.emoji,
+        channelId: chef.youtubeChannelId,
         found: false,
       }));
     }
@@ -51,18 +52,19 @@ export const searchChefVideos = action({
 
           if (data.error) {
             console.error(`YouTube API error for ${chef.name}:`, data.error.message);
-            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false };
+            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, channelId: chef.youtubeChannelId, found: false };
           }
 
           const item = data.items?.[0];
           if (!item) {
-            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false };
+            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, channelId: chef.youtubeChannelId, found: false };
           }
 
           return {
             chefId: chef.id,
             chefName: chef.name,
             chefEmoji: chef.emoji,
+            channelId: chef.youtubeChannelId,
             found: true,
             video: {
               title: item.snippet.title as string,
@@ -72,7 +74,7 @@ export const searchChefVideos = action({
           };
         } catch (err) {
           console.error(`Chef search failed for ${chef.name}:`, err);
-          return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false };
+          return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, channelId: chef.youtubeChannelId, found: false };
         }
       })
     );

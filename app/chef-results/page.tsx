@@ -15,7 +15,11 @@ export default function ChefResultsPage() {
     const stored = localStorage.getItem("chefTableResults");
     if (stored) {
       try {
-        setResults(JSON.parse(stored));
+        const parsed: ChefVideoResult[] = JSON.parse(stored);
+        setResults(parsed.map((r) => ({
+          ...r,
+          channelId: r.channelId || r.chefId,
+        })));
       } catch {
         setResults([]);
       }

@@ -29,6 +29,7 @@ export type ChefVideoResult = {
   chefId: string;
   chefName: string;
   chefEmoji: string;
+  channelId: string;
   found: boolean;
   video?: {
     title: string;
