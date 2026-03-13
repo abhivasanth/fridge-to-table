@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { VideoFavouriteButton } from "@/components/VideoFavouriteButton";
 
 type Props = {
   videoId: string;
@@ -8,10 +9,12 @@ type Props = {
   chefName: string;
   chefEmoji: string;
   thumbnail: string;
+  channelId: string;
+  channelName: string;
   onClose: () => void;
 };
 
-export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onClose }: Props) {
+export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, channelId, channelName, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -120,6 +123,14 @@ export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onC
               <span className="text-sm text-[#D4622A] font-medium">{chefName}</span>
             </div>
             <div className="flex items-center gap-3">
+              <VideoFavouriteButton
+                videoId={videoId}
+                title={title}
+                thumbnail={thumbnail}
+                channelId={channelId}
+                channelName={channelName}
+                size="md"
+              />
               <button
                 type="button"
                 onClick={handleCopyLink}

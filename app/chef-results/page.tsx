@@ -81,6 +81,8 @@ export default function ChefResultsPage() {
           chefName={activeVideo.chefName}
           chefEmoji={activeVideo.chefEmoji}
           thumbnail={activeVideo.video.thumbnail}
+          channelId={activeVideo.channelId}
+          channelName={activeVideo.chefName}
           onClose={() => setActiveVideo(null)}
         />
       )}
