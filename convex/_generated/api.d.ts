@@ -13,6 +13,7 @@ import type * as customChefs from "../customChefs.js";
 import type * as favourites from "../favourites.js";
 import type * as photos from "../photos.js";
 import type * as recipes from "../recipes.js";
+import type * as videoFavourites from "../videoFavourites.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   favourites: typeof favourites;
   photos: typeof photos;
   recipes: typeof recipes;
+  videoFavourites: typeof videoFavourites;
 }>;
 
 /**
