@@ -1,4 +1,6 @@
+"use client";
 import { FavouritesGrid } from "@/components/FavouritesGrid";
+import { VideoFavouritesGrid } from "@/components/VideoFavouritesGrid";
 import Link from "next/link";
 
 export default function FavouritesPage() {
@@ -14,10 +16,11 @@ export default function FavouritesPage() {
           </Link>
           <h1 className="text-2xl font-bold text-[#1A3A2A]">Your Favorites</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Recipes you&apos;ve saved this session
+            Your saved recipes and videos
           </p>
         </div>
         <FavouritesGrid />
+        <VideoFavouritesGrid />
       </div>
     </main>
   );
