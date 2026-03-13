@@ -43,7 +43,7 @@ export function FiltersPanel({ filters, onChange }: Props) {
           {/* Max cooking time */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Max cooking time (mins)
+              Cooking time (mins)
             </label>
             <div className="flex gap-2">
               {([15, 30, 45, 60] as const).map((t) => (
