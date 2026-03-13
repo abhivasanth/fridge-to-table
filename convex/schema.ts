@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 // The full database schema for Fridge to Table.
-// Two tables: recipes (generated sets) and favourites (saved by user session).
+// Four tables: recipes, favourites, customChefs, and videoFavourites.
 export default defineSchema({
   // Each row stores one "search" — a set of 3 generated recipes for a session.
   recipes: defineTable({
