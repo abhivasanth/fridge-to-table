@@ -21,9 +21,11 @@ export function ChefVideoCard({ result, onPlay }: Props) {
   }
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onPlay(result)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onPlay(result); }}
       className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-left w-full cursor-pointer"
     >
       <div className="relative">
@@ -64,6 +66,6 @@ export function ChefVideoCard({ result, onPlay }: Props) {
         <p className="text-[#1A3A2A] font-medium text-sm line-clamp-2">{result.video.title}</p>
         <p className="text-xs text-gray-400 mt-2">▶ Tap to play</p>
       </div>
-    </button>
+    </div>
   );
 }
