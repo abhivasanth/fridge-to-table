@@ -49,4 +49,16 @@ export default defineSchema({
     ),
     updatedAt: v.number(),
   }).index("by_session", ["sessionId"]),
+
+  videoFavourites: defineTable({
+    sessionId: v.string(),
+    videoId: v.string(),
+    title: v.string(),
+    thumbnail: v.string(),
+    channelId: v.string(),
+    channelName: v.string(),
+    savedAt: v.number(),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_and_video", ["sessionId", "videoId"]),
 });
