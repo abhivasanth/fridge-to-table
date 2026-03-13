@@ -1,6 +1,7 @@
 // Displays a single YouTube video result from a chef's channel.
 // Shows a "no result" state gracefully if the chef had no matching video.
 import type { ChefVideoResult } from "@/types/recipe";
+import { VideoFavouriteButton } from "@/components/VideoFavouriteButton";
 
 type Props = {
   result: ChefVideoResult;
@@ -42,6 +43,17 @@ export function ChefVideoCard({ result, onPlay }: Props) {
               <path d="M6 4l12 6-12 6V4z" />
             </svg>
           </div>
+        </div>
+        {/* Favourite heart overlay */}
+        <div className="absolute top-2 right-2 z-10">
+          <VideoFavouriteButton
+            videoId={result.video.videoId}
+            title={result.video.title}
+            thumbnail={result.video.thumbnail}
+            channelId={result.channelId}
+            channelName={result.chefName}
+            size="sm"
+          />
         </div>
       </div>
       <div className="p-4">
