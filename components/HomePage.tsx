@@ -139,6 +139,7 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   useEffect(() => {
     const savedState = loadSearchState();
     if (savedState) {
+      setActiveTab(savedState.activeTab);
       setFilters(savedState.filters);
       setInitialText(savedState.ingredientText);
     }
