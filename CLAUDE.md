@@ -45,3 +45,14 @@ Each task in a plan specifies: files to create/modify/test, exact step-by-step i
 | `/executing-plans` | To implement a saved plan with checkpoints |
 | `/verification-before-completion` | Before claiming anything is done, fixed, or passing |
 | `/systematic-debugging` | On any bug, test failure, or unexpected behavior |
+
+## Lessons Learned
+
+### Convex backend changes require `npx convex dev` to sync
+Changes to `convex/*.ts` files are not picked up by the Next.js dev server alone. The Convex dev server (`npx convex dev`) must be running in a separate terminal to push backend changes to the Convex environment. Without it, the app will use the last-deployed version of the backend functions. Always verify `npx convex dev` is running before testing backend changes locally.
+
+### Type shape changes need localStorage migration
+When changing a shared type that flows through localStorage (e.g. `ChefVideoResult.video?` → `videos[]`), existing users will have stale data in their browser. Always add a normalization step when reading from localStorage to convert the old shape to the new one — otherwise returning users see broken results.
+
+### Known issue: Chef's Table occasionally shows excessive videos (2026-03-14)
+A user reported seeing ~28 videos from 2 chefs on desktop in production, despite the API capping at `maxResults: 3`. Root cause is undiagnosed. The code path (`localStorage.setItem` replaces, never appends) should not produce this. Could not reproduce. Monitor if it recurs — if so, investigate whether stale state, React re-renders, or browser caching could cause duplication.
