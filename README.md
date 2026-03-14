@@ -45,7 +45,7 @@ The app features a **Chef's Table** mode where users can get recipes styled afte
 - **Server components for data pages.** The results and recipe detail pages are Next.js Server Components using `fetchQuery` — data is fetched before the page renders, eliminating loading spinners.
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
 - **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
-- **Search state persistence.** Ingredients, tab, and filters are saved to `sessionStorage` on submit. Back-navigation restores them; "New Search" and new tabs/windows start fresh.
+- **Search state persistence.** The active tab is encoded in the URL query parameter (`?tab=chefs-table`) via `router.replace()`, so the server renders the correct tab on first paint — no flash on back-navigation. Ingredients and filters are saved to `sessionStorage` on submit and restored after mount. "New Search" and new tabs/windows start fresh.
 - **Server/Client Component split for hydration safety.** The home page (`app/page.tsx`) is a Server Component that reads `searchParams` and passes `initialTab` as a prop to the Client Component (`components/HomePage.tsx`). This ensures the first render is deterministic — no hydration mismatches from client-only state like `sessionStorage` or `useSearchParams`.
 - **Conditional entrance animations.** Hero and card animations play only on the first visit per session. Animation state is deferred to `useEffect` (initialized as `false`, enabled after mount) to prevent server/client markup divergence. Return visits (back-nav, New Search) load instantly without animation delays.
 - **Gesture intent lock (mobile sidebar).** Swipe-to-dismiss uses a 12px dead zone to disambiguate scroll vs swipe. Once the dominant axis is determined, the gesture locks — vertical scrolling never triggers horizontal panel movement.
@@ -273,7 +273,7 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 3. User toggles which chefs to include in the current search
 4. Enters ingredients and clicks **Find Recipes**
 5. Recipes are generated in the style of the selected chefs
-6. Results appear on `/chef-results` as video cards
+6. Results appear on `/chef-results` as video cards; the "← Back" link returns to `/?tab=chefs-table`
 7. Tapping a card opens an **inline video modal** — the video plays in-app via YouTube embed (autoplay, 16:9, responsive sizing)
 8. Modal includes a **Copy link** button to share the YouTube URL and a "Watch on YouTube" fallback link
 9. Close via X button, backdrop click, or Escape key — then pick another video
@@ -296,10 +296,11 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 
 ### 6. Back-navigation
 1. User searches for recipes and lands on a results page
-2. Hitting browser back returns to the home page with ingredients, tab, and filters restored from `sessionStorage`
-3. Entrance animations are skipped — the page loads instantly
-4. Clicking **New Search** (sidebar or icon rail) clears the saved state and shows a clean home page
-5. Closing the browser tab or opening a new tab always starts fresh (`sessionStorage` is tab-scoped)
+2. Hitting browser back returns to the home page with the correct tab already active (tab state is in the URL via `?tab=chefs-table`, so the server renders it correctly on first paint — no flash)
+3. Ingredients and filters are restored from `sessionStorage` after mount
+4. Entrance animations are skipped — the page loads instantly
+5. Clicking **New Search** (sidebar or icon rail) clears the saved state and shows a clean home page
+6. Closing the browser tab or opening a new tab always starts fresh (`sessionStorage` is tab-scoped)
 
 ### 7. Sidebar navigation
 1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
