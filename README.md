@@ -311,6 +311,17 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 
 ---
 
+## Homepage Testimonials
+
+The homepage displays four user testimonials highlighting different aspects of the app:
+
+1. **Priya M.** — Saving money by cooking at home instead of ordering takeout
+2. **Emma R.** — Family bonding through cooking together
+3. **Aisha K.** — Chef's Table feature: searching ingredients to discover chef videos
+4. **Jason M.** — Using up leftover ingredients with smart recipe suggestions
+
+---
+
 ## Known Limitations
 
 - **Photo upload occasionally fails** — the Claude Vision → ingredient extraction flow can time out or return empty results on some images. Typing ingredients directly is more reliable.
