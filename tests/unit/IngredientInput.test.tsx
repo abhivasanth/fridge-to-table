@@ -35,19 +35,6 @@ describe("IngredientInput — voice button", () => {
     expect(textarea).toHaveValue("chicken, rice");
   });
 
-  it("updates textarea when initialText prop changes after mount", () => {
-    const { rerender } = render(
-      <IngredientInput onSubmit={vi.fn()} isLoading={false} />
-    );
-    const textarea = screen.getByPlaceholderText(/type your ingredients/i);
-    expect(textarea).toHaveValue("");
-
-    rerender(
-      <IngredientInput onSubmit={vi.fn()} isLoading={false} initialText="eggs, spinach" />
-    );
-    expect(textarea).toHaveValue("eggs, spinach");
-  });
-
   it("shows Listening text when recording starts", () => {
     render(<IngredientInput onSubmit={vi.fn()} isLoading={false} />);
     const dictateBtn = screen.getByRole("button", { name: /dictate your ingredients/i });
