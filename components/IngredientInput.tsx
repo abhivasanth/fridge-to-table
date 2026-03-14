@@ -23,6 +23,13 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, i
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const photoMenuRef = useRef<HTMLDivElement>(null);
 
+  // Sync text state when initialText prop changes after mount (e.g., back-navigation restore)
+  useEffect(() => {
+    if (initialText !== undefined) {
+      setText(initialText);
+    }
+  }, [initialText]);
+
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [interimText, setInterimText] = useState("");
   const committedTextRef = useRef(""); // finalized dictation text
