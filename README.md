@@ -213,9 +213,9 @@ npm run test:e2e
 ```
 
 **Test coverage:**
-- `tests/unit/` — session utility, ingredient parser, image compression, RecipeCard component
-- `tests/integration/` — schema validation, favourites CRUD, analyzePhoto, generateRecipes
-- `tests/e2e/` — button states, ingredient submission → 3 results, save/remove favourite flow
+- `tests/unit/` — session utility, ingredient parser, image compression, RecipeCard, ChefGrid, ChefVideoCard, VideoModal, Sidebar, Navbar, BottomNav, IngredientInput, voice input, search state, search history, YouTube URL parser
+- `tests/integration/` — schema validation, favourites CRUD, analyzePhoto, generateRecipes, custom chefs CRUD
+- `tests/e2e/` — Chef's Table tab switching and chef grid loading, chef selection persistence/restoration, Find Recipes button enable/disable states, ingredient submission → 3 results, save/remove favourite flow, My Chefs page (add input, parse errors, featured chefs, back link), voice/photo input UI, photo menu open/close
 
 ---
 
@@ -332,6 +332,7 @@ The homepage displays four user testimonials highlighting different aspects of t
 - **No pagination** — the results page always shows exactly 3 recipes per search.
 - **Custom chef limit** — max 6 custom YouTube chefs per session (in addition to 8 featured chefs).
 - **Chef's Table slot limit** — max 8 chefs can be active on Chef's Table at a time.
+- **YouTube API result cap** — the YouTube Search API occasionally returns more results than `maxResults`. A server-side `.slice(0, 3)` in `convex/chefs.ts` guarantees no more than 3 videos per chef regardless of API behavior.
 
 ---
 

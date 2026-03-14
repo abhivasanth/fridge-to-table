@@ -54,5 +54,8 @@ Changes to `convex/*.ts` files are not picked up by the Next.js dev server alone
 ### Type shape changes need localStorage migration
 When changing a shared type that flows through localStorage (e.g. `ChefVideoResult.video?` → `videos[]`), existing users will have stale data in their browser. Always add a normalization step when reading from localStorage to convert the old shape to the new one — otherwise returning users see broken results.
 
-### Known issue: Chef's Table occasionally shows excessive videos (2026-03-14)
-A user reported seeing ~28 videos from 2 chefs on desktop in production, despite the API capping at `maxResults: 3`. Root cause is undiagnosed. The code path (`localStorage.setItem` replaces, never appends) should not produce this. Could not reproduce. Monitor if it recurs — if so, investigate whether stale state, React re-renders, or browser caching could cause duplication.
+### YouTube API can return more results than maxResults (resolved 2026-03-14)
+The YouTube Data API v3 Search endpoint intermittently returns more items than the `maxResults` parameter requests. A user reported ~28 videos from a single chef despite `maxResults=3`. Fixed by adding a defensive `.slice(0, 3)` on the server-side response in `convex/chefs.ts`. Always clamp API results server-side — never trust external APIs to honour their own documented limits.
+
+### E2E tests must use stable, unambiguous locators
+After adding a features section with testimonial text mentioning chef names (e.g. "Recipes inspired by Gordon Ramsay"), E2E tests using `getByText("Gordon Ramsay")` broke due to strict mode violations (2 matching elements). Fix: use `getByRole("button", { name: /Gordon Ramsay/i }).first()` to target the chef grid button specifically. Similarly, after refactoring from a visible navbar to a collapsible sidebar, tests that clicked sidebar nav buttons failed because elements were off-screen. Fix: navigate directly via URL (e.g. `/?tab=chefs-table`) or test the target page directly (e.g. `/my-chefs`) instead of relying on UI navigation that may not be visible.
