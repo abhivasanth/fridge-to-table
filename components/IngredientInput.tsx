@@ -31,6 +31,13 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, i
     setVoiceSupported(isVoiceSupported());
   }, []);
 
+  // Sync text when initialText prop changes after mount (e.g. restored from sessionStorage)
+  useEffect(() => {
+    if (initialText !== undefined) {
+      setText(initialText);
+    }
+  }, [initialText]);
+
   const ingredients = parseIngredients(text);
   const hasInput = ingredients.length > 0 || preview !== null;
 

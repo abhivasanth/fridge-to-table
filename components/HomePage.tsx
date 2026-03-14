@@ -321,6 +321,7 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab);
+                  router.replace(tab === "chefs-table" ? "/?tab=chefs-table" : "/", { scroll: false });
                   const current = loadSearchState();
                   if (current) {
                     saveSearchState({ ...current, activeTab: tab });
