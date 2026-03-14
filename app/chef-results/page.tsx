@@ -7,9 +7,17 @@ import { ChefVideoCard } from "@/components/ChefVideoCard";
 import { VideoModal } from "@/components/VideoModal";
 import type { ChefVideoResult } from "@/types/recipe";
 
+type ActiveVideo = {
+  title: string;
+  thumbnail: string;
+  videoId: string;
+  chefName: string;
+  chefEmoji: string;
+};
+
 export default function ChefResultsPage() {
   const [results, setResults] = useState<ChefVideoResult[] | null>(null);
-  const [activeVideo, setActiveVideo] = useState<ChefVideoResult | null>(null);
+  const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("chefTableResults");
@@ -33,6 +41,7 @@ export default function ChefResultsPage() {
   }
 
   const foundCount = results.filter((r) => r.found).length;
+  const totalVideos = results.reduce((sum, r) => sum + (r.videos?.length ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
@@ -45,8 +54,8 @@ export default function ChefResultsPage() {
           Here&apos;s what the chefs would cook
         </h1>
         <p className="text-gray-500 text-sm mb-6">
-          {foundCount > 0
-            ? `${foundCount} video${foundCount > 1 ? "s" : ""} found from your selected chefs`
+          {totalVideos > 0
+            ? `${totalVideos} video${totalVideos > 1 ? "s" : ""} found from ${foundCount} chef${foundCount > 1 ? "s" : ""}`
             : "No videos found — try different ingredients"}
         </p>
 
@@ -58,25 +67,45 @@ export default function ChefResultsPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-8">
             {results.map((result) => (
-              <ChefVideoCard
-                key={result.chefId}
-                result={result}
-                onPlay={setActiveVideo}
-              />
+              <section key={result.chefId}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">{result.chefEmoji}</span>
+                  <h2 className="text-lg font-semibold text-[#1A3A2A]">{result.chefName}</h2>
+                </div>
+
+                {!result.found || !result.videos?.length ? (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+                    <p className="text-gray-400 text-sm">No matching videos for these ingredients.</p>
+                    <p className="text-gray-400 text-xs mt-1">Try different ingredients.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {result.videos.map((video) => (
+                      <ChefVideoCard
+                        key={video.videoId}
+                        video={video}
+                        chefName={result.chefName}
+                        chefEmoji={result.chefEmoji}
+                        onPlay={setActiveVideo}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
             ))}
           </div>
         )}
       </div>
 
-      {activeVideo?.video && (
+      {activeVideo && (
         <VideoModal
-          videoId={activeVideo.video.videoId}
-          title={activeVideo.video.title}
+          videoId={activeVideo.videoId}
+          title={activeVideo.title}
           chefName={activeVideo.chefName}
           chefEmoji={activeVideo.chefEmoji}
-          thumbnail={activeVideo.video.thumbnail}
+          thumbnail={activeVideo.thumbnail}
           onClose={() => setActiveVideo(null)}
         />
       )}
