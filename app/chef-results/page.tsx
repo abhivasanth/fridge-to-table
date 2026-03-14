@@ -23,7 +23,13 @@ export default function ChefResultsPage() {
     const stored = localStorage.getItem("chefTableResults");
     if (stored) {
       try {
-        setResults(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        // Normalize legacy shape (video? → videos[]) for pre-existing history entries
+        const normalized = parsed.map((r: any) => ({
+          ...r,
+          videos: r.videos ?? (r.video ? [r.video] : []),
+        }));
+        setResults(normalized);
       } catch {
         setResults([]);
       }
