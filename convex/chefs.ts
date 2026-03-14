@@ -55,7 +55,7 @@ export const searchChefVideos = action({
             return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false, videos: [] };
           }
 
-          const items = data.items ?? [];
+          const items = (data.items ?? []).slice(0, 3);
           const videos = items.map((item: any) => ({
             title: item.snippet.title as string,
             thumbnail: item.snippet.thumbnails.medium.url as string,
