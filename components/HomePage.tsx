@@ -60,7 +60,7 @@ const FEATURES = [
 const TESTIMONIALS = [
   {
     quote:
-      "I used to stare at my fridge for 20 minutes wondering what to cook. Now I just snap a photo and I've got three delicious options in seconds.",
+      "We used to spend so much on takeout every week. Since using this app, we've been cooking at home way more, eating healthier, and saving money we didn't realize we were wasting.",
     author: "Priya M., San Francisco",
   },
   {
@@ -70,7 +70,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "Finally an app that meets me where I am. I can type, talk, or take a picture — and it always gets it right.",
+      "I love that I can search for an ingredient and instantly find videos from my favorite chefs. Chef's Table has completely changed how I discover new recipes.",
     author: "Aisha K., Toronto",
   },
   {
