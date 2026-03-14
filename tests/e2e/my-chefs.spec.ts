@@ -2,14 +2,9 @@ import { test, expect } from "@playwright/test";
 
 test("My Chefs tab is visible on home page", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: /my chefs/i })).toBeVisible();
-});
-
-test("My Chefs tab shows empty state with link when no chefs saved", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /my chefs/i }).click();
-  await expect(page.getByText(/haven't added any chefs/i)).toBeVisible();
-  await expect(page.getByRole("link", { name: /set up my chefs/i })).toBeVisible();
+  // My Chefs is a sidebar nav button, not a top-level visible element.
+  // The sidebar toggle button should be visible.
+  await expect(page.getByRole("button", { name: /chef's table/i })).toBeVisible();
 });
 
 test("/my-chefs page loads and shows add input", async ({ page }) => {
@@ -27,26 +22,20 @@ test("shows parse error for invalid input", async ({ page }) => {
   await expect(page.getByText(/paste a youtube channel url/i)).toBeVisible();
 });
 
-test("My Chefs nav link is visible in navbar", async ({ page }) => {
-  await page.goto("/");
-  // The navbar contains a "My Chefs" link (span inside Link to /my-chefs)
-  await expect(page.getByRole("link", { name: /my chefs/i }).first()).toBeVisible();
+test("/my-chefs page has back link to chef's table", async ({ page }) => {
+  await page.goto("/my-chefs");
+  await expect(page.getByRole("link", { name: /back to search/i })).toBeVisible();
 });
 
-test("My Chefs nav link navigates to /my-chefs", async ({ page }) => {
-  await page.goto("/");
-  // Click the navbar My Chefs link (first occurrence — the navbar link)
-  await page.getByRole("link", { name: /my chefs/i }).first().click();
-  await expect(page).toHaveURL("/my-chefs");
+test("My Chefs page shows Featured Chefs section", async ({ page }) => {
+  await page.goto("/my-chefs");
+  await expect(page.getByText("Featured Chefs")).toBeVisible();
+  // Gordon Ramsay should appear in the featured chefs grid
+  await expect(page.getByText("Gordon Ramsay")).toBeVisible();
 });
 
-test("search button not available in My Chefs tab when list is empty", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /my chefs/i }).click();
-  await expect(page.getByText(/haven't added any chefs/i)).toBeVisible();
-  // The ingredient input is not rendered in the empty state on the My Chefs tab
-  // The "Find Recipes" button should not be present/enabled because no chefs are selected
-  const findButton = page.getByRole("button", { name: /find recipes/i });
-  const isDisabledOrAbsent = await findButton.isDisabled().catch(() => true);
-  expect(isDisabledOrAbsent).toBe(true);
+test("Chef's Table has Edit chefs link to /my-chefs", async ({ page }) => {
+  await page.goto("/?tab=chefs-table");
+  // The ChefGrid has an "Edit chefs" link to /my-chefs
+  await expect(page.getByRole("link", { name: /edit chefs/i })).toBeVisible();
 });

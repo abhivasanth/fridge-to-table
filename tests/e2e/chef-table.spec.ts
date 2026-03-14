@@ -6,24 +6,26 @@ test("Chef's Table tab is visible on home page", async ({ page }) => {
 });
 
 test("Chef's Table tab shows chef grid when active", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /chef's table/i }).click();
-  await expect(page.getByText("Gordon Ramsay")).toBeVisible();
-  await expect(page.getByText("Maangchi")).toBeVisible();
+  await page.goto("/?tab=chefs-table");
+  // Wait for the chef grid to load (skeleton resolves to actual chef names)
+  await expect(page.getByText("Choose your chefs")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("button", { name: /Gordon Ramsay/i }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maangchi/i })).toBeVisible();
 });
 
 test("Any Recipe tab shows filters panel, not chef grid", async ({ page }) => {
   await page.goto("/");
-  // Default tab is Any Recipe
-  await expect(page.getByText("Gordon Ramsay")).not.toBeVisible();
+  // Default tab is Any Recipe — chef grid header should not be visible
+  await expect(page.getByText("Choose your chefs")).not.toBeVisible();
   await expect(page.getByText(/add filters/i)).toBeVisible();
 });
 
 test("Find Recipes is disabled on Chef's Table with no chefs selected", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /chef's table/i }).click();
+  await page.goto("/?tab=chefs-table");
+  // Wait for the chef grid to fully load
+  await expect(page.getByText("Choose your chefs")).toBeVisible({ timeout: 10_000 });
   await page.getByPlaceholder(/type your ingredients/i).fill("pasta, eggs");
   const button = page.getByRole("button", { name: /find recipes/i });
   await expect(button).toBeDisabled();
@@ -32,18 +34,22 @@ test("Find Recipes is disabled on Chef's Table with no chefs selected", async ({
 test("Find Recipes is enabled on Chef's Table after selecting a chef", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /chef's table/i }).click();
+  await page.goto("/?tab=chefs-table");
+  // Wait for the chef grid to fully load
+  await expect(page.getByText("Choose your chefs")).toBeVisible({ timeout: 10_000 });
   await page.getByPlaceholder(/type your ingredients/i).fill("pasta, eggs");
-  await page.getByText("Gordon Ramsay").click();
+  // Click Gordon Ramsay in the chef grid (use role to avoid matching features section text)
+  await page.getByRole("button", { name: /Gordon Ramsay/i }).first().click();
   const button = page.getByRole("button", { name: /find recipes/i });
   await expect(button).toBeEnabled();
 });
 
 test("Chef selection persists in localStorage", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /chef's table/i }).click();
-  await page.getByText("Gordon Ramsay").click();
+  await page.goto("/?tab=chefs-table");
+  // Wait for the chef grid to fully load
+  await expect(page.getByText("Choose your chefs")).toBeVisible({ timeout: 10_000 });
+  // Click Gordon Ramsay in the chef grid (use role to avoid matching features section text)
+  await page.getByRole("button", { name: /Gordon Ramsay/i }).first().click();
 
   const stored = await page.evaluate(() =>
     localStorage.getItem("fridgeToTable_selectedChefs")
@@ -59,8 +65,9 @@ test("Chef selection is restored on next visit", async ({ page }) => {
       JSON.stringify(["gordon-ramsay"])
     )
   );
-  await page.reload();
-  await page.getByRole("button", { name: /chef's table/i }).click();
-  // The "1 selected" count should appear after reloading with saved selection
+  await page.goto("/?tab=chefs-table");
+  // Wait for the chef grid to fully load (not skeleton)
+  await expect(page.getByText("Choose your chefs")).toBeVisible({ timeout: 10_000 });
+  // The "1 selected" count should appear with saved selection
   await expect(page.getByText(/1 selected/i)).toBeVisible();
 });
