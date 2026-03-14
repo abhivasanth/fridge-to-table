@@ -30,11 +30,11 @@ export type ChefVideoResult = {
   chefName: string;
   chefEmoji: string;
   found: boolean;
-  video?: {
+  videos: {
     title: string;
     thumbnail: string;
     videoId: string;
-  };
+  }[];
 };
 
 export type HistoryEntry = {
