@@ -27,6 +27,7 @@ export const searchChefVideos = action({
         chefName: chef.name,
         chefEmoji: chef.emoji,
         found: false,
+        videos: [],
       }));
     }
 
@@ -42,7 +43,7 @@ export const searchChefVideos = action({
           url.searchParams.set("channelId", chef.youtubeChannelId);
           url.searchParams.set("q", query);
           url.searchParams.set("type", "video");
-          url.searchParams.set("maxResults", "1");
+          url.searchParams.set("maxResults", "3");
           url.searchParams.set("part", "snippet");
           url.searchParams.set("order", "relevance");
 
@@ -51,28 +52,26 @@ export const searchChefVideos = action({
 
           if (data.error) {
             console.error(`YouTube API error for ${chef.name}:`, data.error.message);
-            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false };
+            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false, videos: [] };
           }
 
-          const item = data.items?.[0];
-          if (!item) {
-            return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false };
-          }
+          const items = data.items ?? [];
+          const videos = items.map((item: any) => ({
+            title: item.snippet.title as string,
+            thumbnail: item.snippet.thumbnails.medium.url as string,
+            videoId: item.id.videoId as string,
+          }));
 
           return {
             chefId: chef.id,
             chefName: chef.name,
             chefEmoji: chef.emoji,
-            found: true,
-            video: {
-              title: item.snippet.title as string,
-              thumbnail: item.snippet.thumbnails.medium.url as string,
-              videoId: item.id.videoId as string,
-            },
+            found: videos.length > 0,
+            videos,
           };
         } catch (err) {
           console.error(`Chef search failed for ${chef.name}:`, err);
-          return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false };
+          return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false, videos: [] };
         }
       })
     );
