@@ -10,7 +10,7 @@ A recipe suggestion web app that generates personalised recipes from the ingredi
 
 Fridge to Table lets users input their available ingredients — either by typing a comma-separated list or uploading a fridge photo — and instantly receive three tailored recipe suggestions. Users can filter by diet (vegetarian, vegan, non-vegetarian), cuisine style, cooking time, and difficulty. Recipes include step-by-step instructions, an ingredients list (flagging what you already have), and a shopping list for anything missing.
 
-The app features a **Chef's Table** mode where users can get recipes styled after popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, and new searches. Favourites can be saved and revisited — no account required.
+The app features a **Chef's Table** mode where users can discover up to 3 most relevant YouTube recipe videos per chef from popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, and new searches. Favourites can be saved and revisited — no account required.
 
 ---
 
@@ -78,7 +78,7 @@ fridge_to_table/
 │   ├── page.tsx                            # Server Component — derives initialTab from searchParams
 │   ├── results/[recipeSetId]/page.tsx      # Results page (3 recipe cards)
 │   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page
-│   ├── chef-results/[recipeSetId]/page.tsx # Chef's Table results page
+│   ├── chef-results/page.tsx              # Chef's Table results page (section-per-chef layout)
 │   ├── favourites/page.tsx                 # Saved favourites page
 │   └── my-chefs/page.tsx                   # Manage chef roster (featured + custom)
 ├── components/
@@ -89,7 +89,7 @@ fridge_to_table/
 │   ├── IngredientInput.tsx                 # Text/photo input + diet filter
 │   ├── FiltersPanel.tsx                    # Collapsible cuisine/time/difficulty filters
 │   ├── ChefGrid.tsx                        # Multi-select grid of chefs for Chef's Table tab
-│   ├── ChefVideoCard.tsx                   # Video card for chef-style results
+│   ├── ChefVideoCard.tsx                   # Single video thumbnail card (used in chef results grid)
 │   ├── VideoModal.tsx                      # Inline YouTube player modal overlay
 │   ├── CustomChefCard.tsx                  # Preview card when adding a custom YouTube chef
 │   ├── RecipeCard.tsx                      # Recipe summary card (links to detail)
@@ -101,7 +101,7 @@ fridge_to_table/
 ├── convex/
 │   ├── schema.ts                           # Database schema (recipes, favourites, customChefs)
 │   ├── recipes.ts                          # generateRecipes action + getRecipeSet query
-│   ├── chefs.ts                            # Chef's Table recipe generation action
+│   ├── chefs.ts                            # Chef's Table video search action (up to 3 per chef)
 │   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution
 │   ├── photos.ts                           # analyzePhoto action (Claude vision)
 │   ├── favourites.ts                       # save/remove/get favourites
@@ -272,11 +272,13 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 2. A grid of slotted chefs appears (up to 8, from featured + custom)
 3. User toggles which chefs to include in the current search
 4. Enters ingredients and clicks **Find Recipes**
-5. Recipes are generated in the style of the selected chefs
-6. Results appear on `/chef-results` as video cards; the "← Back" link returns to `/?tab=chefs-table`
-7. Tapping a card opens an **inline video modal** — the video plays in-app via YouTube embed (autoplay, 16:9, responsive sizing)
-8. Modal includes a **Copy link** button to share the YouTube URL and a "Watch on YouTube" fallback link
-9. Close via X button, backdrop click, or Escape key — then pick another video
+5. `searchChefVideos` Convex Action searches each chef's YouTube channel for up to 3 most relevant videos matching the ingredients
+6. Results appear on `/chef-results` in a **section-per-chef layout** — each chef gets a header (emoji + name) followed by a responsive grid of video cards (1 col mobile, 2 col tablet, 3 col desktop)
+7. Only relevant videos are shown — if a chef has 2 matches, 2 cards appear (no padding to fill 3)
+8. Chefs with no matching videos show a "No matching videos for these ingredients" message
+9. Tapping a card opens an **inline video modal** — the video plays in-app via YouTube embed (autoplay, 16:9, responsive sizing)
+10. Modal includes a **Copy link** button to share the YouTube URL and a "Watch on YouTube" fallback link
+11. Close via X button, backdrop click, or Escape key — then pick another video
 
 ### 4. My Chefs flow (roster management)
 1. User navigates to `/my-chefs` (via "Edit chefs" link on Chef's Table, My Chefs icon in collapsed sidebar rail, or My Chefs link in the sidebar)
@@ -339,7 +341,7 @@ The homepage displays four user testimonials highlighting different aspects of t
 |---|---|---|
 | `NEXT_PUBLIC_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-created by `npx convex dev`) |
 | `ANTHROPIC_API_KEY` | Convex environment | Anthropic API key — set via `npx convex env set` |
-| `YOUTUBE_API_KEY` | Convex environment | YouTube Data API v3 key — used for custom chef channel resolution |
+| `YOUTUBE_API_KEY` | Convex environment | YouTube Data API v3 key — used for Chef's Table video search and custom chef channel resolution |
 
 > The Anthropic and YouTube API keys are **never** exposed to the browser. They live exclusively in Convex's secure environment and are only accessed inside Convex Actions.
 
