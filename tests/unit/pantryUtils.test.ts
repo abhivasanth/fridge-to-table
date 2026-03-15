@@ -15,6 +15,22 @@ describe("normalizeName", () => {
     expect(normalizeName("onions")).toBe("onion");
   });
 
+  it("deplurals -oes → -o (tomatoes, potatoes)", () => {
+    expect(normalizeName("tomatoes")).toBe("tomato");
+    expect(normalizeName("potatoes")).toBe("potato");
+    expect(normalizeName("mangoes")).toBe("mango");
+  });
+
+  it("deplurals -ies → -y (berries, cherries)", () => {
+    expect(normalizeName("berries")).toBe("berry");
+    expect(normalizeName("cherries")).toBe("cherry");
+    expect(normalizeName("anchovies")).toBe("anchovy");
+  });
+
+  it("deplurals -ves → -f (halves)", () => {
+    expect(normalizeName("halves")).toBe("half");
+  });
+
   it("does not strip 's' from words like rice", () => {
     expect(normalizeName("rice")).toBe("rice");
   });

@@ -58,7 +58,18 @@ function depluralise(name: string): string {
   if (NO_DEPLURAL.has(name)) return name;
   if (NO_DEPLURAL.has(last)) return name;
 
-  words[words.length - 1] = last.slice(0, -1);
+  let singular: string;
+  if (last.endsWith("ies") && last.length > 4) {
+    singular = last.slice(0, -3) + "y";
+  } else if (last.endsWith("ves")) {
+    singular = last.slice(0, -3) + "f";
+  } else if (last.endsWith("oes") && last.length > 4) {
+    singular = last.slice(0, -2);
+  } else {
+    singular = last.slice(0, -1);
+  }
+
+  words[words.length - 1] = singular;
   return words.join(" ");
 }
 

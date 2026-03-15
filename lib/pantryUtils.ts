@@ -137,7 +137,21 @@ function depluralise(name: string): string {
   if (NO_DEPLURAL.has(name)) return name; // whole-name exception
   if (NO_DEPLURAL.has(last)) return name; // last-word exception
 
-  words[words.length - 1] = last.slice(0, -1);
+  let singular: string;
+  if (last.endsWith("ies") && last.length > 4) {
+    // berries → berry, cherries → cherry
+    singular = last.slice(0, -3) + "y";
+  } else if (last.endsWith("ves")) {
+    // halves → half (but not all -ves words; good enough for ingredients)
+    singular = last.slice(0, -3) + "f";
+  } else if (last.endsWith("oes") && last.length > 4) {
+    // tomatoes → tomato, potatoes → potato, mangoes → mango
+    singular = last.slice(0, -2);
+  } else {
+    singular = last.slice(0, -1);
+  }
+
+  words[words.length - 1] = singular;
   return words.join(" ");
 }
 

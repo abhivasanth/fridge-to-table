@@ -112,7 +112,7 @@ describe("RecipeShoppingCard", () => {
       { _id: "p2", normalizedName: "cumin" },
       { _id: "p3", normalizedName: "salt" },
       { _id: "p4", normalizedName: "pepper" },
-      { _id: "p5", normalizedName: "tomatoe" },
+      { _id: "p5", normalizedName: "tomato" },
     ]);
     const { container } = render(
       <RecipeShoppingCard shoppingList={shoppingList} />
