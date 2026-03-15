@@ -8,9 +8,11 @@ A recipe suggestion web app that generates personalised recipes from the ingredi
 
 ## Overview
 
-Fridge to Table lets users input their available ingredients — either by typing a comma-separated list or uploading a fridge photo — and instantly receive three tailored recipe suggestions. Users can filter by diet (vegetarian, vegan, non-vegetarian), cuisine style, cooking time, and difficulty. Recipes include step-by-step instructions, an ingredients list (flagging what you already have), and a shopping list for anything missing.
+Fridge to Table lets users input their available ingredients — either by typing a comma-separated list or uploading a fridge photo — and instantly receive three tailored recipe suggestions. Users can filter by diet (vegetarian, vegan, non-vegetarian), cuisine style, cooking time, and difficulty. Recipes include step-by-step instructions, a pantry-aware ingredients list, and an interactive shopping list card for anything missing.
 
-The app features a **Chef's Table** mode where users can discover up to 3 most relevant YouTube recipe videos per chef from popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, and new searches. Favourites can be saved and revisited — no account required.
+The app features a **Chef's Table** mode where users can discover up to 3 most relevant YouTube recipe videos per chef from popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, pantry, shopping list, and new searches. Favourites can be saved and revisited — no account required.
+
+Users can manage a persistent **My Pantry** of staple ingredients they always have on hand, and a **My Shopping List** of items to buy. Recipe pages are pantry-aware — ingredients already in the pantry are highlighted, and the shopping list card automatically hides pantry items.
 
 ---
 
@@ -41,7 +43,7 @@ The app features a **Chef's Table** mode where users can discover up to 3 most r
 **Key design decisions:**
 
 - **Convex as the only backend.** All Claude API calls are made inside Convex Actions — never from the browser. This keeps the Anthropic API key secure and off the client.
-- **Anonymous sessions.** A UUID is generated on first visit and stored in `localStorage`. No login required. Favourites are scoped to this session ID.
+- **Anonymous sessions.** A UUID is generated on first visit and stored in `localStorage`. No login required. Favourites, pantry items, and shopping list are scoped to this session ID.
 - **Server components for data pages.** The results and recipe detail pages are Next.js Server Components using `fetchQuery` — data is fetched before the page renders, eliminating loading spinners.
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
 - **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
@@ -50,6 +52,8 @@ The app features a **Chef's Table** mode where users can discover up to 3 most r
 - **Conditional entrance animations.** Hero and card animations play only on the first visit per session. Animation state is deferred to `useEffect` (initialized as `false`, enabled after mount) to prevent server/client markup divergence. Return visits (back-nav, New Search) load instantly without animation delays.
 - **Gesture intent lock (mobile sidebar).** Swipe-to-dismiss uses a 12px dead zone to disambiguate scroll vs swipe. Once the dominant axis is determined, the gesture locks — vertical scrolling never triggers horizontal panel movement.
 - **YouTube channel resolution.** Custom chefs are resolved via YouTube Data API (called from Convex Action) — the client never touches external APIs directly.
+- **Pantry-aware recipe pages.** The ingredients list and shopping list card on recipe detail pages query the user's pantry in real-time. Ingredients in the pantry get a green indicator; items already in the pantry are hidden from the shopping list card entirely. Compound ingredients like "salt and pepper" are split and matched individually.
+- **Server-side name normalization.** Pantry and shopping list mutations normalize names (lowercase, depluralize, resolve aliases, strip qualifiers like "fresh"/"dried") and auto-classify pantry items into categories — all inside Convex mutations for atomic dedup. Normalization logic is duplicated between `lib/pantryUtils.ts` (client) and `convex/pantry.ts` / `convex/shoppingList.ts` (backend) because Convex cannot import from Next.js `lib/`.
 
 ---
 
@@ -80,7 +84,9 @@ fridge_to_table/
 │   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page
 │   ├── chef-results/page.tsx              # Chef's Table results page (section-per-chef layout)
 │   ├── favourites/page.tsx                 # Saved favourites page
-│   └── my-chefs/page.tsx                   # Manage chef roster (featured + custom)
+│   ├── my-chefs/page.tsx                   # Manage chef roster (featured + custom)
+│   ├── my-pantry/page.tsx                  # My Pantry page (persistent staple ingredients)
+│   └── my-shopping-list/page.tsx           # My Shopping List page (items to buy)
 ├── components/
 │   ├── HomePage.tsx                        # Client Component — home page (ingredients, filters, Chef's Table)
 │   ├── ConvexClientProvider.tsx            # Wraps app with Convex context
@@ -95,16 +101,22 @@ fridge_to_table/
 │   ├── RecipeCard.tsx                      # Recipe summary card (links to detail)
 │   ├── FavouriteButton.tsx                 # Heart toggle (save/remove)
 │   ├── FavouritesGrid.tsx                  # Grid of saved recipes
+│   ├── PantryPage.tsx                      # My Pantry client component (categorized pills, undo toast)
+│   ├── ShoppingListPage.tsx                # My Shopping List client component (flat list, fade-out remove)
+│   ├── RecipeIngredientsList.tsx           # Pantry-aware ingredients list on recipe detail page
+│   ├── RecipeShoppingCard.tsx              # Interactive shopping list card on recipe detail page
 │   ├── LoadingChef.tsx                     # Loading animation for chef searches
 │   ├── BottomNav.tsx                       # Mobile bottom navigation bar
 │   └── Navbar.tsx                          # Legacy top navbar
 ├── convex/
-│   ├── schema.ts                           # Database schema (recipes, favourites, customChefs)
+│   ├── schema.ts                           # Database schema (recipes, favourites, customChefs, pantryItems, shoppingListItems)
 │   ├── recipes.ts                          # generateRecipes action + getRecipeSet query
 │   ├── chefs.ts                            # Chef's Table video search action (up to 3 per chef)
 │   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution
 │   ├── photos.ts                           # analyzePhoto action (Claude vision)
 │   ├── favourites.ts                       # save/remove/get favourites
+│   ├── pantry.ts                           # Pantry CRUD (add/remove/get, auto-classify, dedup)
+│   ├── shoppingList.ts                     # Shopping list CRUD (add/remove/get, dedup)
 │   └── _generated/                         # Auto-generated Convex bindings (committed)
 ├── lib/
 │   ├── session.ts                          # Anonymous session ID (localStorage)
@@ -112,6 +124,8 @@ fridge_to_table/
 │   ├── chefSlots.ts                        # Chef's Table slot management (localStorage)
 │   ├── searchHistory.ts                    # Search history storage (localStorage)
 │   ├── ingredientParser.ts                 # Parses comma-separated ingredient text
+│   ├── ingredientNameParser.ts             # Strips quantity/unit prefixes, splits compound ingredients
+│   ├── pantryUtils.ts                      # Name normalization, alias resolution, category classification
 │   ├── imageCompression.ts                 # Client-side Canvas image compression
 │   ├── searchState.ts                      # Search state persistence (sessionStorage)
 │   ├── parseYouTubeUrl.ts                  # YouTube URL/handle parser
@@ -194,6 +208,34 @@ Stores custom YouTube chefs added by a session.
 | `chefs` | `array` | Array of `{ channelId, channelName, channelThumbnail, addedAt, resolvedAt }` |
 | `updatedAt` | `number` | Last modification timestamp |
 
+### `pantryItems` table
+Persistent pantry — ingredients the user always has on hand.
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `string` | Anonymous user UUID |
+| `name` | `string` | Display name, lowercase trimmed |
+| `normalizedName` | `string` | For matching/dedup (depluralized, alias-resolved) |
+| `category` | `string` | Auto-classified: `oils_fats`, `spices_powders`, `sauces_condiments`, `basics`, `other` |
+| `createdAt` | `number` | `Date.now()` timestamp |
+| `updatedAt` | `number` | `Date.now()` timestamp |
+
+Indexes: `by_session`, `by_session_and_name` (sessionId + normalizedName).
+
+### `shoppingListItems` table
+Items the user wants to buy.
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `string` | Anonymous user UUID |
+| `name` | `string` | Display name |
+| `normalizedName` | `string` | For matching/dedup |
+| `source` | `string` | `manual` (typed in) or `recipe` (added from recipe page) |
+| `createdAt` | `number` | `Date.now()` timestamp |
+| `updatedAt` | `number` | `Date.now()` timestamp |
+
+Indexes: `by_session`, `by_session_and_name` (sessionId + normalizedName).
+
 ---
 
 ## Testing
@@ -213,7 +255,7 @@ npm run test:e2e
 ```
 
 **Test coverage:**
-- `tests/unit/` — session utility, ingredient parser, image compression, RecipeCard, ChefGrid, ChefVideoCard, VideoModal, Sidebar, Navbar, BottomNav, IngredientInput, voice input, search state, search history, YouTube URL parser
+- `tests/unit/` — session utility, ingredient parser, ingredient name parser (compound splitting, quantity stripping), pantry utils (normalization, aliases, depluralization, category classification), image compression, RecipeCard, ChefGrid, ChefVideoCard, VideoModal, Sidebar, Navbar, BottomNav, IngredientInput, voice input, search state, search history, YouTube URL parser
 - `tests/integration/` — schema validation, favourites CRUD, analyzePhoto, generateRecipes, custom chefs CRUD
 - `tests/e2e/` — Chef's Table tab switching and chef grid loading, chef selection persistence/restoration, Find Recipes button enable/disable states, ingredient submission → 3 results, save/remove favourite flow, My Chefs page (add input, parse errors, featured chefs, back link), voice/photo input UI, photo menu open/close
 
@@ -307,10 +349,41 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 ### 7. Sidebar navigation
 1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
 2. **"fridge to table" logo** in the sidebar header is clickable — navigates to the home page
-3. Sidebar shows: **New Search**, **My Chefs**, **Favorites** nav links, searchable **Recent Searches** list
-4. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, My Chefs, Recent Searches, and Favourites
+3. Sidebar shows: **New Search**, **My Chefs**, **Favorites**, **My Pantry**, **My Shopping List** nav links, searchable **Recent Searches** list
+4. On desktop, a collapsed icon rail (48px) is always visible when sidebar is closed — provides quick access to New Search, My Chefs, Recent Searches, Favourites, My Pantry, and My Shopping List
 5. On mobile, sidebar overlays the page with scroll isolation (main page doesn't scroll underneath)
 6. On mobile, **swipe left to dismiss** with gesture intent lock — vertical scrolling through history items does not trigger horizontal swipe
+
+### 8. My Pantry flow
+1. User navigates to `/my-pantry` (via sidebar or icon rail)
+2. Page shows items organized by auto-classified categories: Oils & Fats, Spices & Powders, Sauces & Condiments, Basics, Other
+3. Each item appears as a pill with an × remove button
+4. User types an item name and clicks **Add** (or presses Enter)
+5. `addToPantry` mutation normalizes the name (lowercase, depluralize, resolve aliases like "chilli" → "chili", strip qualifiers like "fresh"/"dried"), auto-classifies into a category, and deduplicates atomically
+6. If the item already exists, the existing pill highlights briefly and a message appears ("X is already in your pantry")
+7. Removing an item shows an undo toast for 3 seconds — clicking "Undo" re-adds the item
+8. Empty state: 🫙 emoji with helper text
+
+### 9. My Shopping List flow
+1. User navigates to `/my-shopping-list` (via sidebar or icon rail)
+2. Page shows a flat list of items to buy
+3. User types an item and clicks **Add** (or presses Enter)
+4. `addToShoppingList` mutation normalizes and deduplicates
+5. If item already exists, it highlights and a message appears
+6. Removing an item fades it out with a 300ms animation
+7. Empty state: 🛒 emoji with helper text
+
+### 10. Recipe page pantry integration
+1. On the recipe detail page, the **Ingredients** section is pantry-aware:
+   - Items the user entered (from their fridge photo/text): green ✓ checkmark
+   - Items found in the user's pantry: green • dot
+   - Missing items: grey ○ circle
+2. The **Shopping List** card below shows only items NOT in the user's pantry
+   - Each item has a **+** button to add to the shopping list and an "already have it" link to add to the pantry
+   - After adding to the shopping list, a ✓ appears with "added to list" — clicking ✓ removes it
+   - After marking "already have it", the item disappears from the shopping list card (added to pantry)
+   - If all items are in the pantry, the entire shopping list card is hidden
+3. Compound ingredients (e.g. "to taste salt and pepper") are split and each part is matched individually against the pantry
 
 ---
 
@@ -328,7 +401,8 @@ The homepage displays four user testimonials highlighting different aspects of t
 ## Known Limitations
 
 - **Photo upload occasionally fails** — the Claude Vision → ingredient extraction flow can time out or return empty results on some images. Typing ingredients directly is more reliable.
-- **Session-scoped data** — clearing `localStorage` or switching browsers loses favourites, chef slots, and search history. A future auth layer would persist these across devices.
+- **Session-scoped data** — clearing `localStorage` or switching browsers loses favourites, chef slots, search history, pantry items, and shopping list. A future auth layer would persist these across devices.
+- **Duplicated normalization logic** — pantry/shopping list name normalization is implemented in both `lib/pantryUtils.ts` (client-side for UI matching) and `convex/pantry.ts` / `convex/shoppingList.ts` (server-side for atomic dedup). Changes to normalization rules must be applied in both places. This is a Convex isolation constraint — backend functions cannot import from Next.js `lib/`.
 - **No pagination** — the results page always shows exactly 3 recipes per search.
 - **Custom chef limit** — max 6 custom YouTube chefs per session (in addition to 8 featured chefs).
 - **Chef's Table slot limit** — max 8 chefs can be active on Chef's Table at a time.
