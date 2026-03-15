@@ -5,7 +5,10 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getSessionId } from "@/lib/session";
 import { normalizeName } from "@/lib/pantryUtils";
-import { parseIngredientName } from "@/lib/ingredientNameParser";
+import {
+  parseIngredientName,
+  parseIngredientNames,
+} from "@/lib/ingredientNameParser";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type Props = {
@@ -68,56 +71,80 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
   }, []);
 
   const handleAddToShopping = useCallback(
-    async (normalized: string, ingredientName: string) => {
-      setOptimistic((prev) => new Map(prev).set(normalized, "shopping"));
+    async (normalizedNames: string[], ingredientNames: string[]) => {
+      setOptimistic((prev) => {
+        const next = new Map(prev);
+        for (const n of normalizedNames) next.set(n, "shopping");
+        return next;
+      });
       try {
-        await addToShoppingList({
-          sessionId,
-          name: ingredientName,
-          source: "recipe",
-        });
+        await Promise.all(
+          ingredientNames.map((name) =>
+            addToShoppingList({ sessionId, name, source: "recipe" })
+          )
+        );
       } finally {
-        clearOptimistic(normalized);
+        for (const n of normalizedNames) clearOptimistic(n);
       }
     },
     [sessionId, addToShoppingList, clearOptimistic]
   );
 
   const handleRemoveFromShopping = useCallback(
-    async (normalized: string) => {
-      const id = shoppingMap.get(normalized);
-      if (!id) return;
-      setOptimistic((prev) => new Map(prev).set(normalized, null));
+    async (normalizedNames: string[]) => {
+      const ids = normalizedNames
+        .map((n) => shoppingMap.get(n))
+        .filter(Boolean);
+      if (ids.length === 0) return;
+      setOptimistic((prev) => {
+        const next = new Map(prev);
+        for (const n of normalizedNames) next.set(n, null);
+        return next;
+      });
       try {
-        await removeFromShoppingList({ id });
+        await Promise.all(ids.map((id) => removeFromShoppingList({ id: id! })));
       } finally {
-        clearOptimistic(normalized);
+        for (const n of normalizedNames) clearOptimistic(n);
       }
     },
     [shoppingMap, removeFromShoppingList, clearOptimistic]
   );
 
   const handleAddToPantry = useCallback(
-    async (normalized: string, ingredientName: string) => {
-      setOptimistic((prev) => new Map(prev).set(normalized, "pantry"));
+    async (normalizedNames: string[], ingredientNames: string[]) => {
+      setOptimistic((prev) => {
+        const next = new Map(prev);
+        for (const n of normalizedNames) next.set(n, "pantry");
+        return next;
+      });
       try {
-        await addToPantry({ sessionId, name: ingredientName });
+        await Promise.all(
+          ingredientNames.map((name) =>
+            addToPantry({ sessionId, name })
+          )
+        );
       } finally {
-        clearOptimistic(normalized);
+        for (const n of normalizedNames) clearOptimistic(n);
       }
     },
     [sessionId, addToPantry, clearOptimistic]
   );
 
   const handleRemoveFromPantry = useCallback(
-    async (normalized: string) => {
-      const id = pantryMap.get(normalized);
-      if (!id) return;
-      setOptimistic((prev) => new Map(prev).set(normalized, null));
+    async (normalizedNames: string[]) => {
+      const ids = normalizedNames
+        .map((n) => pantryMap.get(n))
+        .filter(Boolean);
+      if (ids.length === 0) return;
+      setOptimistic((prev) => {
+        const next = new Map(prev);
+        for (const n of normalizedNames) next.set(n, null);
+        return next;
+      });
       try {
-        await removeFromPantry({ id });
+        await Promise.all(ids.map((id) => removeFromPantry({ id: id! })));
       } finally {
-        clearOptimistic(normalized);
+        for (const n of normalizedNames) clearOptimistic(n);
       }
     },
     [pantryMap, removeFromPantry, clearOptimistic]
@@ -132,20 +159,34 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
       </h2>
       <ul className="space-y-1">
         {shoppingList.map((rawItem, i) => {
-          const ingredientName = parseIngredientName(rawItem);
-          const normalized = normalizeName(ingredientName);
+          const ingredientNames = parseIngredientNames(rawItem);
+          const normalizedNames = ingredientNames.map(normalizeName);
+
+          // For display label in aria, join the parsed names
+          const displayLabel = ingredientNames.join(" and ");
 
           // Determine state: optimistic first, then backend
-          const opt = optimistic.get(normalized);
+          // Check if ANY part has an optimistic override
+          const hasOptimistic = normalizedNames.some(
+            (n) => optimistic.get(n) !== undefined
+          );
+
           let state: "default" | "in-shopping" | "in-pantry";
 
-          if (opt !== undefined) {
-            if (opt === "shopping") state = "in-shopping";
-            else if (opt === "pantry") state = "in-pantry";
+          if (hasOptimistic) {
+            // If all parts are optimistically "shopping"
+            if (normalizedNames.every((n) => optimistic.get(n) === "shopping"))
+              state = "in-shopping";
+            // If all parts are optimistically "pantry"
+            else if (
+              normalizedNames.every((n) => optimistic.get(n) === "pantry")
+            )
+              state = "in-pantry";
+            // Mixed or null → default
             else state = "default";
-          } else if (pantryMap.has(normalized)) {
+          } else if (normalizedNames.every((n) => pantryMap.has(n))) {
             state = "in-pantry";
-          } else if (shoppingMap.has(normalized)) {
+          } else if (normalizedNames.some((n) => shoppingMap.has(n))) {
             state = "in-shopping";
           } else {
             state = "default";
@@ -160,21 +201,21 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
               {state === "default" && (
                 <button
                   onClick={() =>
-                    handleAddToShopping(normalized, ingredientName)
+                    handleAddToShopping(normalizedNames, ingredientNames)
                   }
                   className="text-[#BA7517] font-bold flex-shrink-0 w-5 text-center"
                   style={{ fontSize: "18px" }}
-                  aria-label={`Add ${ingredientName} to shopping list`}
+                  aria-label={`Add ${displayLabel} to shopping list`}
                 >
                   +
                 </button>
               )}
               {state === "in-shopping" && (
                 <button
-                  onClick={() => handleRemoveFromShopping(normalized)}
+                  onClick={() => handleRemoveFromShopping(normalizedNames)}
                   className="text-[#BA7517] font-bold flex-shrink-0 w-5 text-center"
                   style={{ fontSize: "18px" }}
-                  aria-label={`Remove ${ingredientName} from shopping list`}
+                  aria-label={`Remove ${displayLabel} from shopping list`}
                 >
                   ✓
                 </button>
@@ -203,7 +244,7 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
               {state === "default" && (
                 <button
                   onClick={() =>
-                    handleAddToPantry(normalized, ingredientName)
+                    handleAddToPantry(normalizedNames, ingredientNames)
                   }
                   className="text-[#0F6E56] flex-shrink-0"
                   style={{ fontSize: "12px" }}
@@ -221,7 +262,7 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
               )}
               {state === "in-pantry" && (
                 <button
-                  onClick={() => handleRemoveFromPantry(normalized)}
+                  onClick={() => handleRemoveFromPantry(normalizedNames)}
                   className="text-[#888780] flex-shrink-0"
                   style={{ fontSize: "12px" }}
                 >

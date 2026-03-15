@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getSessionId } from "@/lib/session";
 import { normalizeName } from "@/lib/pantryUtils";
+import { parseIngredientNames } from "@/lib/ingredientNameParser";
 
 type Ingredient = {
   name: string;
@@ -37,10 +38,13 @@ export function RecipeIngredientsList({ ingredients }: Props) {
       </h2>
       <ul className="space-y-2">
         {ingredients.map((ing, i) => {
-          const normalized = normalizeName(ing.name);
+          const splitNames = parseIngredientNames(ing.name);
+          const normalizedParts = splitNames.map(normalizeName);
           const isUserInput = ing.inFridge === true;
           const isInPantry =
-            !isUserInput && pantryNames.has(normalized);
+            !isUserInput &&
+            normalizedParts.length > 0 &&
+            normalizedParts.every((n) => pantryNames.has(n));
           const isMissing = !isUserInput && !isInPantry;
 
           let iconBg: string;

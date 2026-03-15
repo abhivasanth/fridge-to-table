@@ -118,3 +118,21 @@ export function parseIngredientName(raw: string): string {
 
   return words.slice(i).join(" ");
 }
+
+/**
+ * Like parseIngredientName but splits compound ingredients joined by " and "
+ * into separate names.
+ *
+ * Examples:
+ *   "to taste salt and pepper" → ["salt", "pepper"]
+ *   "salt and pepper"          → ["salt", "pepper"]
+ *   "1 tsp red chili powder"   → ["red chili powder"]
+ *   "oil"                      → ["oil"]
+ */
+export function parseIngredientNames(raw: string): string[] {
+  const parsed = parseIngredientName(raw);
+  if (!parsed) return [];
+
+  const parts = parsed.split(" and ");
+  return parts.map((p) => p.trim()).filter(Boolean);
+}

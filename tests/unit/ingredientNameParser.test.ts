@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { parseIngredientName } from "@/lib/ingredientNameParser";
+import {
+  parseIngredientName,
+  parseIngredientNames,
+} from "@/lib/ingredientNameParser";
 
 describe("parseIngredientName", () => {
   it("strips quantity and unit from '1 tsp red chili powder'", () => {
@@ -78,5 +81,35 @@ describe("parseIngredientName", () => {
 
   it("returns full lowercased string when all words are consumed", () => {
     expect(parseIngredientName("1 cup")).toBe("1 cup");
+  });
+});
+
+describe("parseIngredientNames", () => {
+  it("splits 'to taste salt and pepper' into ['salt', 'pepper']", () => {
+    expect(parseIngredientNames("to taste salt and pepper")).toEqual([
+      "salt",
+      "pepper",
+    ]);
+  });
+
+  it("splits 'salt and pepper' into ['salt', 'pepper']", () => {
+    expect(parseIngredientNames("salt and pepper")).toEqual([
+      "salt",
+      "pepper",
+    ]);
+  });
+
+  it("returns single-element array for '1 tsp red chili powder'", () => {
+    expect(parseIngredientNames("1 tsp red chili powder")).toEqual([
+      "red chili powder",
+    ]);
+  });
+
+  it("returns single-element array for 'oil'", () => {
+    expect(parseIngredientNames("oil")).toEqual(["oil"]);
+  });
+
+  it("returns single-element array for 'to taste salt'", () => {
+    expect(parseIngredientNames("to taste salt")).toEqual(["salt"]);
   });
 });
