@@ -46,15 +46,6 @@ export default async function RecipeDetailPage({ params }: Props) {
           ← Back to results
         </Link>
 
-        {/* Uncertainty notice — shown only if photo analysis flagged items */}
-        {recipe.uncertainIngredients && recipe.uncertainIngredients.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-800 text-sm">
-            <strong>Note:</strong> We assumed these were vegetarian but weren&apos;t
-            certain: {recipe.uncertainIngredients.join(", ")}. Double-check
-            before cooking!
-          </div>
-        )}
-
         {/* Title and favourite button */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <h1 className="text-3xl font-bold text-[#1A3A2A]">{recipe.title}</h1>
