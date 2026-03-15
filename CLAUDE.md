@@ -59,3 +59,9 @@ The YouTube Data API v3 Search endpoint intermittently returns more items than t
 
 ### E2E tests must use stable, unambiguous locators
 After adding a features section with testimonial text mentioning chef names (e.g. "Recipes inspired by Gordon Ramsay"), E2E tests using `getByText("Gordon Ramsay")` broke due to strict mode violations (2 matching elements). Fix: use `getByRole("button", { name: /Gordon Ramsay/i }).first()` to target the chef grid button specifically. Similarly, after refactoring from a visible navbar to a collapsible sidebar, tests that clicked sidebar nav buttons failed because elements were off-screen. Fix: navigate directly via URL (e.g. `/?tab=chefs-table`) or test the target page directly (e.g. `/my-chefs`) instead of relying on UI navigation that may not be visible.
+
+### Duplicated logic across Convex and lib/ must stay in sync
+Convex backend functions run in an isolated environment and cannot import from Next.js `lib/`. For the pantry feature, normalization logic (`normalizeName`, `depluralise`, `classifyCategory`) is duplicated in three files: `lib/pantryUtils.ts`, `convex/pantry.ts`, and `convex/shoppingList.ts`. When a bug was found in depluralization (-oes/-ies/-ves handling), it had to be fixed in all three copies. Always grep for the function name across all three files before considering a normalization fix complete.
+
+### Keyword containment classification needs a blocklist for common words
+The pantry `classifyCategory()` function uses keyword containment (e.g. "tomato paste" contains "tomato" → sauces). This caused "tomato" itself to be classified as sauces, and "onion" as spices (via "onion powder"). Fix: added a `PRODUCE` set (~50 fruits/vegetables) checked before keyword containment — produce always returns "other". When adding keyword-based classification, always consider whether the base word itself is a valid standalone input that shouldn't match.
