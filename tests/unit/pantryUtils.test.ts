@@ -105,6 +105,23 @@ describe("normalizeName", () => {
 });
 
 describe("classifyCategory", () => {
+  it("classifies produce as other (not misclassified by keyword containment)", () => {
+    expect(classifyCategory("tomato")).toBe("other");
+    expect(classifyCategory("onion")).toBe("other");
+    expect(classifyCategory("garlic")).toBe("other");
+    expect(classifyCategory("potato")).toBe("other");
+    expect(classifyCategory("lemon")).toBe("other");
+    expect(classifyCategory("mango")).toBe("other");
+    expect(classifyCategory("avocado")).toBe("other");
+  });
+
+  it("still classifies produce-derived pantry staples correctly", () => {
+    expect(classifyCategory("onion powder")).toBe("spices_powders");
+    expect(classifyCategory("garlic powder")).toBe("spices_powders");
+    expect(classifyCategory("tomato paste")).toBe("sauces_condiments");
+    expect(classifyCategory("tomato sauce")).toBe("sauces_condiments");
+  });
+
   it("classifies olive oil as oils_fats", () => {
     expect(classifyCategory("olive oil")).toBe("oils_fats");
   });

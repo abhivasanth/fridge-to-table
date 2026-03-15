@@ -294,6 +294,22 @@ for (const [cat, items] of Object.entries(CATEGORY_MAP) as [CategoryKey, string[
   }
 }
 
+// Fruits and vegetables — perishable produce that should classify as "other"
+// even though their names may partially match pantry staples (e.g. "tomato"
+// matching "tomato paste", "onion" matching "onion powder").
+const PRODUCE = new Set([
+  "tomato", "onion", "garlic", "potato", "carrot", "celery", "bell pepper",
+  "broccoli", "cauliflower", "spinach", "lettuce", "cabbage", "zucchini",
+  "eggplant", "cucumber", "corn", "pea", "green bean", "mushroom",
+  "avocado", "jalapeno", "ginger", "scallion", "green onion", "leek",
+  "shallot", "radish", "beet", "turnip", "squash", "pumpkin", "kale",
+  "arugula", "asparagus", "artichoke", "sweet potato",
+  "apple", "banana", "orange", "lemon", "lime", "mango", "pineapple",
+  "strawberry", "blueberry", "raspberry", "grape", "peach", "pear",
+  "watermelon", "cantaloupe", "cherry", "plum", "fig", "pomegranate",
+  "papaya", "coconut", "kiwi", "apricot", "cranberry",
+]);
+
 // Heuristic keywords
 const HEURISTIC_KEYWORDS: [RegExp, CategoryKey][] = [
   [/powder|seed|spice/, "spices_powders"],
@@ -305,12 +321,16 @@ const HEURISTIC_KEYWORDS: [RegExp, CategoryKey][] = [
  * Classify a (normalised) ingredient name into a pantry category.
  *
  * Resolution order:
+ * 0. Produce check — fruits/vegetables always go to "other"
  * 1. Exact match in the known-items map
  * 2. Keyword containment: does the name contain a known item or vice versa?
  * 3. Heuristic regex fallback
  * 4. Default → "other"
  */
 export function classifyCategory(name: string): CategoryKey {
+  // 0. Produce — always "other" to prevent false matches
+  if (PRODUCE.has(name)) return "other";
+
   // 1. Direct lookup
   const direct = itemToCategory.get(name);
   if (direct) return direct;

@@ -255,6 +255,20 @@ for (const [cat, items] of Object.entries(CATEGORY_MAP) as [CategoryKey, string[
   }
 }
 
+// Fruits and vegetables — perishable produce that should classify as "other"
+const PRODUCE = new Set([
+  "tomato", "onion", "garlic", "potato", "carrot", "celery", "bell pepper",
+  "broccoli", "cauliflower", "spinach", "lettuce", "cabbage", "zucchini",
+  "eggplant", "cucumber", "corn", "pea", "green bean", "mushroom",
+  "avocado", "jalapeno", "ginger", "scallion", "green onion", "leek",
+  "shallot", "radish", "beet", "turnip", "squash", "pumpkin", "kale",
+  "arugula", "asparagus", "artichoke", "sweet potato",
+  "apple", "banana", "orange", "lemon", "lime", "mango", "pineapple",
+  "strawberry", "blueberry", "raspberry", "grape", "peach", "pear",
+  "watermelon", "cantaloupe", "cherry", "plum", "fig", "pomegranate",
+  "papaya", "coconut", "kiwi", "apricot", "cranberry",
+]);
+
 // Heuristic keywords
 const HEURISTIC_KEYWORDS: [RegExp, CategoryKey][] = [
   [/powder|seed|spice/, "spices_powders"],
@@ -263,6 +277,9 @@ const HEURISTIC_KEYWORDS: [RegExp, CategoryKey][] = [
 ];
 
 function classifyCategory(name: string): CategoryKey {
+  // 0. Produce — always "other"
+  if (PRODUCE.has(name)) return "other";
+
   // 1. Direct lookup
   const direct = itemToCategory.get(name);
   if (direct) return direct;
