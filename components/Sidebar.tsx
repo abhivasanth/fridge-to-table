@@ -354,6 +354,8 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const navItems = [
     { label: "My Chefs", href: "/my-chefs", icon: "chef" },
     { label: "Favorites", href: "/favourites", icon: "heart" },
+    { label: "My Pantry", href: "/my-pantry", icon: "pantry" },
+    { label: "My Shopping List", href: "/my-shopping-list", icon: "cart" },
   ];
 
   return (
@@ -476,6 +478,22 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
                   )}
                   {item.icon === "heart" && (
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 13.5L2.05 7.55C1.02 6.52 1.02 4.85 2.05 3.82C3.08 2.79 4.75 2.79 5.78 3.82L8 6.04L10.22 3.82C11.25 2.79 12.92 2.79 13.95 3.82C14.98 4.85 14.98 6.52 13.95 7.55L8 13.5Z" strokeLinejoin="round"/></svg>
+                  )}
+                  {item.icon === "pantry" && (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="12" height="12" rx="2" />
+                      <path d="M2 6h12" />
+                      <path d="M2 10h12" />
+                      <path d="M6 6v4" />
+                      <path d="M10 6v4" />
+                    </svg>
+                  )}
+                  {item.icon === "cart" && (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 1h2l1.5 8h8L14 3.5H4" />
+                      <circle cx="5.5" cy="12.5" r="1" />
+                      <circle cx="11.5" cy="12.5" r="1" />
+                    </svg>
                   )}
                   {item.label}
                 </button>

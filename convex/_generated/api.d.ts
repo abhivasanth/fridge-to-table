@@ -11,8 +11,10 @@
 import type * as chefs from "../chefs.js";
 import type * as customChefs from "../customChefs.js";
 import type * as favourites from "../favourites.js";
+import type * as pantry from "../pantry.js";
 import type * as photos from "../photos.js";
 import type * as recipes from "../recipes.js";
+import type * as shoppingList from "../shoppingList.js";
 
 import type {
   ApiFromModules,
@@ -24,8 +26,10 @@ declare const fullApi: ApiFromModules<{
   chefs: typeof chefs;
   customChefs: typeof customChefs;
   favourites: typeof favourites;
+  pantry: typeof pantry;
   photos: typeof photos;
   recipes: typeof recipes;
+  shoppingList: typeof shoppingList;
 }>;
 
 /**

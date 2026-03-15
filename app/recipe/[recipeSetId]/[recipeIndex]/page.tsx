@@ -1,6 +1,8 @@
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import { FavouriteButton } from "@/components/FavouriteButton";
+import { RecipeIngredientsList } from "@/components/RecipeIngredientsList";
+import { RecipeShoppingCard } from "@/components/RecipeShoppingCard";
 import Link from "next/link";
 import type { Recipe } from "@/types/recipe";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -81,32 +83,7 @@ export default async function RecipeDetailPage({ params }: Props) {
         <p className="text-gray-600 mb-8">{recipe.description}</p>
 
         {/* Ingredients list */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-[#1A3A2A] mb-3">
-            Ingredients
-          </h2>
-          <ul className="space-y-2">
-            {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex items-center gap-3 text-sm">
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center
-                    text-xs flex-shrink-0
-                    ${ing.inFridge
-                      ? "bg-[#C8DFC8] text-[#1A3A2A]"
-                      : "bg-gray-100 text-gray-400"
-                    }`}
-                >
-                  {ing.inFridge ? "✓" : "○"}
-                </span>
-                <span
-                  className={ing.inFridge ? "text-gray-800" : "text-gray-400"}
-                >
-                  <strong>{ing.amount}</strong> {ing.name}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <RecipeIngredientsList ingredients={recipe.ingredients} />
 
         {/* Step-by-step instructions */}
         <section className="mb-8">
@@ -128,25 +105,8 @@ export default async function RecipeDetailPage({ params }: Props) {
           </ol>
         </section>
 
-        {/* Shopping list — only shown if there are items to buy */}
-        {recipe.shoppingList.length > 0 && (
-          <section className="bg-amber-50 rounded-xl p-5">
-            <h2 className="text-lg font-semibold text-[#1A3A2A] mb-3">
-              🛒 Shopping List
-            </h2>
-            <ul className="space-y-1">
-              {recipe.shoppingList.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-sm text-gray-700 flex items-center gap-2"
-                >
-                  <span className="text-amber-500">•</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {/* Shopping list — interactive card with pantry awareness */}
+        <RecipeShoppingCard shoppingList={recipe.shoppingList} />
       </div>
     </main>
   );

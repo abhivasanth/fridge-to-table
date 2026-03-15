@@ -43,6 +43,12 @@ describe("Sidebar", () => {
     expect(screen.getByText("Favorites")).toBeInTheDocument();
   });
 
+  it("renders nav links for My Pantry and My Shopping List", () => {
+    render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
+    expect(screen.getByText("My Pantry")).toBeInTheDocument();
+    expect(screen.getByText("My Shopping List")).toBeInTheDocument();
+  });
+
   it("renders New Search button", () => {
     render(<Sidebar open={true} onClose={vi.fn()} isDesktop={false} />);
     expect(screen.getByText(/New Search/)).toBeInTheDocument();
