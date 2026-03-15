@@ -29,31 +29,32 @@ export function ShoppingListPage() {
     };
   }, []);
 
-  const handleAdd = useCallback(
-    async (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key !== "Enter") return;
-      const name = inputValue.trim();
-      if (!name || !sessionId) return;
+  const submitItem = useCallback(async () => {
+    const name = inputValue.trim();
+    if (!name || !sessionId) return;
 
-      const result = await addItem({ sessionId, name });
+    const result = await addItem({ sessionId, name });
 
-      if (result.alreadyExists) {
-        // Clear input, highlight existing item, show message
-        setInputValue("");
-        setHighlightId(result.existingId as string);
-        setDupMessage(`${name} is already on your list`);
+    if (result.alreadyExists) {
+      setInputValue("");
+      setHighlightId(result.existingId as string);
+      setDupMessage(`${name} is already on your list`);
 
-        // Clear previous timer
-        if (dupTimerRef.current) clearTimeout(dupTimerRef.current);
-        dupTimerRef.current = setTimeout(() => {
-          setHighlightId(null);
-          setDupMessage(null);
-        }, 3000);
-      } else {
-        setInputValue("");
-      }
+      if (dupTimerRef.current) clearTimeout(dupTimerRef.current);
+      dupTimerRef.current = setTimeout(() => {
+        setHighlightId(null);
+        setDupMessage(null);
+      }, 3000);
+    } else {
+      setInputValue("");
+    }
+  }, [inputValue, sessionId, addItem]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") submitItem();
     },
-    [inputValue, sessionId, addItem]
+    [submitItem]
   );
 
   const handleRemove = useCallback(
@@ -166,15 +167,24 @@ export function ShoppingListPage() {
         )}
 
         {/* Add item input */}
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleAdd}
-          placeholder="Add an item..."
-          className="w-full bg-white border border-[#E8E3D0] rounded-lg px-4 py-3 text-[#2C2C2A] placeholder-[#B4B2A9] focus:outline-none focus:border-[#BA7517] transition-colors"
-          style={{ fontSize: "15px" }}
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add an item..."
+            className="flex-1 bg-white border border-[#E8E3D0] rounded-lg px-4 py-2.5 text-sm text-[#2C2C2A] placeholder-[#B4B2A9] focus:outline-none focus:border-[#BA7517] transition-colors"
+          />
+          <button
+            type="button"
+            onClick={submitItem}
+            disabled={!inputValue.trim()}
+            className="px-4 py-2.5 bg-[#BA7517] text-white text-sm font-medium rounded-lg disabled:opacity-40 transition-opacity hover:bg-[#A06410] cursor-pointer"
+          >
+            Add
+          </button>
+        </div>
       </div>
     </main>
   );
