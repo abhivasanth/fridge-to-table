@@ -81,10 +81,22 @@ export const searchChefVideos = action({
     const topIngredients = args.ingredients.slice(0, 3);
     const query = topIngredients.join(" ") + " recipe";
 
-    // Detect if any of the top ingredients is a protein
-    const proteinIngredient = topIngredients.find((ing) =>
-      PROTEINS.has(ing.toLowerCase().trim())
-    );
+    // Detect if any of the top ingredients is (or contains) a protein.
+    // Stems the input ("chickens" → "chicken") and extracts the protein word
+    // from multi-word ingredients ("chicken breast" → "chicken").
+    let proteinWord: string | undefined;
+    for (const ing of topIngredients) {
+      const lower = ing.toLowerCase().trim();
+      if (PROTEINS.has(lower)) { proteinWord = lower; break; }
+      if (PROTEINS.has(stemIngredient(lower))) { proteinWord = stemIngredient(lower); break; }
+      if (lower.includes(" ")) {
+        for (const w of lower.split(" ")) {
+          if (PROTEINS.has(w)) { proteinWord = w; break; }
+          if (PROTEINS.has(stemIngredient(w))) { proteinWord = stemIngredient(w); break; }
+        }
+        if (proteinWord) break;
+      }
+    }
 
     // Search each chef's channel in parallel
     const results = await Promise.all(
@@ -116,8 +128,8 @@ export const searchChefVideos = action({
 
           // Filter by ingredient relevance
           const filtered = allVideos.filter((video) => {
-            if (proteinIngredient) {
-              return titleContainsIngredient(video.title, proteinIngredient);
+            if (proteinWord) {
+              return titleContainsIngredient(video.title, proteinWord);
             }
             return topIngredients.some((ing) =>
               titleContainsIngredient(video.title, ing)

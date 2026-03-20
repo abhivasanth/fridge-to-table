@@ -4,6 +4,9 @@
 
 import assert from "node:assert";
 
+// WARNING: The functions below are duplicated from convex/chefs.ts (PROTEINS,
+// stemIngredient, titleContainsIngredient, stripHashtags, findProteinWord).
+// Any changes to those functions in convex/chefs.ts MUST be mirrored here.
 // ── Copy of pure functions from convex/chefs.ts ──────────────────────────────
 
 const PROTEINS = new Set([
@@ -47,14 +50,27 @@ function stripHashtags(title) {
   return title.replace(/#\S+/g, "").trim().toLowerCase();
 }
 
+function findProteinWord(topIngredients) {
+  for (const ing of topIngredients) {
+    const lower = ing.toLowerCase().trim();
+    if (PROTEINS.has(lower)) return lower;
+    if (PROTEINS.has(stemIngredient(lower))) return stemIngredient(lower);
+    if (lower.includes(" ")) {
+      for (const w of lower.split(" ")) {
+        if (PROTEINS.has(w)) return w;
+        if (PROTEINS.has(stemIngredient(w))) return stemIngredient(w);
+      }
+    }
+  }
+  return undefined;
+}
+
 function filterVideos(allVideos, topIngredients) {
-  const proteinIngredient = topIngredients.find((ing) =>
-    PROTEINS.has(ing.toLowerCase().trim())
-  );
+  const proteinWord = findProteinWord(topIngredients);
 
   const filtered = allVideos.filter((video) => {
-    if (proteinIngredient) {
-      return titleContainsIngredient(video.title, proteinIngredient);
+    if (proteinWord) {
+      return titleContainsIngredient(video.title, proteinWord);
     }
     return topIngredients.some((ing) =>
       titleContainsIngredient(video.title, ing)
@@ -222,6 +238,30 @@ test("tomatoes is NOT a protein", () => {
   assert.ok(!PROTEINS.has("tomatoes"));
 });
 
+test("chickens (plural) detected as protein via stemming", () => {
+  assert.strictEqual(findProteinWord(["chickens", "rice"]), "chicken");
+});
+
+test("salmons (plural) detected as protein via stemming", () => {
+  assert.strictEqual(findProteinWord(["salmons", "lemon"]), "salmon");
+});
+
+test("chicken breast (multi-word) extracts chicken as protein", () => {
+  assert.strictEqual(findProteinWord(["chicken breast", "rice"]), "chicken");
+});
+
+test("ground beef (multi-word) extracts beef as protein", () => {
+  assert.strictEqual(findProteinWord(["ground beef", "onions"]), "beef");
+});
+
+test("pork belly (multi-word) extracts pork as protein", () => {
+  assert.strictEqual(findProteinWord(["pork belly", "garlic"]), "pork");
+});
+
+test("no protein in vegetables returns undefined", () => {
+  assert.strictEqual(findProteinWord(["potatoes", "spinach", "tomatoes"]), undefined);
+});
+
 // ── filterVideos pipeline tests (spec test cases) ────────────────────────────
 
 console.log("\nfilterVideos pipeline:");
@@ -319,6 +359,30 @@ test("eggs, tomatoes, onions: eggs NOT a protein, flexible match", () => {
   assert.ok(result.length >= 2);
   assert.ok(!result.some((r) => r.title.includes("Chocolate")));
   assert.ok(!result.some((r) => r.title.includes("Banana")));
+});
+
+test("chicken breast, rice, broccoli: multi-word protein, filters on chicken", () => {
+  const videos = [
+    v("Korean Chicken Stew"),
+    v("Kimchi Fried Rice"),
+    v("Beef Bulgogi"),
+    v("Chicken Noodle Soup"),
+  ];
+  const result = filterVideos(videos, ["chicken breast", "rice", "broccoli"]);
+  assert.ok(result.every((r) => r.title.toLowerCase().includes("chicken")));
+  assert.ok(!result.some((r) => r.title.includes("Kimchi")));
+  assert.ok(!result.some((r) => r.title.includes("Beef")));
+});
+
+test("chickens, rice: plural protein detected and filters correctly", () => {
+  const videos = [
+    v("Chicken Curry"),
+    v("Beef Stew"),
+    v("Rice Pudding"),
+  ];
+  const result = filterVideos(videos, ["chickens", "rice", "broccoli"]);
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].title, "Chicken Curry");
 });
 
 test("potatoes, spinach, tomatoes: no protein, flexible match", () => {
