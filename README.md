@@ -111,7 +111,7 @@ fridge_to_table/
 ├── convex/
 │   ├── schema.ts                           # Database schema (recipes, favourites, customChefs, pantryItems, shoppingListItems)
 │   ├── recipes.ts                          # generateRecipes action + getRecipeSet query
-│   ├── chefs.ts                            # Chef's Table video search action (up to 3 per chef)
+│   ├── chefs.ts                            # Chef's Table video search action (protein-aware filtering, dedup, up to 3 per chef)
 │   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution
 │   ├── photos.ts                           # analyzePhoto action (Claude vision)
 │   ├── favourites.ts                       # save/remove/get favourites
@@ -256,6 +256,7 @@ npm run test:e2e
 
 **Test coverage:**
 - `tests/unit/` — session utility, ingredient parser, ingredient name parser (compound splitting, quantity stripping), pantry utils (normalization, aliases, depluralization, category classification), image compression, RecipeCard, ChefGrid, ChefVideoCard, VideoModal, Sidebar, Navbar, BottomNav, IngredientInput, voice input, search state, search history, YouTube URL parser
+- `tests/chefs-filter.test.mjs` — chef video filtering pipeline: stemming, protein detection, title matching (single-word and multi-word), deduplication, edge cases (0 results, >3 matches, return shape)
 - `tests/integration/` — schema validation, favourites CRUD, analyzePhoto, generateRecipes, custom chefs CRUD
 - `tests/e2e/` — Chef's Table tab switching and chef grid loading, chef selection persistence/restoration, Find Recipes button enable/disable states, ingredient submission → 3 results, save/remove favourite flow, My Chefs page (add input, parse errors, featured chefs, back link), voice/photo input UI, photo menu open/close
 
@@ -314,7 +315,12 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 2. A grid of slotted chefs appears (up to 8, from featured + custom)
 3. User toggles which chefs to include in the current search
 4. Enters ingredients and clicks **Find Recipes**
-5. `searchChefVideos` Convex Action searches each chef's YouTube channel for up to 3 most relevant videos matching the ingredients
+5. `searchChefVideos` Convex Action searches each chef's YouTube channel for up to 6 videos, then filters them by ingredient relevance:
+   - **Protein-aware filtering:** If the input contains a protein (chicken, salmon, tofu, etc.), videos must mention that protein in their title. This prevents wrong-protein results (e.g., seabass showing up when the user searched for salmon).
+   - **Flexible matching:** If no protein is detected (vegetables, eggs, carbs), any of the user's ingredients matching in the title is sufficient.
+   - **Stem matching:** Handles plural differences (tomatoes↔tomato, noodles↔noodle). Multi-word ingredients (e.g., "soy sauce") match only as full phrases.
+   - **Deduplication:** Exact duplicate titles (after stripping hashtags) are removed.
+   - Up to 3 filtered videos are returned per chef. No padding with unrelated videos.
 6. Results appear on `/chef-results` in a **section-per-chef layout** — each chef gets a header (emoji + name) followed by a responsive grid of video cards (1 col mobile, 2 col tablet, 3 col desktop)
 7. Only relevant videos are shown — if a chef has 2 matches, 2 cards appear (no padding to fill 3)
 8. Chefs with no matching videos show a "No matching videos for these ingredients" message
@@ -406,7 +412,8 @@ The homepage displays four user testimonials highlighting different aspects of t
 - **No pagination** — the results page always shows exactly 3 recipes per search.
 - **Custom chef limit** — max 6 custom YouTube chefs per session (in addition to 8 featured chefs).
 - **Chef's Table slot limit** — max 8 chefs can be active on Chef's Table at a time.
-- **YouTube API result cap** — the YouTube Search API occasionally returns more results than `maxResults`. A server-side `.slice(0, 3)` in `convex/chefs.ts` guarantees no more than 3 videos per chef regardless of API behavior.
+- **YouTube API result cap** — the YouTube Search API occasionally returns more results than `maxResults`. A server-side `.slice(0, 6)` in `convex/chefs.ts` caps the raw pool, and post-filtering `.slice(0, 3)` guarantees no more than 3 videos per chef.
+- **Chef's Table relevance filtering is title-based** — video relevance is determined by matching ingredient names against video titles. Videos whose titles don't mention the searched ingredients are filtered out. This is effective for protein-specific searches but may miss videos with creative/non-literal titles.
 
 ---
 

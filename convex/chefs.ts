@@ -11,6 +11,52 @@ const chefValidator = v.object({
   youtubeChannelId: v.string(),
 });
 
+const PROTEINS = new Set([
+  "chicken", "beef", "lamb", "mutton", "pork", "fish", "salmon", "shrimp",
+  "prawns", "tofu", "paneer", "turkey", "duck", "goat", "tuna", "cod",
+  "tilapia", "crab", "lobster", "scallops", "squid", "trout", "halibut",
+  "swordfish", "venison", "bison", "rabbit", "octopus",
+]);
+
+function stemIngredient(word: string): string {
+  const w = word.toLowerCase().trim();
+  if (w.endsWith("oes")) return w.slice(0, -2);   // tomatoes → tomato
+  if (w.endsWith("ies")) return w.slice(0, -3) + "y"; // berries → berry
+  if (w.endsWith("ches") || w.endsWith("shes")) return w.slice(0, -2); // peaches → peach, radishes → radish
+  if (w.endsWith("s") && !w.endsWith("ss")) return w.slice(0, -1); // noodles → noodle
+  return w;
+}
+
+function titleContainsIngredient(title: string, ingredient: string): boolean {
+  const lowerTitle = title.toLowerCase();
+  const lowerIng = ingredient.toLowerCase().trim();
+  const isMultiWord = lowerIng.includes(" ");
+
+  // Full phrase match (exact or stemmed form of each word)
+  if (lowerTitle.includes(lowerIng)) return true;
+
+  if (isMultiWord) {
+    // Stem each word in the phrase independently and check if the full
+    // stemmed phrase appears in the title
+    const stemmedPhrase = lowerIng.split(" ").map(stemIngredient).join(" ");
+    if (stemmedPhrase !== lowerIng && lowerTitle.includes(stemmedPhrase)) return true;
+    // Multi-word ingredients must match as a phrase — no single-word fallback
+    return false;
+  }
+
+  // Single-word ingredient: check against individual title words with stemming
+  const stemmed = stemIngredient(lowerIng);
+  const titleWords = lowerTitle.split(/[\s,\-–—|/()]+/);
+  for (const tw of titleWords) {
+    if (stemIngredient(tw) === stemmed) return true;
+  }
+  return false;
+}
+
+function stripHashtags(title: string): string {
+  return title.replace(/#\S+/g, "").trim().toLowerCase();
+}
+
 export const searchChefVideos = action({
   args: {
     ingredients: v.array(v.string()),
@@ -32,7 +78,13 @@ export const searchChefVideos = action({
     }
 
     // Build search query from the first 3 ingredients
-    const query = args.ingredients.slice(0, 3).join(" ") + " recipe";
+    const topIngredients = args.ingredients.slice(0, 3);
+    const query = topIngredients.join(" ") + " recipe";
+
+    // Detect if any of the top ingredients is a protein
+    const proteinIngredient = topIngredients.find((ing) =>
+      PROTEINS.has(ing.toLowerCase().trim())
+    );
 
     // Search each chef's channel in parallel
     const results = await Promise.all(
@@ -43,7 +95,7 @@ export const searchChefVideos = action({
           url.searchParams.set("channelId", chef.youtubeChannelId);
           url.searchParams.set("q", query);
           url.searchParams.set("type", "video");
-          url.searchParams.set("maxResults", "3");
+          url.searchParams.set("maxResults", "6");
           url.searchParams.set("part", "snippet");
           url.searchParams.set("order", "relevance");
 
@@ -55,12 +107,33 @@ export const searchChefVideos = action({
             return { chefId: chef.id, chefName: chef.name, chefEmoji: chef.emoji, found: false, videos: [] };
           }
 
-          const items = (data.items ?? []).slice(0, 3);
-          const videos = items.map((item: any) => ({
+          const items = (data.items ?? []).slice(0, 6);
+          const allVideos: { title: string; thumbnail: string; videoId: string }[] = items.map((item: any) => ({
             title: item.snippet.title as string,
             thumbnail: item.snippet.thumbnails.medium.url as string,
             videoId: item.id.videoId as string,
           }));
+
+          // Filter by ingredient relevance
+          const filtered = allVideos.filter((video) => {
+            if (proteinIngredient) {
+              return titleContainsIngredient(video.title, proteinIngredient);
+            }
+            return topIngredients.some((ing) =>
+              titleContainsIngredient(video.title, ing)
+            );
+          });
+
+          // Deduplicate by normalized title
+          const seen = new Set<string>();
+          const deduped = filtered.filter((video) => {
+            const key = stripHashtags(video.title);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          const videos = deduped.slice(0, 3);
 
           return {
             chefId: chef.id,
