@@ -89,7 +89,7 @@ describe("ShoppingListPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      sessionId: "test-session-123",
+      userId: "test-session-123",
       name: "milk",
     });
   });
@@ -104,7 +104,7 @@ describe("ShoppingListPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      sessionId: "test-session-123",
+      userId: "test-session-123",
       name: "milk",
     });
   });

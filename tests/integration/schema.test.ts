@@ -9,7 +9,7 @@ describe("schema", () => {
 
     const id = await t.run(async (ctx) => {
       return await ctx.db.insert("recipes", {
-        sessionId: "test-session",
+        userId: "test-session",
         ingredients: ["eggs", "tomatoes"],
         filters: { cuisine: "", maxCookingTime: 30, difficulty: "easy" },
         results: [],
@@ -19,7 +19,7 @@ describe("schema", () => {
 
     const doc = await t.run(async (ctx) => ctx.db.get(id));
     expect(doc).not.toBeNull();
-    expect(doc!.sessionId).toBe("test-session");
+    expect(doc!.userId).toBe("test-session");
   });
 
   test("can insert and retrieve a favourite", async () => {
@@ -27,7 +27,7 @@ describe("schema", () => {
 
     const recipeSetId = await t.run(async (ctx) => {
       return await ctx.db.insert("recipes", {
-        sessionId: "test-session",
+        userId: "test-session",
         ingredients: [],
         filters: { cuisine: "", maxCookingTime: 30, difficulty: "easy" },
         results: [],
@@ -37,7 +37,7 @@ describe("schema", () => {
 
     const favId = await t.run(async (ctx) => {
       return await ctx.db.insert("favourites", {
-        sessionId: "test-session",
+        userId: "test-session",
         recipeSetId,
         recipeIndex: 0,
         savedAt: Date.now(),

@@ -8,7 +8,7 @@ describe("favourites", () => {
   async function createRecipeSet(t: ReturnType<typeof convexTest>) {
     return await t.run(async (ctx) => {
       return await ctx.db.insert("recipes", {
-        sessionId: "session-123",
+        userId: "session-123",
         ingredients: ["eggs"],
         filters: { cuisine: "", maxCookingTime: 30, difficulty: "easy" },
         results: [],
@@ -23,13 +23,13 @@ describe("favourites", () => {
     const recipeSetId = await createRecipeSet(t);
 
     await t.mutation(api.favourites.saveFavourite, {
-      sessionId: "session-123",
+      userId: "session-123",
       recipeSetId,
       recipeIndex: 0,
     });
 
     const favourites = await t.query(api.favourites.getFavourites, {
-      sessionId: "session-123",
+      userId: "session-123",
     });
 
     expect(favourites).toHaveLength(1);
@@ -43,18 +43,18 @@ describe("favourites", () => {
 
     // Save the same recipe twice
     await t.mutation(api.favourites.saveFavourite, {
-      sessionId: "session-123",
+      userId: "session-123",
       recipeSetId,
       recipeIndex: 0,
     });
     await t.mutation(api.favourites.saveFavourite, {
-      sessionId: "session-123",
+      userId: "session-123",
       recipeSetId,
       recipeIndex: 0,
     });
 
     const favourites = await t.query(api.favourites.getFavourites, {
-      sessionId: "session-123",
+      userId: "session-123",
     });
     expect(favourites).toHaveLength(1);
   });
@@ -64,34 +64,34 @@ describe("favourites", () => {
     const recipeSetId = await createRecipeSet(t);
 
     await t.mutation(api.favourites.saveFavourite, {
-      sessionId: "session-123",
+      userId: "session-123",
       recipeSetId,
       recipeIndex: 1,
     });
     await t.mutation(api.favourites.removeFavourite, {
-      sessionId: "session-123",
+      userId: "session-123",
       recipeSetId,
       recipeIndex: 1,
     });
 
     const favourites = await t.query(api.favourites.getFavourites, {
-      sessionId: "session-123",
+      userId: "session-123",
     });
     expect(favourites).toHaveLength(0);
   });
 
-  test("getFavourites only returns favourites for the given sessionId", async () => {
+  test("getFavourites only returns favourites for the given userId", async () => {
     const t = convexTest(schema);
     const recipeSetId = await createRecipeSet(t);
 
     await t.mutation(api.favourites.saveFavourite, {
-      sessionId: "session-A",
+      userId: "session-A",
       recipeSetId,
       recipeIndex: 0,
     });
 
     const favouritesB = await t.query(api.favourites.getFavourites, {
-      sessionId: "session-B",
+      userId: "session-B",
     });
     expect(favouritesB).toHaveLength(0);
   });

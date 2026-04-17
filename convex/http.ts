@@ -57,7 +57,9 @@ http.route({
               stripePriceId: subscription.items.data[0]?.price.id,
               subscriptionStatus: subscription.status === "trialing" ? "trialing" : "active",
               trialEndsAt: subscription.trial_end ? subscription.trial_end * 1000 : undefined,
-              currentPeriodEnd: subscription.current_period_end * 1000,
+              currentPeriodEnd: subscription.items.data[0]?.current_period_end
+                ? subscription.items.data[0].current_period_end * 1000
+                : undefined,
             });
           }
         }
@@ -81,7 +83,9 @@ http.route({
                 ? "active"
                 : subscription.status,
           trialEndsAt: subscription.trial_end ? subscription.trial_end * 1000 : undefined,
-          currentPeriodEnd: subscription.current_period_end * 1000,
+          currentPeriodEnd: subscription.items.data[0]?.current_period_end
+            ? subscription.items.data[0].current_period_end * 1000
+            : undefined,
         });
         break;
       }
@@ -97,14 +101,23 @@ http.route({
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.customer && invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(
-            invoice.subscription as string
-          );
+        const subscriptionId =
+          typeof invoice.parent?.subscription_details?.subscription === "string"
+            ? invoice.parent.subscription_details.subscription
+            : invoice.parent?.subscription_details?.subscription?.id;
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id;
+
+        if (customerId && subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           await ctx.runMutation(internal.users.updateSubscription, {
-            stripeCustomerId: invoice.customer as string,
+            stripeCustomerId: customerId,
             subscriptionStatus: "active",
-            currentPeriodEnd: subscription.current_period_end * 1000,
+            currentPeriodEnd: subscription.items.data[0]?.current_period_end
+              ? subscription.items.data[0].current_period_end * 1000
+              : undefined,
           });
         }
         break;
@@ -112,9 +125,14 @@ http.route({
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.customer) {
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id;
+
+        if (customerId) {
           await ctx.runMutation(internal.users.updateSubscription, {
-            stripeCustomerId: invoice.customer as string,
+            stripeCustomerId: customerId,
             subscriptionStatus: "past_due",
           });
         }

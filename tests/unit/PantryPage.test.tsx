@@ -96,7 +96,7 @@ describe("PantryPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith({
-      sessionId: "test-session-123",
+      userId: "test-session-123",
       name: "butter",
     });
   });
@@ -111,7 +111,7 @@ describe("PantryPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToPantry).toHaveBeenCalledWith({
-      sessionId: "test-session-123",
+      userId: "test-session-123",
       name: "butter",
     });
   });

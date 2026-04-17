@@ -130,7 +130,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByLabelText(/Add .* to shopping list/));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: "test-session-123", source: "recipe" })
+      expect.objectContaining({ userId: "test-session-123", source: "recipe" })
     );
   });
 
@@ -141,7 +141,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByText("already have it"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: "test-session-123" })
+      expect.objectContaining({ userId: "test-session-123" })
     );
   });
 
