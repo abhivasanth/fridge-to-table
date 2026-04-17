@@ -1,16 +1,39 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// The full database schema for Fridge to Table.
-// Tables: recipes, favourites, customChefs, pantryItems, shoppingListItems.
 export default defineSchema({
-  // Each row stores one "search" — a set of 3 generated recipes for a session.
+  users: defineTable({
+    clerkId: v.string(),
+    email: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+    plan: v.optional(v.union(v.literal("basic"), v.literal("chef"))),
+    stripePriceId: v.optional(v.string()),
+    subscriptionStatus: v.string(),
+    trialEndsAt: v.optional(v.number()),
+    currentPeriodEnd: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clerk_id", ["clerkId"])
+    .index("by_stripe_customer_id", ["stripeCustomerId"])
+    .index("by_plan", ["plan"]),
+
+  searchUsage: defineTable({
+    userId: v.string(),
+    searchedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_time", ["userId", "searchedAt"]),
+
   recipes: defineTable({
-    sessionId: v.string(),            // anonymous user UUID from localStorage
-    ingredients: v.array(v.string()), // ingredients the user entered
+    userId: v.string(),
+    ingredients: v.array(v.string()),
     filters: v.object({
-      cuisine: v.string(),            // free-text e.g. "Italian" or ""
-      maxCookingTime: v.number(),     // max cooking time in minutes
+      cuisine: v.string(),
+      maxCookingTime: v.number(),
       difficulty: v.union(
         v.literal("easy"),
         v.literal("medium"),
@@ -22,22 +45,21 @@ export default defineSchema({
         v.literal("non-vegetarian")
       )),
     }),
-    results: v.array(v.any()),        // array of exactly 3 Recipe objects (JSON)
-    generatedAt: v.number(),          // Date.now() timestamp
-  }).index("by_session", ["sessionId"]),
+    results: v.array(v.any()),
+    generatedAt: v.number(),
+  }).index("by_user", ["userId"]),
 
-  // Tracks which recipes a session has saved as favourites.
   favourites: defineTable({
-    sessionId: v.string(),
-    recipeSetId: v.id("recipes"),     // references the recipes table
-    recipeIndex: v.number(),          // 0, 1, or 2 — which of the 3 recipes
+    userId: v.string(),
+    recipeSetId: v.id("recipes"),
+    recipeIndex: v.number(),
     savedAt: v.number(),
   })
-    .index("by_session", ["sessionId"])
-    .index("by_session_and_recipe", ["sessionId", "recipeSetId", "recipeIndex"]),
+    .index("by_user", ["userId"])
+    .index("by_user_and_recipe", ["userId", "recipeSetId", "recipeIndex"]),
 
   customChefs: defineTable({
-    sessionId: v.string(),
+    userId: v.string(),
     chefs: v.array(
       v.object({
         channelId: v.string(),
@@ -48,29 +70,27 @@ export default defineSchema({
       })
     ),
     updatedAt: v.number(),
-  }).index("by_session", ["sessionId"]),
+  }).index("by_user", ["userId"]),
 
-  // Persistent pantry items — ingredients the user always has on hand.
   pantryItems: defineTable({
-    sessionId: v.string(),
-    name: v.string(),                // display name, lowercase trimmed
-    normalizedName: v.string(),      // for matching/dedup
-    category: v.string(),            // "oils_fats" | "spices_powders" | "sauces_condiments" | "basics" | "other"
+    userId: v.string(),
+    name: v.string(),
+    normalizedName: v.string(),
+    category: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_session", ["sessionId"])
-    .index("by_session_and_name", ["sessionId", "normalizedName"]),
+    .index("by_user", ["userId"])
+    .index("by_user_and_name", ["userId", "normalizedName"]),
 
-  // Persistent shopping list — items the user wants to buy.
   shoppingListItems: defineTable({
-    sessionId: v.string(),
-    name: v.string(),                // display name
-    normalizedName: v.string(),      // for matching/dedup
-    source: v.string(),              // "manual" | "recipe"
+    userId: v.string(),
+    name: v.string(),
+    normalizedName: v.string(),
+    source: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_session", ["sessionId"])
-    .index("by_session_and_name", ["sessionId", "normalizedName"]),
+    .index("by_user", ["userId"])
+    .index("by_user_and_name", ["userId", "normalizedName"]),
 });
