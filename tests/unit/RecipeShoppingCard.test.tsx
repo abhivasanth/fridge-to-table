@@ -14,6 +14,17 @@ const {
   mockRemoveFromShoppingList: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: { id: "test-user-123", primaryEmailAddress: { emailAddress: "test@example.com" }, firstName: "Test", lastName: "User" },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+}));
+
 vi.mock("@/convex/_generated/api", () => ({
   api: {
     pantry: {
@@ -130,7 +141,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByLabelText(/Add .* to shopping list/));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "test-session-123", source: "recipe" })
+      expect.objectContaining({ userId: "test-user-123", source: "recipe" })
     );
   });
 
@@ -141,7 +152,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByText("already have it"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "test-session-123" })
+      expect.objectContaining({ userId: "test-user-123" })
     );
   });
 

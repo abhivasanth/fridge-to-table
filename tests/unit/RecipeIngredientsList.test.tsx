@@ -4,6 +4,17 @@ import { RecipeIngredientsList } from "@/components/RecipeIngredientsList";
 
 const mockUseQuery = vi.fn();
 
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: { id: "test-user-123", primaryEmailAddress: { emailAddress: "test@example.com" }, firstName: "Test", lastName: "User" },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+}));
+
 vi.mock("@/convex/_generated/api", () => ({
   api: {
     pantry: {

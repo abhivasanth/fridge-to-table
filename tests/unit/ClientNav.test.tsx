@@ -2,6 +2,16 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ClientNav } from "@/components/ClientNav";
 
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: { id: "test-user-123", primaryEmailAddress: { emailAddress: "test@example.com" }, firstName: "Test", lastName: "User" },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
   usePathname: () => "/",
@@ -15,6 +25,14 @@ vi.mock("@/lib/searchHistory", () => ({
   loadHistory: vi.fn(() => []),
   deleteHistoryEntry: vi.fn(),
   updateHistoryEntry: vi.fn(),
+}));
+vi.mock("@/convex/_generated/api", () => ({
+  api: {
+    users: { getByClerkId: "getByClerkId" },
+  },
+}));
+vi.mock("convex/react", () => ({
+  useQuery: () => undefined,
 }));
 
 describe("ClientNav", () => {

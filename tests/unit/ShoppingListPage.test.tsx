@@ -8,6 +8,17 @@ const { mockUseQuery, mockAddToShoppingList, mockRemoveFromShoppingList } = vi.h
   mockRemoveFromShoppingList: vi.fn(),
 }));
 
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: { id: "test-user-123", primaryEmailAddress: { emailAddress: "test@example.com" }, firstName: "Test", lastName: "User" },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+}));
+
 vi.mock("@/convex/_generated/api", () => ({
   api: {
     shoppingList: {
@@ -89,7 +100,7 @@ describe("ShoppingListPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      userId: "test-session-123",
+      userId: "test-user-123",
       name: "milk",
     });
   });
@@ -104,7 +115,7 @@ describe("ShoppingListPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      userId: "test-session-123",
+      userId: "test-user-123",
       name: "milk",
     });
   });

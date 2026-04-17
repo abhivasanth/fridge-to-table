@@ -8,6 +8,17 @@ const { mockUseQuery, mockAddToPantry, mockRemoveFromPantry } = vi.hoisted(() =>
   mockRemoveFromPantry: vi.fn(),
 }));
 
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: { id: "test-user-123", primaryEmailAddress: { emailAddress: "test@example.com" }, firstName: "Test", lastName: "User" },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+}));
+
 vi.mock("@/convex/_generated/api", () => ({
   api: {
     pantry: {
@@ -96,7 +107,7 @@ describe("PantryPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith({
-      userId: "test-session-123",
+      userId: "test-user-123",
       name: "butter",
     });
   });
@@ -111,7 +122,7 @@ describe("PantryPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToPantry).toHaveBeenCalledWith({
-      userId: "test-session-123",
+      userId: "test-user-123",
       name: "butter",
     });
   });
