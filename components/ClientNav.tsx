@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useUser, UserButton } from "@clerk/nextjs";
 import { Sidebar } from "@/components/Sidebar";
 import { clearSearchState } from "@/lib/searchState";
 
@@ -21,6 +22,7 @@ function useIsDesktop() {
 export function ClientNav({ children }: { children: React.ReactNode }) {
   const isDesktop = useIsDesktop();
   const router = useRouter();
+  const { user, isLoaded: clerkLoaded } = useUser();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -93,6 +95,23 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
           </svg>
         )}
       </button>
+
+      {clerkLoaded && (
+        <div className="fixed top-3 right-4 z-[100] flex items-center gap-2">
+          {user ? (
+            <UserButton afterSignOutUrl="/" />
+          ) : (
+            <>
+              <a href="/sign-in" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors px-3 py-1.5">
+                Sign in
+              </a>
+              <a href="/sign-up" className="text-sm font-medium text-white bg-[#1A3A2A] hover:bg-[#2a5a3a] transition-colors px-4 py-1.5 rounded-lg">
+                Sign up
+              </a>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Collapsed icon rail — desktop only, when sidebar is closed */}
       {hydrated && isDesktop && !sidebarOpen && (
@@ -172,6 +191,17 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
               <path d="M2 10h12" />
               <path d="M6 6v4" />
               <path d="M10 6v4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/settings")}
+            title="Settings"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-black/5 transition-colors cursor-pointer"
+          >
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8" cy="8" r="2.5" />
+              <path d="M6.5 1.5h3l.5 2 1.5.5 1.5-1 2 2-1 1.5.5 1.5 2 .5v3l-2 .5-1.5.5-1.5-1-2 2-1.5-1-.5-1.5-2-.5v-3l2-.5.5-1.5-1-1.5z" />
             </svg>
           </button>
           <button

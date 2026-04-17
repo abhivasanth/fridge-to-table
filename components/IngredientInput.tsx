@@ -10,9 +10,11 @@ type Props = {
   disabled?: boolean;
   beforeSubmit?: React.ReactNode;
   initialText?: string;
+  showPhotoButton?: boolean;
+  isSignedIn?: boolean;
 };
 
-export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, initialText }: Props) {
+export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, initialText, showPhotoButton, isSignedIn }: Props) {
   const [text, setText] = useState(initialText ?? "");
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
@@ -157,6 +159,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, i
       {!preview && (
         <div className="flex items-start" style={wrapperStyle}>
           {/* + button — left side */}
+          {showPhotoButton !== false && (
           <div className="relative flex-shrink-0" ref={photoMenuRef} style={{ margin: "10px 0 10px 10px" }}>
             <button
               type="button"
@@ -205,6 +208,7 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, i
               </div>
             )}
           </div>
+          )}
 
           {/* Textarea — middle */}
           <textarea
@@ -308,38 +312,47 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, i
       {beforeSubmit}
 
       {/* Submit button */}
-      <button
-        onClick={handleSubmit}
-        disabled={!hasInput || isLoading || disabled}
-        className="btn-find-recipes w-full text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{
-          background: "#C4622A",
-          borderRadius: "14px",
-          padding: "16px 24px",
-          fontSize: "15px",
-          fontWeight: 500,
-          border: "none",
-          cursor: "pointer",
-          transition: "all 0.3s ease",
-        }}
-        onMouseEnter={(e) => {
-          if (!e.currentTarget.disabled) {
-            e.currentTarget.style.background = "#B5551F";
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(196, 98, 42, 0.3)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#C4622A";
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
-      >
-        {isLoading ? "🍳 Finding recipes..." : "Find Recipes →"}
-      </button>
+      {isSignedIn === false ? (
+        <a
+          href="/sign-up"
+          className="w-full block text-center bg-[#D4622A] text-white py-4 rounded-2xl font-bold text-base hover:bg-[#BF5525] transition-colors"
+        >
+          Sign Up to Start
+        </a>
+      ) : (
+        <button
+          onClick={handleSubmit}
+          disabled={!hasInput || isLoading || disabled}
+          className="btn-find-recipes w-full text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            background: "#C4622A",
+            borderRadius: "14px",
+            padding: "16px 24px",
+            fontSize: "15px",
+            fontWeight: 500,
+            border: "none",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.background = "#B5551F";
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.boxShadow = "0 4px 20px rgba(196, 98, 42, 0.3)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#C4622A";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          {isLoading ? "🍳 Finding recipes..." : "Find Recipes →"}
+        </button>
+      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { loadHistory, deleteHistoryEntry, updateHistoryEntry } from "@/lib/searchHistory";
 import { clearSearchState } from "@/lib/searchState";
 import type { HistoryEntry } from "@/types/recipe";
@@ -206,6 +209,9 @@ function HistoryItem({
 export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useUser();
+  const dbUser = useQuery(api.users.getByClerkId, user ? { clerkId: user.id } : "skip");
+  const isChefPlan = dbUser?.plan === "chef";
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -352,10 +358,11 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const totalResults = pinned.length + recent.length;
 
   const navItems = [
-    { label: "My Chefs", href: "/my-chefs", icon: "chef" },
+    ...(isChefPlan ? [{ label: "My Chefs", href: "/my-chefs", icon: "chef" }] : []),
     { label: "Favorites", href: "/favourites", icon: "heart" },
     { label: "My Pantry", href: "/my-pantry", icon: "pantry" },
     { label: "My Shopping List", href: "/my-shopping-list", icon: "cart" },
+    { label: "Settings", href: "/settings", icon: "settings" },
   ];
 
   return (
@@ -493,6 +500,12 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
                       <path d="M1 1h2l1.5 8h8L14 3.5H4" />
                       <circle cx="5.5" cy="12.5" r="1" />
                       <circle cx="11.5" cy="12.5" r="1" />
+                    </svg>
+                  )}
+                  {item.icon === "settings" && (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="8" cy="8" r="2.5" />
+                      <path d="M6.5 1.5h3l.5 2 1.5.5 1.5-1 2 2-1 1.5.5 1.5 2 .5v3l-2 .5-1.5.5-1.5-1-2 2-1.5-1-.5-1.5-2-.5v-3l2-.5.5-1.5-1-1.5z" />
                     </svg>
                   )}
                   {item.label}

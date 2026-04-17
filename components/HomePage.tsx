@@ -242,6 +242,12 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ingredients: finalIngredients, filters }),
         });
+        if (res.status === 429) {
+          const data = await res.json();
+          setError(data.error);
+          setIsLoading(false);
+          return;
+        }
         if (!res.ok) throw new Error("Recipe generation failed");
         const { recipeSetId } = await res.json();
         router.push(`/results/${recipeSetId}`);
@@ -320,7 +326,9 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
 
           {/* Tab selector */}
           <div className="flex gap-1 bg-gray-50 rounded-2xl p-1 mb-6">
-            {(["any-recipe", "chefs-table"] as ActiveTab[]).map((tab) => (
+            {(["any-recipe", "chefs-table"] as ActiveTab[])
+              .filter((tab) => tab !== "chefs-table" || isChefPlan)
+              .map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -387,6 +395,8 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
             isLoading={isLoading}
             disabled={chefsTableDisabled}
             initialText={initialText}
+            showPhotoButton={isChefPlan}
+            isSignedIn={isSignedIn}
             beforeSubmit={
               activeTab === "any-recipe" ? (
                 <FiltersPanel filters={filters} onChange={setFilters} />

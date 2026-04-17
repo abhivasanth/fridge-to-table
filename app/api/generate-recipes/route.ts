@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ConvexHttpClient } from "convex/browser";
+import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 
 export const runtime = "nodejs";
@@ -7,10 +8,31 @@ export const maxDuration = 60; // Vercel Hobby allows up to 60s; Sonnet needs ~2
 
 export async function POST(req: Request) {
   try {
-    const { sessionId, ingredients, filters } = await req.json();
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { ingredients, filters } = await req.json();
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+    const usage = await convex.query(api.searchUsage.checkLimit, { userId });
+    if (!usage.allowed) {
+      const resetsIn = usage.resetsAt
+        ? Math.ceil((usage.resetsAt - Date.now()) / 60000)
+        : 0;
+      const hours = Math.floor(resetsIn / 60);
+      const minutes = resetsIn % 60;
+      return Response.json(
+        {
+          error: `You've used all 20 searches for now. Resets in ${hours > 0 ? `${hours}h ` : ""}${minutes}m.`,
+          rateLimited: true,
+        },
+        { status: 429 }
+      );
+    }
 
     const ingredientList = ingredients.join(", ");
     const cuisineNote = filters.cuisine || "any style";
@@ -82,8 +104,9 @@ ${recipeSchema}`,
 
     const recipeSetId = await convex.mutation(
       api.recipes.saveRecipeSet,
-      { sessionId, ingredients, filters, results: recipes }
+      { userId, ingredients, filters, results: recipes }
     );
+    await convex.mutation(api.searchUsage.recordSearch, { userId });
 
     return Response.json({ recipeSetId });
   } catch (err: unknown) {
