@@ -14,6 +14,16 @@ function UserSync() {
   useEffect(() => {
     if (!isLoaded || !user) return;
 
+    // Clear stale anonymous localStorage data on first auth
+    const migratedKey = `ftt_migrated_${user.id}`;
+    if (!localStorage.getItem(migratedKey)) {
+      localStorage.removeItem("ftt_search_history");
+      localStorage.removeItem("fridge_session_id");
+      localStorage.removeItem("chefTableResults");
+      localStorage.removeItem("fridgeToTable_selectedChefs");
+      localStorage.setItem(migratedKey, "1");
+    }
+
     getOrCreateUser({
       clerkId: user.id,
       email: user.primaryEmailAddress?.emailAddress ?? "",
