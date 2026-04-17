@@ -5,11 +5,11 @@ import { v } from "convex/values";
 // ─── listCustomChefs ───────────────────────────────────────────────────────
 
 export const listCustomChefs = query({
-  args: { sessionId: v.string() },
+  args: { userId: v.string() },
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
 
     if (!doc) return [];
@@ -23,7 +23,7 @@ const MAX_CHEFS = 6;
 
 export const addCustomChef = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     channelId: v.string(),
     channelName: v.string(),
     channelThumbnail: v.string(),
@@ -32,7 +32,7 @@ export const addCustomChef = mutation({
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
 
     const newChef = {
@@ -45,7 +45,7 @@ export const addCustomChef = mutation({
 
     if (!doc) {
       await ctx.db.insert("customChefs", {
-        sessionId: args.sessionId,
+        userId: args.userId,
         chefs: [newChef],
         updatedAt: Date.now(),
       });
@@ -71,13 +71,13 @@ export const addCustomChef = mutation({
 
 export const removeCustomChef = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     channelId: v.string(),
   },
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
 
     if (!doc) return;

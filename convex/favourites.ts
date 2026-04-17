@@ -5,7 +5,7 @@ import { v } from "convex/values";
 // Silently ignores duplicate saves (idempotent).
 export const saveFavourite = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     recipeSetId: v.id("recipes"),
     recipeIndex: v.number(), // 0, 1, or 2
   },
@@ -15,7 +15,7 @@ export const saveFavourite = mutation({
       .query("favourites")
       .filter((q) =>
         q.and(
-          q.eq(q.field("sessionId"), args.sessionId),
+          q.eq(q.field("userId"), args.userId),
           q.eq(q.field("recipeSetId"), args.recipeSetId),
           q.eq(q.field("recipeIndex"), args.recipeIndex)
         )
@@ -24,7 +24,7 @@ export const saveFavourite = mutation({
 
     if (!existing) {
       await ctx.db.insert("favourites", {
-        sessionId: args.sessionId,
+        userId: args.userId,
         recipeSetId: args.recipeSetId,
         recipeIndex: args.recipeIndex,
         savedAt: Date.now(),
@@ -37,7 +37,7 @@ export const saveFavourite = mutation({
 // Silently ignores if the entry doesn't exist.
 export const removeFavourite = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     recipeSetId: v.id("recipes"),
     recipeIndex: v.number(),
   },
@@ -46,7 +46,7 @@ export const removeFavourite = mutation({
       .query("favourites")
       .filter((q) =>
         q.and(
-          q.eq(q.field("sessionId"), args.sessionId),
+          q.eq(q.field("userId"), args.userId),
           q.eq(q.field("recipeSetId"), args.recipeSetId),
           q.eq(q.field("recipeIndex"), args.recipeIndex)
         )
@@ -62,12 +62,12 @@ export const removeFavourite = mutation({
 // Returns all favourites for a session, sorted most-recently-saved first.
 export const getFavourites = query({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("favourites")
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .order("desc")
       .collect();
   },

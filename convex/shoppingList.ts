@@ -116,12 +116,12 @@ function normalizeName(raw: string): string {
 /** Returns all shopping list items for a session. */
 export const getShoppingListItems = query({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("shoppingListItems")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
   },
 });
@@ -137,7 +137,7 @@ export const getShoppingListItems = query({
  */
 export const addToShoppingList = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     name: v.string(),
     source: v.optional(v.string()),
   },
@@ -148,8 +148,8 @@ export const addToShoppingList = mutation({
     // Check for duplicate using the index
     const existing = await ctx.db
       .query("shoppingListItems")
-      .withIndex("by_session_and_name", (q) =>
-        q.eq("sessionId", args.sessionId).eq("normalizedName", normalized)
+      .withIndex("by_user_and_name", (q) =>
+        q.eq("userId", args.userId).eq("normalizedName", normalized)
       )
       .first();
 
@@ -159,7 +159,7 @@ export const addToShoppingList = mutation({
 
     const now = Date.now();
     const id = await ctx.db.insert("shoppingListItems", {
-      sessionId: args.sessionId,
+      userId: args.userId,
       name: displayName,
       normalizedName: normalized,
       source: args.source ?? "manual",
