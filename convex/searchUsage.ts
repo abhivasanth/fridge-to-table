@@ -2,13 +2,15 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-const MAX_SEARCHES = 20;
+const BASIC_MAX_SEARCHES = 5;
+const CHEF_MAX_SEARCHES = 100;
 const WINDOW_MS = 5 * 60 * 60 * 1000; // 5 hours
 
 // Check if user can search — returns { allowed, remaining, resetsAt }
 export const checkLimit = query({
-  args: { userId: v.string() },
+  args: { userId: v.string(), plan: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const maxSearches = args.plan === "chef" ? CHEF_MAX_SEARCHES : BASIC_MAX_SEARCHES;
     const cutoff = Date.now() - WINDOW_MS;
     const recent = await ctx.db
       .query("searchUsage")
@@ -18,8 +20,8 @@ export const checkLimit = query({
       .collect();
 
     const count = recent.length;
-    const allowed = count < MAX_SEARCHES;
-    const remaining = Math.max(0, MAX_SEARCHES - count);
+    const allowed = count < maxSearches;
+    const remaining = Math.max(0, maxSearches - count);
 
     // Find when the oldest search in the window expires
     let resetsAt: number | null = null;

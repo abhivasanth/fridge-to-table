@@ -358,7 +358,7 @@ export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const totalResults = pinned.length + recent.length;
 
   const navItems = [
-    ...(isChefPlan ? [{ label: "My Chefs", href: "/my-chefs", icon: "chef" }] : []),
+    { label: "My Chefs", href: "/my-chefs", icon: "chef" },
     { label: "Favorites", href: "/favourites", icon: "heart" },
     { label: "My Pantry", href: "/my-pantry", icon: "pantry" },
     { label: "My Shopping List", href: "/my-shopping-list", icon: "cart" },

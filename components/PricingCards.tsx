@@ -69,11 +69,11 @@ export function PricingCards() {
             $2<span className="text-base font-normal text-gray-500">/mo</span>
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            Everything you need to cook smarter every night.
+            Great for casual home cooks.
           </p>
 
           <ul className="space-y-3 mb-6">
-            {["Recipe search", "Pantry tracker", "Shopping list", "Save favourites", "Cooking history"].map((feature) => (
+            {["All features included", "Recipe search + photo scan", "Chef's Table videos", "Pantry + shopping list", "Save favourites"].map((feature) => (
               <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
                 <span className="w-5 h-5 rounded-full bg-[#C8DFC8] flex items-center justify-center text-xs text-[#1A3A2A]">&#10003;</span>
                 {feature}
@@ -106,11 +106,11 @@ export function PricingCards() {
             {chefPrice}<span className="text-base font-normal text-gray-500">/mo</span>
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            The full experience — scan, speak, watch and cook.
+            For everyday cooking, unlimited inspiration.
           </p>
 
           <ul className="space-y-3 mb-6">
-            {["Everything in Basic", "Photo scan", "Chef's Table videos"].map((feature) => (
+            {["All features included", "Priority access with higher limits", "Recipe search + photo scan", "Chef's Table videos", "Pantry + shopping list"].map((feature) => (
               <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
                 <span className="w-5 h-5 rounded-full bg-[#C8DFC8] flex items-center justify-center text-xs text-[#1A3A2A]">&#10003;</span>
                 {feature}

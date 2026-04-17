@@ -144,7 +144,7 @@ export default function MyChefsMPage() {
   const selectedCount = slotIds.length;
 
   return (
-    <SubscriptionGuard requiredPlan="chef">
+    <SubscriptionGuard>
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="mb-8">
