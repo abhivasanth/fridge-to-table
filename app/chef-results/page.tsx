@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChefVideoCard } from "@/components/ChefVideoCard";
 import { VideoModal } from "@/components/VideoModal";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import type { ChefVideoResult } from "@/types/recipe";
 
 type ActiveVideo = {
@@ -50,6 +51,7 @@ export default function ChefResultsPage() {
   const totalVideos = results.reduce((sum, r) => sum + (r.videos?.length ?? 0), 0);
 
   return (
+    <SubscriptionGuard requiredPlan="chef">
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <Link href="/?tab=chefs-table" className="text-[#D4622A] text-sm mb-6 block hover:underline mt-6 sm:mt-0">
@@ -116,5 +118,6 @@ export default function ChefResultsPage() {
         />
       )}
     </div>
+    </SubscriptionGuard>
   );
 }

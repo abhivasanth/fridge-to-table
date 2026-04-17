@@ -1,5 +1,12 @@
+"use client";
+
 import { ShoppingListPage } from "@/components/ShoppingListPage";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 
 export default function MyShoppingListRoute() {
-  return <ShoppingListPage />;
+  return (
+    <SubscriptionGuard>
+      <ShoppingListPage />
+    </SubscriptionGuard>
+  );
 }

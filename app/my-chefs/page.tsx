@@ -8,6 +8,7 @@ import { getSessionId } from "@/lib/session";
 import { CHEFS } from "@/lib/chefs";
 import { getSlotIds, setSlotIds, MAX_CHEF_TABLE_SLOTS } from "@/lib/chefSlots";
 import { CustomChefCard } from "@/components/CustomChefCard";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 
 const MAX_CUSTOM_CHEFS = 6;
 
@@ -142,6 +143,7 @@ export default function MyChefsMPage() {
   const selectedCount = slotIds.length;
 
   return (
+    <SubscriptionGuard requiredPlan="chef">
     <div className="min-h-screen bg-[#FAF6F1] pb-24">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="mb-8">
@@ -316,5 +318,6 @@ export default function MyChefsMPage() {
         </div>
       </div>
     </div>
+    </SubscriptionGuard>
   );
 }
