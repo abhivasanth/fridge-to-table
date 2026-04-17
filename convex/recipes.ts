@@ -1,4 +1,4 @@
-import { action, query, internalMutation } from "./_generated/server";
+import { action, query, mutation, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
@@ -19,6 +19,23 @@ const filtersValidator = v.object({
 // Internal mutation — saves a generated recipe set to the database.
 // "internal" means it cannot be called directly from the browser; only from actions.
 export const insertRecipeSet = internalMutation({
+  args: {
+    sessionId: v.string(),
+    ingredients: v.array(v.string()),
+    filters: filtersValidator,
+    results: v.array(v.any()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("recipes", {
+      ...args,
+      generatedAt: Date.now(),
+    });
+  },
+});
+
+// Public mutation — used by the Next.js API route via ConvexHttpClient.
+// Separate from insertRecipeSet (which stays internal for Convex actions).
+export const saveRecipeSet = mutation({
   args: {
     sessionId: v.string(),
     ingredients: v.array(v.string()),

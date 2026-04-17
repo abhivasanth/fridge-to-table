@@ -187,7 +187,6 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   }
 
   const analyzePhoto = useAction(api.photos.analyzePhoto);
-  const generateRecipes = useAction(api.recipes.generateRecipes);
   const searchChefVideos = useAction(api.chefs.searchChefVideos);
   async function handleSubmit(ingredients: string[], imageBase64?: string) {
     setIsLoading(true);
@@ -235,11 +234,13 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
         });
       } else {
         const sessionId = getSessionId();
-        const recipeSetId = await generateRecipes({
-          sessionId,
-          ingredients: finalIngredients,
-          filters,
+        const res = await fetch("/api/generate-recipes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, ingredients: finalIngredients, filters }),
         });
+        if (!res.ok) throw new Error("Recipe generation failed");
+        const { recipeSetId } = await res.json();
         router.push(`/results/${recipeSetId}`);
         saveHistoryEntry({
           id: crypto.randomUUID(),
