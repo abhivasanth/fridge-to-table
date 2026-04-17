@@ -41,6 +41,73 @@ vi.mock("@anthropic-ai/sdk", () => {
   return { default: MockAnthropic };
 });
 
+describe("saveRecipeSet", () => {
+  test("saves a recipe set and returns its ID", async () => {
+    const t = convexTest(schema);
+
+    const recipeSetId = await t.mutation(api.recipes.saveRecipeSet, {
+      sessionId: "session-save-1",
+      ingredients: ["chicken", "onions"],
+      filters: { cuisine: "Indian", maxCookingTime: 30, difficulty: "medium" },
+      results: [mockRecipe, mockRecipe, mockRecipe],
+    });
+
+    const saved = await t.run(async (ctx) => ctx.db.get(recipeSetId));
+    expect(saved).not.toBeNull();
+    expect(saved!.sessionId).toBe("session-save-1");
+    expect(saved!.ingredients).toEqual(["chicken", "onions"]);
+    expect(saved!.results).toHaveLength(3);
+    expect(saved!.generatedAt).toBeTypeOf("number");
+  });
+
+  test("saved recipe set is retrievable via getRecipeSet", async () => {
+    const t = convexTest(schema);
+
+    const recipeSetId = await t.mutation(api.recipes.saveRecipeSet, {
+      sessionId: "session-save-2",
+      ingredients: ["rice", "eggs"],
+      filters: { cuisine: "", maxCookingTime: 20, difficulty: "easy" },
+      results: [mockRecipe],
+    });
+
+    const result = await t.query(api.recipes.getRecipeSet, { recipeSetId });
+    expect(result).not.toBeNull();
+    expect(result!.sessionId).toBe("session-save-2");
+    expect(result!.results).toHaveLength(1);
+  });
+
+  test("stores filters correctly including difficulty variants", async () => {
+    const t = convexTest(schema);
+
+    const recipeSetId = await t.mutation(api.recipes.saveRecipeSet, {
+      sessionId: "session-save-3",
+      ingredients: ["salmon"],
+      filters: { cuisine: "Japanese", maxCookingTime: 60, difficulty: "hard" },
+      results: [mockRecipe, mockRecipe, mockRecipe],
+    });
+
+    const saved = await t.run(async (ctx) => ctx.db.get(recipeSetId));
+    expect(saved!.filters.cuisine).toBe("Japanese");
+    expect(saved!.filters.maxCookingTime).toBe(60);
+    expect(saved!.filters.difficulty).toBe("hard");
+  });
+
+  test("handles empty cuisine string", async () => {
+    const t = convexTest(schema);
+
+    const recipeSetId = await t.mutation(api.recipes.saveRecipeSet, {
+      sessionId: "session-save-4",
+      ingredients: ["potatoes", "butter"],
+      filters: { cuisine: "", maxCookingTime: 30, difficulty: "easy" },
+      results: [mockRecipe, mockRecipe, mockRecipe],
+    });
+
+    const saved = await t.run(async (ctx) => ctx.db.get(recipeSetId));
+    expect(saved).not.toBeNull();
+    expect(saved!.filters.cuisine).toBe("");
+  });
+});
+
 describe("generateRecipes", () => {
   test("saves a recipe set to the database and returns its ID", async () => {
     const t = convexTest(schema);

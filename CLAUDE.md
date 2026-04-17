@@ -68,3 +68,12 @@ Generic English stemming rules can mishandle cooking ingredients. The `-ves → 
 
 ### Keyword containment classification needs a blocklist for common words
 The pantry `classifyCategory()` function uses keyword containment (e.g. "tomato paste" contains "tomato" → sauces). This caused "tomato" itself to be classified as sauces, and "onion" as spices (via "onion powder"). Fix: added a `PRODUCE` set (~50 fruits/vegetables) checked before keyword containment — produce always returns "other". When adding keyword-based classification, always consider whether the base word itself is a valid standalone input that shouldn't match.
+
+### Prompt parity discipline (learned 2026-04-16)
+When modifying code that contains LLM prompts, preserve the production prompt text word for word. Do not add, remove, or rephrase instructions from memory — read the production prompt and copy it exactly. During the recipe performance optimization, "Return only valid JSON, no markdown or explanation" was added to a system message despite the production prompt already containing "No other text." This changed the prompt sent to Claude without the user's knowledge. Always diff the prompt text against production after any change.
+
+### Convex actions add network latency to external API calls (learned 2026-04-16)
+Convex actions route through Convex's infrastructure when calling external APIs (Anthropic, YouTube, etc.). For the recipe generation flow, this added ~12 seconds of latency compared to calling Anthropic directly from a Next.js API route (~28s vs ~40s). For latency-sensitive flows with long-running API calls, consider a Next.js API route with `ConvexHttpClient` for the database save. Keep the Convex action as a fallback.
+
+### Haiku lacks regional cuisine knowledge (learned 2026-04-16)
+Claude Haiku 4.5 generates structured recipe data quickly (~3x faster than Sonnet) but lacks cultural and regional nuance. It suggested rotis with South Indian dishes and missed cuisine-specific accompaniments. For recipe content that needs cultural accuracy, Sonnet is required. Haiku is suitable for purely mechanical tasks (shopping list derivation, structured data extraction) but not for content that requires regional knowledge.

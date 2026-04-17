@@ -22,27 +22,24 @@ Users can manage a persistent **My Pantry** of staple ingredients they always ha
 ┌─────────────────────────────────────────────────┐
 │              Next.js 16 (Vercel)                │
 │  App Router · TypeScript · Tailwind CSS         │
-│  Pure UI layer — no server logic here           │
-└───────────────────┬─────────────────────────────┘
-                    │  Convex React SDK
-                    ▼
-┌─────────────────────────────────────────────────┐
-│              Convex (Backend)                   │
-│  Actions · Mutations · Queries · Database       │
-│  All Claude API calls happen here               │
-└───────────────────┬─────────────────────────────┘
-                    │  Anthropic SDK
-                    ▼
-┌─────────────────────────────────────────────────┐
-│           Claude Sonnet 4.6 (Anthropic)         │
-│  Vision: ingredient extraction from photos      │
-│  Chat: recipe generation from ingredients       │
-└─────────────────────────────────────────────────┘
+│  API route for recipe generation (streaming)    │
+└──────────┬────────────────────┬─────────────────┘
+           │  Convex React SDK  │  Anthropic SDK
+           ▼                    ▼
+┌──────────────────────┐  ┌──────────────────────┐
+│   Convex (Backend)   │  │  Claude Sonnet 4.6   │
+│  Mutations · Queries │  │  (Anthropic)         │
+│  Database · Actions  │  │  Recipe generation   │
+│  Photo analysis      │  │  via API route       │
+│  Chef video search   │  │                      │
+└──────────────────────┘  └──────────────────────┘
 ```
 
 **Key design decisions:**
 
-- **Convex as the only backend.** All Claude API calls are made inside Convex Actions — never from the browser. This keeps the Anthropic API key secure and off the client.
+- **Hybrid backend architecture.** Recipe generation uses a Next.js API route (`/api/generate-recipes`) that calls Claude Sonnet directly via streaming, then saves results to Convex via `ConvexHttpClient`. This reduces latency from ~40s (through Convex Actions) to ~28s (direct connection to Anthropic). All other Claude API calls (photo analysis, Chef's Table) remain in Convex Actions. The Convex `generateRecipes` action is kept as a production-identical fallback.
+- **Prompt caching via system message.** The recipe generation API route uses a separate `system` parameter for the persona instruction ("You are a creative chef..."), enabling Anthropic's prompt caching — subsequent calls within 5 minutes skip re-processing the system prompt.
+- **Convex as the primary backend.** Photo analysis, Chef's Table video search, favourites, pantry, and shopping list all use Convex Actions and Mutations. The Anthropic API key lives in both Convex environment variables (for actions) and Vercel environment variables (for the API route).
 - **Anonymous sessions.** A UUID is generated on first visit and stored in `localStorage`. No login required. Favourites, pantry items, and shopping list are scoped to this session ID.
 - **Server components for data pages.** The results and recipe detail pages are Next.js Server Components using `fetchQuery` — data is fetched before the page renders, eliminating loading spinners.
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
@@ -80,6 +77,7 @@ fridge_to_table/
 ├── app/
 │   ├── layout.tsx                          # Root layout with ConvexClientProvider
 │   ├── page.tsx                            # Server Component — derives initialTab from searchParams
+│   ├── api/generate-recipes/route.ts      # Recipe generation API route (streaming Claude call)
 │   ├── results/[recipeSetId]/page.tsx      # Results page (3 recipe cards)
 │   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page
 │   ├── chef-results/page.tsx              # Chef's Table results page (section-per-chef layout)
@@ -110,7 +108,7 @@ fridge_to_table/
 │   └── Navbar.tsx                          # Legacy top navbar
 ├── convex/
 │   ├── schema.ts                           # Database schema (recipes, favourites, customChefs, pantryItems, shoppingListItems)
-│   ├── recipes.ts                          # generateRecipes action + getRecipeSet query
+│   ├── recipes.ts                          # generateRecipes action (fallback) + saveRecipeSet mutation (API route) + getRecipeSet query
 │   ├── chefs.ts                            # Chef's Table video search action (protein-aware filtering, dedup, up to 3 per chef)
 │   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution
 │   ├── photos.ts                           # analyzePhoto action (Claude vision)
@@ -284,6 +282,7 @@ This deploys Convex functions first (regenerating `_generated/` bindings), then 
 |---|---|
 | `NEXT_PUBLIC_CONVEX_URL` | Your production Convex URL (e.g. `https://helpful-loris-385.convex.cloud`) |
 | `CONVEX_DEPLOY_KEY` | Production deploy key from Convex dashboard → Settings → Deploy Keys |
+| `ANTHROPIC_API_KEY` | Your Anthropic API key — used by the recipe generation API route |
 
 ### Set API keys in production Convex
 
@@ -301,14 +300,14 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 2. Selects diet preference (Vegetarian / Vegan / Non-Vegetarian)
 3. Optionally opens filters (cuisine, cooking time, difficulty)
 4. Clicks **Find Recipes**
-5. `generateRecipes` Convex Action calls Claude → saves to DB → returns ID
+5. `/api/generate-recipes` API route streams Claude response → saves to Convex → returns ID (~28s)
 6. Redirects to `/results/[id]` showing 3 recipe cards
 7. User clicks a card → `/recipe/[id]/[index]` shows full detail
 
 ### 2. Photo input flow
 1. User uploads a fridge photo (compressed client-side to ≤1024px)
 2. `analyzePhoto` Convex Action sends image to Claude Vision → returns ingredient list
-3. Extracted ingredients feed into `generateRecipes` (same flow as above)
+3. Extracted ingredients feed into `/api/generate-recipes` (same flow as above)
 
 ### 3. Chef's Table flow
 1. User switches to the **Chef's Table** tab on the home page
@@ -406,6 +405,7 @@ The homepage displays four user testimonials highlighting different aspects of t
 
 ## Known Limitations
 
+- **Recipe generation takes ~28 seconds** — Claude Sonnet generates ~3000 tokens for 3 full recipes at ~80-100 tokens/second. This is a model speed constraint, not an architectural one. The API route uses streaming to keep the connection alive. Previous architecture through Convex Actions took ~40 seconds due to additional network latency.
 - **Photo upload occasionally fails** — the Claude Vision → ingredient extraction flow can time out or return empty results on some images. Typing ingredients directly is more reliable.
 - **Session-scoped data** — clearing `localStorage` or switching browsers loses favourites, chef slots, search history, pantry items, and shopping list. A future auth layer would persist these across devices.
 - **Duplicated normalization logic** — pantry/shopping list name normalization is implemented in both `lib/pantryUtils.ts` (client-side for UI matching) and `convex/pantry.ts` / `convex/shoppingList.ts` (server-side for atomic dedup). Changes to normalization rules must be applied in both places. This is a Convex isolation constraint — backend functions cannot import from Next.js `lib/`.
@@ -422,10 +422,10 @@ The homepage displays four user testimonials highlighting different aspects of t
 | Variable | Where | Description |
 |---|---|---|
 | `NEXT_PUBLIC_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-created by `npx convex dev`) |
-| `ANTHROPIC_API_KEY` | Convex environment | Anthropic API key — set via `npx convex env set` |
+| `ANTHROPIC_API_KEY` | Convex environment + `.env.local` + Vercel | Anthropic API key — used by Convex Actions (photo analysis) and the Next.js API route (recipe generation). Set in Convex via `npx convex env set` and in Vercel via dashboard. |
 | `YOUTUBE_API_KEY` | Convex environment | YouTube Data API v3 key — used for Chef's Table video search and custom chef channel resolution |
 
-> The Anthropic and YouTube API keys are **never** exposed to the browser. They live exclusively in Convex's secure environment and are only accessed inside Convex Actions.
+> The Anthropic and YouTube API keys are **never** exposed to the browser. The Anthropic key lives in Convex environment variables (for photo analysis and fallback recipe generation) and in Vercel/`.env.local` environment variables (for the recipe generation API route — server-side only, not prefixed with `NEXT_PUBLIC_`). The YouTube key lives exclusively in Convex.
 
 ---
 
