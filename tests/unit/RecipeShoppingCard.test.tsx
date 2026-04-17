@@ -33,10 +33,6 @@ vi.mock("convex/react", () => ({
   useMutation: (ref: unknown) => ref,
 }));
 
-vi.mock("@/lib/session", () => ({
-  getSessionId: () => "test-session-123",
-}));
-
 const shoppingList = [
   "2 cups flour",
   "1 tsp cumin",

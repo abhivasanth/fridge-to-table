@@ -23,10 +23,6 @@ vi.mock("convex/react", () => ({
   useMutation: (ref: unknown) => ref,
 }));
 
-vi.mock("@/lib/session", () => ({
-  getSessionId: () => "test-session-123",
-}));
-
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>

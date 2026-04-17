@@ -16,10 +16,6 @@ vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
 }));
 
-vi.mock("@/lib/session", () => ({
-  getSessionId: () => "test-session-123",
-}));
-
 const baseIngredients = [
   { name: "olive oil", amount: "2 tbsp", inFridge: false },
   { name: "garlic", amount: "3 cloves", inFridge: true },
