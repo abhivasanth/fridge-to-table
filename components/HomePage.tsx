@@ -329,7 +329,6 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
           {/* Tab selector */}
           <div className="flex gap-1 bg-gray-50 rounded-2xl p-1 mb-6">
             {(["any-recipe", "chefs-table"] as ActiveTab[])
-              .filter((tab) => tab !== "chefs-table" || canUseApp)
               .map((tab) => (
               <button
                 key={tab}
