@@ -1,7 +1,7 @@
 "use client";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
+import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import type { Recipe } from "@/types/recipe";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -9,9 +9,10 @@ import type { Id } from "@/convex/_generated/dataModel";
 // Loads and renders the user's saved recipes.
 // Uses Convex's real-time query — removes appear instantly without a page refresh.
 export function FavouritesGrid() {
-  const sessionId = getSessionId();
+  const { user } = useUser();
+  const userId = user?.id ?? "";
   // `undefined` while loading, `[]` when loaded but empty
-  const favourites = useQuery(api.favourites.getFavourites, sessionId ? { sessionId } : "skip");
+  const favourites = useQuery(api.favourites.getFavourites, userId ? { userId } : "skip");
   const removeFavourite = useMutation(api.favourites.removeFavourite);
 
   if (favourites === undefined) {
@@ -51,7 +52,7 @@ export function FavouritesGrid() {
           recipeIndex={fav.recipeIndex}
           onRemove={() =>
             removeFavourite({
-              sessionId,
+              userId,
               recipeSetId: fav.recipeSetId as Id<"recipes">,
               recipeIndex: fav.recipeIndex,
             })

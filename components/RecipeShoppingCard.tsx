@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
+import { useUser } from "@clerk/nextjs";
 import { normalizeName } from "@/lib/pantryUtils";
 import { parseIngredientNames } from "@/lib/ingredientNameParser";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -15,15 +15,16 @@ type Props = {
 type OptimisticState = "pantry" | "shopping" | null;
 
 export function RecipeShoppingCard({ shoppingList }: Props) {
-  const sessionId = getSessionId();
+  const { user } = useUser();
+  const userId = user?.id ?? "";
 
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    sessionId ? { sessionId } : "skip"
+    userId ? { userId } : "skip"
   );
   const shoppingItems = useQuery(
     api.shoppingList.getShoppingListItems,
-    sessionId ? { sessionId } : "skip"
+    userId ? { userId } : "skip"
   );
 
   const addToPantry = useMutation(api.pantry.addToPantry);
@@ -76,14 +77,14 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
       try {
         await Promise.all(
           ingredientNames.map((name) =>
-            addToShoppingList({ sessionId, name, source: "recipe" })
+            addToShoppingList({ userId, name, source: "recipe" })
           )
         );
       } finally {
         for (const n of normalizedNames) clearOptimistic(n);
       }
     },
-    [sessionId, addToShoppingList, clearOptimistic]
+    [userId, addToShoppingList, clearOptimistic]
   );
 
   const handleRemoveFromShopping = useCallback(
@@ -116,14 +117,14 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
       try {
         await Promise.all(
           ingredientNames.map((name) =>
-            addToPantry({ sessionId, name })
+            addToPantry({ userId, name })
           )
         );
       } finally {
         for (const n of normalizedNames) clearOptimistic(n);
       }
     },
-    [sessionId, addToPantry, clearOptimistic]
+    [userId, addToPantry, clearOptimistic]
   );
 
   // Compute state for each item and filter out pantry items
