@@ -12,9 +12,11 @@ type Props = {
   initialText?: string;
   showPhotoButton?: boolean;
   isSignedIn?: boolean;
+  ctaHref?: string;
+  ctaText?: string;
 };
 
-export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, initialText, showPhotoButton, isSignedIn }: Props) {
+export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, initialText, showPhotoButton, isSignedIn, ctaHref, ctaText }: Props) {
   const [text, setText] = useState(initialText ?? "");
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
@@ -314,10 +316,10 @@ export function IngredientInput({ onSubmit, isLoading, disabled, beforeSubmit, i
       {/* Submit button */}
       {isSignedIn === false ? (
         <a
-          href="/sign-up"
+          href={ctaHref ?? "/sign-up"}
           className="w-full block text-center bg-[#D4622A] text-white py-4 rounded-2xl font-bold text-base hover:bg-[#BF5525] transition-colors"
         >
-          Sign Up to Start
+          {ctaText ?? "Sign Up to Start"}
         </a>
       ) : (
         <button

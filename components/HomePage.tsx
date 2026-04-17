@@ -150,6 +150,8 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   const dbUser = useQuery(api.users.getByClerkId, user ? { clerkId: user.id } : "skip");
   const isChefPlan = dbUser?.plan === "chef";
   const isSignedIn = !!user;
+  const hasActiveSubscription = dbUser?.subscriptionStatus === "active" || dbUser?.subscriptionStatus === "trialing";
+  const canUseApp = isSignedIn && hasActiveSubscription;
   const customChefsResult = useQuery(
     api.customChefs.listCustomChefs,
     userId ? { userId } : "skip"
@@ -327,7 +329,7 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
           {/* Tab selector */}
           <div className="flex gap-1 bg-gray-50 rounded-2xl p-1 mb-6">
             {(["any-recipe", "chefs-table"] as ActiveTab[])
-              .filter((tab) => tab !== "chefs-table" || isSignedIn)
+              .filter((tab) => tab !== "chefs-table" || canUseApp)
               .map((tab) => (
               <button
                 key={tab}
@@ -395,8 +397,10 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
             isLoading={isLoading}
             disabled={chefsTableDisabled}
             initialText={initialText}
-            showPhotoButton={isSignedIn}
-            isSignedIn={isSignedIn}
+            showPhotoButton={canUseApp}
+            isSignedIn={canUseApp}
+            ctaHref={isSignedIn && !hasActiveSubscription ? "/pricing" : "/sign-up"}
+            ctaText={isSignedIn && !hasActiveSubscription ? "Subscribe to Start" : "Sign Up to Start"}
             beforeSubmit={
               activeTab === "any-recipe" ? (
                 <FiltersPanel filters={filters} onChange={setFilters} />
