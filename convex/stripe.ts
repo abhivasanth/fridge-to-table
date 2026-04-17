@@ -3,9 +3,9 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-03-25.dahlia",
-});
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!);
+}
 
 export const createCheckoutSession = action({
   args: {
@@ -41,7 +41,7 @@ export const createCheckoutSession = action({
       };
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    const session = await getStripe().checkout.sessions.create(sessionConfig);
     return { url: session.url };
   },
 });
@@ -54,7 +54,7 @@ export const createPortalSession = action({
   handler: async (_ctx, args) => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripe().billingPortal.sessions.create({
       customer: args.stripeCustomerId,
       return_url: `${baseUrl}/settings`,
     });
@@ -68,7 +68,7 @@ export const cancelSubscription = action({
     stripeSubscriptionId: v.string(),
   },
   handler: async (_ctx, args) => {
-    await stripe.subscriptions.update(args.stripeSubscriptionId, {
+    await getStripe().subscriptions.update(args.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
   },
