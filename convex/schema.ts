@@ -8,6 +8,11 @@ import { v } from "convex/values";
 // than we'd mirror (sign-up method, session history, OAuth providers).
 // Add a `users` table here only when a feature needs per-user server-side
 // metadata (admin roles, notification preferences, analytics aggregates).
+// TEMPORARY: schema validation disabled for one deploy cycle so the new
+// auth schema can land on production even though old sessionId-keyed rows
+// still exist. After this deploy succeeds, run `migrations.wipeLegacyData`
+// in the Convex dashboard, then restore `schemaValidation: true` in a
+// follow-up PR. See chore/wipe-prod-legacy-data commit history.
 export default defineSchema({
   // Each row stores one "search" — a set of 3 generated recipes for a user.
   recipes: defineTable({
@@ -76,4 +81,8 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "normalizedName"]),
+}, {
+  // TEMPORARY — see top-of-file comment. Restore to `true` (default) after
+  // running migrations.wipeLegacyData against production.
+  schemaValidation: false,
 });
