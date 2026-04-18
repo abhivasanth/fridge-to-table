@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as chefs from "../chefs.js";
 import type * as customChefs from "../customChefs.js";
 import type * as favourites from "../favourites.js";
+import type * as migrations from "../migrations.js";
 import type * as pantry from "../pantry.js";
 import type * as photos from "../photos.js";
 import type * as recipes from "../recipes.js";
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   chefs: typeof chefs;
   customChefs: typeof customChefs;
   favourites: typeof favourites;
+  migrations: typeof migrations;
   pantry: typeof pantry;
   photos: typeof photos;
   recipes: typeof recipes;
