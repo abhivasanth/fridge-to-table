@@ -122,8 +122,34 @@ Every user-owned table stores `userId: v.string()` (the Clerk user ID like `"use
 
 ### Clerk setup that must exist in the Clerk dashboard
 
-- **JWT template named `convex`** (Configure → JWT templates → Convex preset). Without it, `getToken({ template: "convex" })` returns null and nothing auth'd works. New Clerk instances (production) need this configured separately.
+- **JWT template named `convex`** (Configure → JWT templates → Convex preset). Without it, `getToken({ template: "convex" })` returns null and nothing auth'd works. New Clerk instances (production) need this configured separately. Failure mode when missing: API route logs `Error: e: Not Found ... clerkError: true, status: 404`.
 - **Email lockdown** (recommended): Users & Authentication → Email, Phone, Username → disable "Users can add email addresses" so users can't change their login email. Our code keys on Clerk user ID (stable), but downstream Stripe / notifications might cache email.
+
+### Deployment: Vercel + Convex env var wiring
+
+There are three env var surfaces and they are not interchangeable. Getting this wrong produces a cascade of specific failure modes documented below.
+
+**Vercel env vars** (Project Settings → Environment Variables, Project tab):
+- `NEXT_PUBLIC_CONVEX_URL` (All Environments) — managed by the Vercel Convex integration; it rewrites this to the ephemeral preview deployment URL per PR.
+- `CONVEX_DEPLOY_KEY` — **two separate entries**: one scoped to **Production** with the Production Deploy Key, another scoped to **Preview** with a **Preview Deploy Key** (generated in Convex → Project Settings → Preview Deploy Keys). Convex rejects a production key in non-production builds — they must be different keys.
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — Preview + Production (safe to expose)
+- `CLERK_SECRET_KEY` — Preview + Production (mark Sensitive)
+- `ANTHROPIC_API_KEY` — Preview + Production (Sensitive). Used by `app/api/generate-recipes/route.ts`. Can also live in Shared env vars if managed at team level.
+
+Do **not** scope these to Development in Vercel — that scope is for `vercel dev` CLI, which we don't use. Local dev uses `.env.local`.
+
+**Convex Default Environment Variables** (Project Settings → Environment Variables → Default Environment Variables): these are applied when Convex creates a **new** deployment (including every preview deployment spun up by `CONVEX_DEPLOY_KEY` at build time). Existing deployments are not updated retroactively — push a new commit to trigger a fresh preview. Required defaults (check all three deployment types — Production, Preview, Development):
+- `CLERK_JWT_ISSUER_DOMAIN` — exactly the Issuer URL from the Clerk JWT template (no trailing slash)
+- `ANTHROPIC_API_KEY`
+- `YOUTUBE_API_KEY`
+
+**Per-deployment Convex env vars** (`npx convex env set ... --prod` or dashboard → deployment → Environment Variables): override defaults for a specific deployment. Only needed if production should use different keys than dev.
+
+**Standard failure modes and their error messages:**
+- `✖ CONVEX_DEPLOY_KEY ... not set` → Preview scope missing the key
+- `✖ Detected a non-production build environment and "CONVEX_DEPLOY_KEY" for a production Convex deployment` → you put the Production key in Preview scope; generate a Preview Deploy Key instead
+- `✖ Environment variable CLERK_JWT_ISSUER_DOMAIN is used in auth config file but its value was not set` → missing from Convex Default Env Vars (or the preview deployment was created before defaults were added)
+- `[generate-recipes] Error: e: Not Found ... clerkError: true, status: 404` → Clerk JWT template `convex` not configured in the Clerk dashboard
 
 ### Anonymous data migration
 
@@ -195,3 +221,12 @@ Claude Haiku 4.5 generates structured recipe data quickly (~3x faster than Sonne
 
 ### Convex queries trusted client userId arg (security bug, learned 2026-04-18)
 The first Clerk auth PR accepted `userId: v.string()` as a client-supplied argument on every user-owned query/mutation. A signed-in user could pass another user's ID and read/write their data. Root cause: we were treating Convex auth as "wrap `useQuery` in `isLoaded ? {...} : 'skip'`" — really it must be derived from `ctx.auth.getUserIdentity()` server-side. Fixed by introducing `requireUserId(ctx)` and removing `userId` from every public query/mutation args. **Never pass `userId` from client to a Convex function.** The server decides who the caller is.
+
+### Preview deployments need their own Convex Deploy Key + env var defaults (learned 2026-04-18)
+First Preview deploy of PR #46 failed through four sequential env-var errors, each revealing the next layer:
+1. `CONVEX_DEPLOY_KEY` was scoped Production-only → preview build couldn't deploy Convex.
+2. Added Production key to Preview scope → Convex refused: *"Detected a non-production build environment and CONVEX_DEPLOY_KEY for a production Convex deployment."* Convex requires a **Preview Deploy Key** (generated in Project Settings → Preview Deploy Keys), scoped to Preview only, as a separate Vercel entry from the Production key.
+3. Fresh preview Convex deployment created successfully but `convex/auth.config.ts` errored: *"Environment variable CLERK_JWT_ISSUER_DOMAIN is used in auth config file but its value was not set."* Preview deployments start empty — env vars must be configured as **Default Environment Variables** at the Convex project level. Add all three (`CLERK_JWT_ISSUER_DOMAIN`, `ANTHROPIC_API_KEY`, `YOUTUBE_API_KEY`) with Prod/Preview/Dev all checked. **Existing deployments are not updated retroactively** — push a new commit to the PR to spin up a fresh preview that inherits the defaults.
+4. Auth worked, but recipe generation returned `[generate-recipes] Error: e: Not Found ... clerkError: true, status: 404`. Root cause: the Clerk **JWT template named `convex`** didn't exist in the Clerk dashboard. `getToken({ template: "convex" })` 404s silently from the server's perspective — the API route bubbles it as 500. Fix: Clerk → Configure → JWT templates → New template → **Convex** preset → name it exactly `convex`. No redeploy needed.
+
+**Future preview deploys that fail:** check these in order. The error messages are specific enough to diagnose without reading code.
