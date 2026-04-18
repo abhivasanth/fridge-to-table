@@ -97,7 +97,14 @@ export const removeCustomChef = mutation({
 
 export const resolveYouTubeChannel = action({
   args: { input: v.string() },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    // Gate on auth — this action calls YouTube Data API. Only signed-in users
+    // can reach the /my-chefs UI that invokes this, but the action would
+    // otherwise be callable by any anonymous Convex client. Match the cost
+    // protection on searchChefVideos and analyzePhoto.
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
       return { ok: false as const, error: "api_error" as const };

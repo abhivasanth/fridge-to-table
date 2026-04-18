@@ -64,7 +64,11 @@ export function FavouritesGrid() {
   );
 }
 
-// Individual card that fetches its own recipe data from Convex
+// Individual card that fetches its own recipe data from Convex.
+// Re-checks `isReady` — the parent gates the favourites list on it, but by the
+// time this child mounts Convex auth could temporarily flip (token rotation,
+// sign-out) and an unguarded query would throw "Not authenticated" until the
+// subscription retries. Keep every useQuery against an authed function gated.
 function FavouriteCard({
   recipeSetId,
   recipeIndex,
@@ -74,9 +78,11 @@ function FavouriteCard({
   recipeIndex: number;
   onRemove: () => void;
 }) {
-  const recipeSet = useQuery(api.recipes.getRecipeSet, {
-    recipeSetId: recipeSetId as Id<"recipes">,
-  });
+  const { isReady } = useAuthedUser();
+  const recipeSet = useQuery(
+    api.recipes.getRecipeSet,
+    isReady ? { recipeSetId: recipeSetId as Id<"recipes"> } : "skip"
+  );
 
   if (!recipeSet) return null;
 

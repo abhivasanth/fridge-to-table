@@ -243,9 +243,10 @@ describe("resolveYouTubeChannel", () => {
     mockFetchSuccess("UCtest123", "Babish Culinary Universe", "https://example.com/thumb.jpg");
 
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@babish",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@babish" }
+    );
 
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -258,9 +259,10 @@ describe("resolveYouTubeChannel", () => {
   test("returns parse_error for an unrecognised input", async () => {
     process.env.YOUTUBE_API_KEY = "fake-key";
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "not a url",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "not a url" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("parse_error");
   });
@@ -269,9 +271,10 @@ describe("resolveYouTubeChannel", () => {
     process.env.YOUTUBE_API_KEY = "fake-key";
     mockFetchEmpty();
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@nobody",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@nobody" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("not_found");
   });
@@ -280,19 +283,29 @@ describe("resolveYouTubeChannel", () => {
     process.env.YOUTUBE_API_KEY = "fake-key";
     mockFetchApiError();
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@babish",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@babish" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("not_found");
   });
 
   test("returns api_error when YOUTUBE_API_KEY is not set", async () => {
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@babish",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@babish" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("api_error");
+  });
+
+  test("unauthenticated callers can't invoke resolveYouTubeChannel", async () => {
+    process.env.YOUTUBE_API_KEY = "fake-key";
+    const t = convexTest(schema);
+    await expect(
+      t.action(api.customChefs.resolveYouTubeChannel, { input: "@babish" })
+    ).rejects.toThrow(/Not authenticated/);
   });
 });

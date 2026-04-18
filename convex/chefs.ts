@@ -62,7 +62,13 @@ export const searchChefVideos = action({
     ingredients: v.array(v.string()),
     chefs: v.array(chefValidator),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    // Gate on auth — this action calls YouTube Data API once per chef (up to
+    // 8 chefs per search, 100 quota units each). Leaving it open to anonymous
+    // callers is a cost/DoS vector against the YouTube quota.
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
     const apiKey = process.env.YOUTUBE_API_KEY;
 
     // Graceful degradation: if no API key, return empty results

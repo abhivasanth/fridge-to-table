@@ -12,9 +12,14 @@ export const analyzePhoto = action({
     imageBase64: v.string(),
   },
   handler: async (
-    _ctx,
+    ctx,
     args
   ): Promise<{ ingredients: string[]; uncertain: string[] }> => {
+    // Gate on auth — this action calls the Anthropic vision API, which costs
+    // per-image and is a cost/DoS vector if left open to anonymous callers.
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
     // API key is stored securely in Convex environment variables — never in the browser
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 

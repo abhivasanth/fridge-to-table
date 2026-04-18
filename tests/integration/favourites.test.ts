@@ -113,4 +113,37 @@ describe("favourites", () => {
       t.mutation(api.favourites.saveFavourite, { recipeSetId, recipeIndex: 0 })
     ).rejects.toThrow(/Not authenticated/);
   });
+
+  test("saveFavourite throws Forbidden when recipe set is owned by another user", async () => {
+    const t = convexTest(schema);
+    // Alice owns the recipe set
+    const recipeSetId = await createRecipeSet(t, "user_alice");
+    // Bob tries to favourite it
+    await expect(
+      withUser(t, "user_bob").mutation(api.favourites.saveFavourite, {
+        recipeSetId,
+        recipeIndex: 0,
+      })
+    ).rejects.toThrow(/Forbidden/);
+
+    // And no row was planted
+    const aliceFavourites = await withUser(t, "user_alice").query(
+      api.favourites.getFavourites,
+      {}
+    );
+    expect(aliceFavourites).toHaveLength(0);
+  });
+
+  test("saveFavourite throws Forbidden for a non-existent recipe set", async () => {
+    const t = convexTest(schema);
+    // Create and immediately delete a recipe set so we have a plausibly-shaped ID
+    const recipeSetId = await createRecipeSet(t);
+    await t.run(async (ctx) => await ctx.db.delete(recipeSetId));
+    await expect(
+      withUser(t, "user_alice").mutation(api.favourites.saveFavourite, {
+        recipeSetId,
+        recipeIndex: 0,
+      })
+    ).rejects.toThrow(/Forbidden/);
+  });
 });

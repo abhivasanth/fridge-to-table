@@ -4,6 +4,10 @@ import { requireUserId } from "./auth";
 
 // Saves a recipe to the user's favourites list.
 // Silently ignores duplicate saves (idempotent).
+// Throws "Forbidden" if the caller tries to favourite a recipe set owned by
+// another user — mirrors the ownership-check pattern used by delete-by-ID
+// mutations (pantry.removeFromPantry, shoppingList.removeFromShoppingList)
+// so cross-user Convex IDs can't be used to plant orphan rows.
 export const saveFavourite = mutation({
   args: {
     recipeSetId: v.id("recipes"),
@@ -11,6 +15,11 @@ export const saveFavourite = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
+
+    const recipeSet = await ctx.db.get(args.recipeSetId);
+    if (!recipeSet || recipeSet.userId !== userId) {
+      throw new Error("Forbidden");
+    }
 
     const existing = await ctx.db
       .query("favourites")
