@@ -2,6 +2,7 @@
 
 import { SignIn, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
+import { WordmarkLogo } from "./WordmarkLogo";
 
 type AuthMode = "sign-in" | "sign-up";
 
@@ -9,13 +10,9 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
   return (
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <Link
-            href="/"
-            className="text-2xl font-bold text-[#1A3A2A]"
-            style={{ fontFamily: "var(--font-playfair)" }}
-          >
-            fridge to table
+        <div className="flex justify-center mb-6">
+          <Link href="/" aria-label="fridge to table — home">
+            <WordmarkLogo width={180} height={40} />
           </Link>
         </div>
 
