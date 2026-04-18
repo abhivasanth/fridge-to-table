@@ -151,7 +151,11 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
     isReady ? {} : "skip"
   );
   const customChefsRaw = customChefsResult ?? [];
-  const customChefsLoaded = customChefsResult !== undefined;
+  // When auth isn't ready (signed-out visitor, or Clerk still loading), we
+  // intentionally skip the query — treat that as "loaded with no custom chefs"
+  // so the Chef's Table grid renders for public visitors, not an eternal
+  // skeleton. When auth IS ready, wait for the real query result.
+  const customChefsLoaded = !isReady || customChefsResult !== undefined;
 
   // Build merged chef list: defaults (always) + customs
   const allSlots: ChefSlot[] = [
