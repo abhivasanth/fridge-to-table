@@ -55,7 +55,32 @@ export async function requireUserId(ctx: QueryCtx | MutationCtx): Promise<string
 }
 ```
 
-For `ActionCtx` (action handlers), inline `ctx.auth.getUserIdentity()` + null check — `requireUserId` currently doesn't accept `ActionCtx`.
+For `ActionCtx` (action handlers), inline `ctx.auth.getUserIdentity()` + null check — `requireUserId` currently doesn't accept `ActionCtx`:
+
+```ts
+// convex/photos.ts — pattern used by every action that calls an external paid API
+handler: async (ctx, args) => {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  // ... rest of handler
+}
+```
+
+### Invariants (must be preserved in every PR)
+
+These are the non-negotiable rules. A grep for any of these will catch regressions:
+
+1. **No Convex query, mutation, or action that reads or writes user-owned data may accept `userId` as a client argument.** Identity is always derived server-side via `requireUserId(ctx)` (queries/mutations) or `ctx.auth.getUserIdentity()` (actions). Use `grep -rn "userId: v.string()" convex/` — the only legitimate hit is on `internalMutation`s that are explicitly not callable from the client.
+
+2. **Every Convex action that calls an external paid API (Anthropic, YouTube, or any future provider) must be auth-gated.** This protects against cost/DoS attacks from anonymous callers who know the function name. Today that's `photos.analyzePhoto`, `chefs.searchChefVideos`, `customChefs.resolveYouTubeChannel`, and `recipes.generateRecipes` — all four inline `ctx.auth.getUserIdentity()` + null-check as the first statement in their handler. **Any new action that fits this profile must match this pattern.** Convert-on-sight if you see an external `fetch(...)` or API-client call in an action with no auth check above it.
+
+3. **Every `useQuery(api.*, ...)` against an auth-required Convex function must gate on `useAuthedUser().isReady`.** Including queries inside child components whose parent already gated — token rotation and sign-out can temporarily flip Convex auth off, and an unguarded child query will throw `"Not authenticated"` until the subscription retries. Gate every site; do not rely on the parent having gated.
+
+4. **Every client-side submit handler that invokes a user-owned action/mutation or an authed API route must early-return with a `/sign-in` redirect when `!user`.** Don't fire the network call and hope the server-side rejection renders cleanly — it won't; a catch-all will swallow it as a generic error. `components/HomePage.tsx:handleSubmit` is the canonical example.
+
+5. **Every `Id<"table">` arg on a public mutation must be ownership-checked.** Pattern: `get → null-guard → userId-compare → throw "Forbidden"`. This applies to both delete-by-ID (`removeFromPantry`, `removeFromShoppingList`) and any mutation that references a user-owned row by its Convex ID (`saveFavourite` — checks `recipeSetId`).
+
+6. **Integration tests must cover the negative path for invariants 1, 2, and 5.** For each user-owned function: one `t.mutation(...)` (or `.query`/`.action`) call with no identity asserting `/Not authenticated/`, and for invariant 5, one cross-user ownership test asserting `/Forbidden/`. See `tests/integration/pantry.test.ts` and `tests/integration/shoppingList.test.ts` for the canonical shape.
 
 ### Ownership checks on delete-by-ID
 
