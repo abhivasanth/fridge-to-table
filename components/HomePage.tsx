@@ -249,6 +249,11 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
           setIsLoading(false);
           return;
         }
+        if (res.status === 402) {
+          // Server-side subscription guard — redirect to /settings to subscribe
+          router.push("/settings");
+          return;
+        }
         if (!res.ok) throw new Error("Recipe generation failed");
         const { recipeSetId } = await res.json();
         router.push(`/results/${recipeSetId}`);
