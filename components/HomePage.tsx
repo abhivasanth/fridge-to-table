@@ -193,6 +193,15 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   const analyzePhoto = useAction(api.photos.analyzePhoto);
   const searchChefVideos = useAction(api.chefs.searchChefVideos);
   async function handleSubmit(ingredients: string[], imageBase64?: string) {
+    // All three backends (analyzePhoto, searchChefVideos, /api/generate-recipes)
+    // require a signed-in user. Redirect before firing any network work so
+    // signed-out visitors land on /sign-in instead of seeing the generic
+    // "chef is taking a break" error from the catch below.
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
