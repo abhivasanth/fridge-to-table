@@ -9,17 +9,19 @@ export default defineSchema({
     lastName: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
+    // Deprecated — kept optional so pre-existing docs still validate.
     plan: v.optional(v.union(v.literal("basic"), v.literal("chef"))),
+    hasUsedChefTrial: v.optional(v.boolean()),
+    trialEndsAt: v.optional(v.number()),
     stripePriceId: v.optional(v.string()),
     subscriptionStatus: v.string(),
-    trialEndsAt: v.optional(v.number()),
+    cancelAtPeriodEnd: v.optional(v.boolean()),
     currentPeriodEnd: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_clerk_id", ["clerkId"])
-    .index("by_stripe_customer_id", ["stripeCustomerId"])
-    .index("by_plan", ["plan"]),
+    .index("by_stripe_customer_id", ["stripeCustomerId"]),
 
   searchUsage: defineTable({
     userId: v.string(),

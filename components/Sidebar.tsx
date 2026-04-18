@@ -1,9 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { loadHistory, deleteHistoryEntry, updateHistoryEntry } from "@/lib/searchHistory";
 import { clearSearchState } from "@/lib/searchState";
 import type { HistoryEntry } from "@/types/recipe";
@@ -209,9 +206,6 @@ function HistoryItem({
 export function Sidebar({ open, onClose, isDesktop, onDragOffset }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useUser();
-  const dbUser = useQuery(api.users.getByClerkId, user ? { clerkId: user.id } : "skip");
-  const isChefPlan = dbUser?.plan === "chef";
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);

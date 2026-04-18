@@ -13,10 +13,18 @@ function getStripe() {
 function getPeriodEnd(subscription: Stripe.Subscription): number | undefined {
   const itemEnd = subscription.items.data[0]?.current_period_end;
   if (itemEnd) return itemEnd * 1000;
-  // Fallback: the raw API response may still include it at the top level
   const raw = subscription as unknown as Record<string, unknown>;
   if (typeof raw.current_period_end === "number") return (raw.current_period_end as number) * 1000;
   return undefined;
+}
+
+// Map Stripe subscription.status to our canonical status string.
+function mapStatus(stripeStatus: Stripe.Subscription.Status): string {
+  if (stripeStatus === "trialing") return "trialing";
+  if (stripeStatus === "active") return "active";
+  if (stripeStatus === "past_due") return "past_due";
+  if (stripeStatus === "canceled") return "cancelled";
+  return stripeStatus;
 }
 
 export const handleWebhookEvent = internalAction({
@@ -37,7 +45,6 @@ export const handleWebhookEvent = internalAction({
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const clerkId = session.metadata?.clerkId;
-        const plan = session.metadata?.plan as "basic" | "chef" | undefined;
 
         if (clerkId && session.customer) {
           await ctx.runMutation(internal.users.setStripeCustomerId, {
@@ -52,10 +59,9 @@ export const handleWebhookEvent = internalAction({
             await ctx.runMutation(internal.users.updateSubscription, {
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: subscription.id,
-              plan: plan ?? "basic",
               stripePriceId: subscription.items.data[0]?.price.id,
-              subscriptionStatus: subscription.status === "trialing" ? "trialing" : "active",
-              trialEndsAt: subscription.trial_end ? subscription.trial_end * 1000 : undefined,
+              subscriptionStatus: mapStatus(subscription.status),
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
               currentPeriodEnd: getPeriodEnd(subscription),
             });
           }
@@ -65,21 +71,12 @@ export const handleWebhookEvent = internalAction({
 
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        const plan = subscription.metadata?.plan as "basic" | "chef" | undefined;
-
         await ctx.runMutation(internal.users.updateSubscription, {
           stripeCustomerId: subscription.customer as string,
           stripeSubscriptionId: subscription.id,
-          plan,
           stripePriceId: subscription.items.data[0]?.price.id,
-          subscriptionStatus: subscription.cancel_at_period_end
-            ? "cancelled"
-            : subscription.status === "trialing"
-              ? "trialing"
-              : subscription.status === "active"
-                ? "active"
-                : subscription.status,
-          trialEndsAt: subscription.trial_end ? subscription.trial_end * 1000 : undefined,
+          subscriptionStatus: mapStatus(subscription.status),
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
           currentPeriodEnd: getPeriodEnd(subscription),
         });
         break;
@@ -90,6 +87,7 @@ export const handleWebhookEvent = internalAction({
         await ctx.runMutation(internal.users.updateSubscription, {
           stripeCustomerId: subscription.customer as string,
           subscriptionStatus: "cancelled",
+          cancelAtPeriodEnd: false,
         });
         break;
       }
@@ -101,7 +99,6 @@ export const handleWebhookEvent = internalAction({
             ? invoice.customer
             : invoice.customer?.id;
 
-        // Extract subscription ID from invoice — v22 moved this to parent.subscription_details
         const raw = invoice as unknown as Record<string, unknown>;
         const subscriptionId =
           (typeof raw.subscription === "string" ? raw.subscription : null) ??
@@ -111,7 +108,8 @@ export const handleWebhookEvent = internalAction({
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           await ctx.runMutation(internal.users.updateSubscription, {
             stripeCustomerId: customerId,
-            subscriptionStatus: "active",
+            subscriptionStatus: mapStatus(subscription.status),
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
             currentPeriodEnd: getPeriodEnd(subscription),
           });
         }

@@ -1,11 +1,7 @@
-import { PricingCards } from "@/components/PricingCards";
+import { redirect } from "next/navigation";
 
+// Consolidated into /settings (which now handles plan-picker, management,
+// and past-due states). Any inbound link to /pricing bounces to /settings.
 export default function PricingPage() {
-  return (
-    <main className="min-h-screen bg-[#FAF6F1] pb-24">
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <PricingCards />
-      </div>
-    </main>
-  );
+  redirect("/settings");
 }

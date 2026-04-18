@@ -148,7 +148,6 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   const { user } = useUser();
   const userId = user?.id ?? "";
   const dbUser = useQuery(api.users.getByClerkId, user ? { clerkId: user.id } : "skip");
-  const isChefPlan = dbUser?.plan === "chef";
   const isSignedIn = !!user;
   const hasActiveSubscription = dbUser?.subscriptionStatus === "active" || dbUser?.subscriptionStatus === "trialing";
   const canUseApp = isSignedIn && hasActiveSubscription;
@@ -398,7 +397,7 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
             initialText={initialText}
             showPhotoButton={canUseApp}
             isSignedIn={canUseApp}
-            ctaHref={isSignedIn && !hasActiveSubscription ? "/pricing" : "/sign-up"}
+            ctaHref={isSignedIn && !hasActiveSubscription ? "/settings" : "/sign-up"}
             ctaText={isSignedIn && !hasActiveSubscription ? "Subscribe to Start" : "Sign Up to Start"}
             beforeSubmit={
               activeTab === "any-recipe" ? (

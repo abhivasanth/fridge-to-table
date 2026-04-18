@@ -18,6 +18,7 @@ import type * as recipes from "../recipes.js";
 import type * as searchUsage from "../searchUsage.js";
 import type * as shoppingList from "../shoppingList.js";
 import type * as stripe from "../stripe.js";
+import type * as stripeWebhook from "../stripeWebhook.js";
 import type * as users from "../users.js";
 
 import type {
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   searchUsage: typeof searchUsage;
   shoppingList: typeof shoppingList;
   stripe: typeof stripe;
+  stripeWebhook: typeof stripeWebhook;
   users: typeof users;
 }>;
 

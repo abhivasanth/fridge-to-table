@@ -38,7 +38,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
             routing="path"
             path="/sign-up"
             signInUrl="/sign-in"
-            forceRedirectUrl="/pricing"
+            forceRedirectUrl="/settings"
             appearance={{
               elements: {
                 rootBox: "w-full",

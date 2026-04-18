@@ -50,18 +50,31 @@ export const getOrCreateUser = mutation({
   },
 });
 
-// Count Chef plan subscribers (for first-100 pricing)
-export const getChefSubscriberCount = query({
-  args: {},
-  handler: async (ctx) => {
-    const chefUsers = await ctx.db
+// Subscription state summary — drives PricingCards + guards
+export const getSubscriptionSummary = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
       .query("users")
-      .withIndex("by_plan", (q) => q.eq("plan", "chef"))
-      .collect();
-    // Only count active/trialing subscribers
-    return chefUsers.filter(
-      (u) => u.subscriptionStatus === "active" || u.subscriptionStatus === "trialing"
-    ).length;
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+    if (!user) {
+      return {
+        hasRecord: false,
+        hasActiveSub: false,
+        pendingCancel: false,
+        subscriptionStatus: "none",
+      };
+    }
+    const hasActiveSub =
+      user.subscriptionStatus === "trialing" ||
+      user.subscriptionStatus === "active";
+    return {
+      hasRecord: true,
+      hasActiveSub,
+      pendingCancel: user.cancelAtPeriodEnd === true,
+      subscriptionStatus: user.subscriptionStatus,
+    };
   },
 });
 
@@ -70,10 +83,9 @@ export const updateSubscription = internalMutation({
   args: {
     stripeCustomerId: v.string(),
     stripeSubscriptionId: v.optional(v.string()),
-    plan: v.optional(v.union(v.literal("basic"), v.literal("chef"))),
     stripePriceId: v.optional(v.string()),
     subscriptionStatus: v.string(),
-    trialEndsAt: v.optional(v.number()),
+    cancelAtPeriodEnd: v.optional(v.boolean()),
     currentPeriodEnd: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -91,10 +103,12 @@ export const updateSubscription = internalMutation({
 
     await ctx.db.patch(user._id, {
       stripeSubscriptionId: args.stripeSubscriptionId ?? user.stripeSubscriptionId,
-      plan: args.plan ?? user.plan,
       stripePriceId: args.stripePriceId ?? user.stripePriceId,
       subscriptionStatus: args.subscriptionStatus,
-      trialEndsAt: args.trialEndsAt ?? user.trialEndsAt,
+      cancelAtPeriodEnd:
+        args.cancelAtPeriodEnd !== undefined
+          ? args.cancelAtPeriodEnd
+          : user.cancelAtPeriodEnd,
       currentPeriodEnd: args.currentPeriodEnd ?? user.currentPeriodEnd,
       updatedAt: Date.now(),
     });
@@ -125,27 +139,3 @@ export const setStripeCustomerId = internalMutation({
   },
 });
 
-// Update user profile — called from Settings page
-export const updateProfile = mutation({
-  args: {
-    firstName: v.string(),
-    lastName: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) throw new Error("User not found");
-
-    await ctx.db.patch(user._id, {
-      firstName: args.firstName,
-      lastName: args.lastName,
-      updatedAt: Date.now(),
-    });
-  },
-});
