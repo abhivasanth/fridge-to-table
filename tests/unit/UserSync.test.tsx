@@ -29,9 +29,15 @@ vi.mock("convex/react-clerk", () => ({
   ConvexProviderWithClerk: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+const convexAuthState = { isAuthenticated: false };
+
 vi.mock("convex/react", () => ({
   ConvexReactClient: vi.fn(),
   useMutation: () => getOrCreateSpy,
+  useConvexAuth: () => ({
+    isAuthenticated: convexAuthState.isAuthenticated,
+    isLoading: false,
+  }),
 }));
 
 vi.mock("@/convex/_generated/api", () => ({
@@ -43,6 +49,7 @@ vi.mock("@/convex/_generated/api", () => ({
 describe("ConvexClientProvider (UserSync effect)", () => {
   beforeEach(() => {
     getOrCreateSpy.mockReset().mockResolvedValue(undefined);
+    convexAuthState.isAuthenticated = true; // default: auth attached
     process.env.NEXT_PUBLIC_CONVEX_URL = "https://test.convex.cloud";
   });
 
@@ -66,7 +73,26 @@ describe("ConvexClientProvider (UserSync effect)", () => {
     expect(getOrCreateSpy).not.toHaveBeenCalled();
   });
 
-  it("calls getOrCreateUser with profile fields (NOT clerkId) when user signs in", async () => {
+  it("does NOT call getOrCreateUser until Convex auth is attached (prevents 'Not authenticated' race)", () => {
+    mockState.useUser = {
+      user: {
+        id: "user_test",
+        primaryEmailAddress: { emailAddress: "test@example.com" },
+        firstName: null,
+        lastName: null,
+      },
+      isLoaded: true,
+    };
+    convexAuthState.isAuthenticated = false; // Clerk loaded but JWT not yet on Convex
+    render(
+      <ConvexClientProvider>
+        <div />
+      </ConvexClientProvider>
+    );
+    expect(getOrCreateSpy).not.toHaveBeenCalled();
+  });
+
+  it("calls getOrCreateUser with profile fields (NOT clerkId) when user signs in + Convex authed", async () => {
     mockState.useUser = {
       user: {
         id: "user_test",
