@@ -1,13 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ConvexHttpClient } from "convex/browser";
+import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 
 export const runtime = "nodejs";
-export const maxDuration = 60; // Vercel Hobby allows up to 60s; Sonnet needs ~28s
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const { sessionId, ingredients, filters } = await req.json();
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { ingredients, filters } = await req.json();
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -15,7 +21,6 @@ export async function POST(req: Request) {
     const ingredientList = ingredients.join(", ");
     const cuisineNote = filters.cuisine || "any style";
 
-    // Including the schema in the prompt dramatically improves Claude's JSON reliability
     const recipeSchema = `{
   title: string,
   description: string (1-2 sentences),
@@ -29,8 +34,6 @@ export async function POST(req: Request) {
   uncertainIngredients?: string[]
 }`;
 
-    // System message enables Anthropic prompt caching — cached after first call,
-    // reducing input processing time for subsequent calls within 5 minutes.
     const stream = await client.messages.stream({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
@@ -66,7 +69,6 @@ ${recipeSchema}`,
       }
     }
 
-    // Strip markdown code fences if Claude wraps the JSON (e.g. ```json ... ```)
     const text = fullText
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/```\s*$/i, "")
@@ -82,7 +84,7 @@ ${recipeSchema}`,
 
     const recipeSetId = await convex.mutation(
       api.recipes.saveRecipeSet,
-      { sessionId, ingredients, filters, results: recipes }
+      { userId, ingredients, filters, results: recipes }
     );
 
     return Response.json({ recipeSetId });

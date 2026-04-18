@@ -16,8 +16,20 @@ vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
 }));
 
-vi.mock("@/lib/session", () => ({
-  getSessionId: () => "test-session-123",
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: {
+      id: "user_test",
+      primaryEmailAddress: { emailAddress: "test@example.com" },
+    },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+  SignedIn: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  SignedOut: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 const baseIngredients = [

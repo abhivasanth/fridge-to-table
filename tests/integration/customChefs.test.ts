@@ -7,7 +7,7 @@ describe("listCustomChefs", () => {
   test("returns empty array when no document exists for session", async () => {
     const t = convexTest(schema);
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-new",
+      userId: "session-new",
     });
     expect(result).toEqual([]);
   });
@@ -16,7 +16,7 @@ describe("listCustomChefs", () => {
     const t = convexTest(schema);
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-abc",
+        userId: "session-abc",
         chefs: [
           { channelId: "UC2", channelName: "Chef B", channelThumbnail: "b.jpg", addedAt: 2000, resolvedAt: 1000 },
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
@@ -26,7 +26,7 @@ describe("listCustomChefs", () => {
     });
 
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
+      userId: "session-abc",
     });
 
     expect(result).toHaveLength(2);
@@ -34,11 +34,11 @@ describe("listCustomChefs", () => {
     expect(result[1].channelId).toBe("UC2");
   });
 
-  test("only returns chefs for the given sessionId", async () => {
+  test("only returns chefs for the given userId", async () => {
     const t = convexTest(schema);
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-X",
+        userId: "session-X",
         chefs: [
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
         ],
@@ -47,14 +47,14 @@ describe("listCustomChefs", () => {
     });
 
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-Y",
+      userId: "session-Y",
     });
     expect(result).toEqual([]);
   });
 });
 describe("addCustomChef", () => {
   const newChef = {
-    sessionId: "session-abc",
+    userId: "session-abc",
     channelId: "UCtest123",
     channelName: "Test Chef",
     channelThumbnail: "https://example.com/thumb.jpg",
@@ -67,7 +67,7 @@ describe("addCustomChef", () => {
     await t.mutation(api.customChefs.addCustomChef, newChef);
 
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
+      userId: "session-abc",
     });
     expect(result).toHaveLength(1);
     expect(result[0].channelId).toBe("UCtest123");
@@ -85,7 +85,7 @@ describe("addCustomChef", () => {
     });
 
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
+      userId: "session-abc",
     });
     expect(result).toHaveLength(2);
   });
@@ -127,7 +127,7 @@ describe("removeCustomChef", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-abc",
+        userId: "session-abc",
         chefs: [
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
           { channelId: "UC2", channelName: "Chef B", channelThumbnail: "b.jpg", addedAt: 2000, resolvedAt: 1000 },
@@ -137,12 +137,12 @@ describe("removeCustomChef", () => {
     });
 
     await t.mutation(api.customChefs.removeCustomChef, {
-      sessionId: "session-abc",
+      userId: "session-abc",
       channelId: "UC1",
     });
 
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
+      userId: "session-abc",
     });
     expect(result).toHaveLength(1);
     expect(result[0].channelId).toBe("UC2");
@@ -153,7 +153,7 @@ describe("removeCustomChef", () => {
 
     await expect(
       t.mutation(api.customChefs.removeCustomChef, {
-        sessionId: "session-none",
+        userId: "session-none",
         channelId: "UC1",
       })
     ).resolves.toBeNull();
@@ -164,7 +164,7 @@ describe("removeCustomChef", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-abc",
+        userId: "session-abc",
         chefs: [
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
         ],
@@ -173,12 +173,12 @@ describe("removeCustomChef", () => {
     });
 
     await t.mutation(api.customChefs.removeCustomChef, {
-      sessionId: "session-abc",
+      userId: "session-abc",
       channelId: "UC-not-exist",
     });
 
     const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
+      userId: "session-abc",
     });
     expect(result).toHaveLength(1);
   });

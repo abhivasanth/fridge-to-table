@@ -6,6 +6,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
   usePathname: () => "/",
 }));
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: null,
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+  SignedIn: () => null,
+  SignedOut: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>

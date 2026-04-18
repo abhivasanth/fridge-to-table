@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { UserButton, useUser } from "@clerk/nextjs";
+import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
 import { clearSearchState } from "@/lib/searchState";
 
@@ -21,6 +23,7 @@ function useIsDesktop() {
 export function ClientNav({ children }: { children: React.ReactNode }) {
   const isDesktop = useIsDesktop();
   const router = useRouter();
+  const { user, isLoaded: authLoaded } = useUser();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -65,6 +68,34 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Top-right auth area — sign in/up when logged out, UserButton when logged in */}
+      {authLoaded && (
+        <div className="fixed top-3 right-4 z-[100] flex items-center gap-3">
+          {user ? (
+            <UserButton
+              appearance={{
+                elements: { avatarBox: "w-8 h-8" },
+              }}
+            />
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="text-sm text-gray-600 hover:text-[#1A3A2A] transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="text-sm bg-[#1A3A2A] text-white px-4 py-1.5 rounded-full hover:bg-[#2a5a3a] transition-colors"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Toggle button — when closed: fixed top-left; when open: at right edge of sidebar */}
       <button
         ref={toggleRef}

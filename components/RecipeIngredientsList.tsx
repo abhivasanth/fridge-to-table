@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import { normalizeName } from "@/lib/pantryUtils";
 import { parseIngredientNames } from "@/lib/ingredientNameParser";
 
@@ -17,10 +17,11 @@ type Props = {
 };
 
 export function RecipeIngredientsList({ ingredients }: Props) {
-  const sessionId = getSessionId();
+  const { user } = useUser();
+  const userId = user?.id ?? "";
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    sessionId ? { sessionId } : "skip"
+    userId ? { userId } : "skip"
   );
 
   // Build a set of normalized pantry names for quick lookup

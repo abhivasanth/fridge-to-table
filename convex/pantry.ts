@@ -307,26 +307,26 @@ function classifyCategory(name: string): CategoryKey {
 /** Returns all pantry items for a session. */
 export const getPantryItems = query({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("pantryItems")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
   },
 });
 
 /**
  * Adds an item to the pantry. Normalizes the name, auto-classifies category,
- * and checks for duplicates using the by_session_and_name index.
+ * and checks for duplicates using the by_user_and_name index.
  *
  * Returns { alreadyExists: true, existingId } if duplicate,
  * or { alreadyExists: false, id } if newly inserted.
  */
 export const addToPantry = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     name: v.string(),
   },
   handler: async (ctx, args) => {
@@ -336,8 +336,8 @@ export const addToPantry = mutation({
     // Check for duplicate using the index
     const existing = await ctx.db
       .query("pantryItems")
-      .withIndex("by_session_and_name", (q) =>
-        q.eq("sessionId", args.sessionId).eq("normalizedName", normalized)
+      .withIndex("by_user_and_name", (q) =>
+        q.eq("userId", args.userId).eq("normalizedName", normalized)
       )
       .first();
 
@@ -347,7 +347,7 @@ export const addToPantry = mutation({
 
     const now = Date.now();
     const id = await ctx.db.insert("pantryItems", {
-      sessionId: args.sessionId,
+      userId: args.userId,
       name: displayName,
       normalizedName: normalized,
       category: classifyCategory(normalized),

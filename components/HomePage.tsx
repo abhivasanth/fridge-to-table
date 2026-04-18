@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { useAction, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import { saveHistoryEntry } from "@/lib/searchHistory";
 import { saveSearchState, loadSearchState } from "@/lib/searchState";
 import { IngredientInput } from "@/components/IngredientInput";
@@ -145,10 +145,11 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
     setMounted(true);
   }, []);
 
-  const sessionId = getSessionId();
+  const { user } = useUser();
+  const userId = user?.id ?? "";
   const customChefsResult = useQuery(
     api.customChefs.listCustomChefs,
-    sessionId ? { sessionId } : "skip"
+    userId ? { userId } : "skip"
   );
   const customChefsRaw = customChefsResult ?? [];
   const customChefsLoaded = customChefsResult !== undefined;
@@ -233,12 +234,15 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
           videoResults: results,
         });
       } else {
-        const sessionId = getSessionId();
         const res = await fetch("/api/generate-recipes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, ingredients: finalIngredients, filters }),
+          body: JSON.stringify({ ingredients: finalIngredients, filters }),
         });
+        if (res.status === 401) {
+          router.push("/sign-in");
+          return;
+        }
         if (!res.ok) throw new Error("Recipe generation failed");
         const { recipeSetId } = await res.json();
         router.push(`/results/${recipeSetId}`);

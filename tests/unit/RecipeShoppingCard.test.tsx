@@ -33,8 +33,20 @@ vi.mock("convex/react", () => ({
   useMutation: (ref: unknown) => ref,
 }));
 
-vi.mock("@/lib/session", () => ({
-  getSessionId: () => "test-session-123",
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: {
+      id: "user_test",
+      primaryEmailAddress: { emailAddress: "test@example.com" },
+    },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+  SignedIn: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  SignedOut: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 const shoppingList = [
@@ -134,7 +146,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByLabelText(/Add .* to shopping list/));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: "test-session-123", source: "recipe" })
+      expect.objectContaining({ userId: "user_test", source: "recipe" })
     );
   });
 
@@ -145,7 +157,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByText("already have it"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: "test-session-123" })
+      expect.objectContaining({ userId: "user_test" })
     );
   });
 

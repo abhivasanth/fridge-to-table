@@ -2,18 +2,19 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import { CATEGORY_ORDER, CATEGORY_LABELS } from "@/lib/pantryUtils";
 import type { CategoryKey } from "@/lib/pantryUtils";
 import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 
 export function PantryPage() {
-  const sessionId = getSessionId();
+  const { user } = useUser();
+  const userId = user?.id ?? "";
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    sessionId ? { sessionId } : "skip"
+    userId ? { userId } : "skip"
   );
   const addToPantry = useMutation(api.pantry.addToPantry);
   const removeFromPantry = useMutation(api.pantry.removeFromPantry);
@@ -39,9 +40,9 @@ export function PantryPage() {
 
   const handleAdd = useCallback(async () => {
     const trimmed = inputValue.trim();
-    if (!trimmed || !sessionId) return;
+    if (!trimmed || !userId) return;
 
-    const result = await addToPantry({ sessionId, name: trimmed });
+    const result = await addToPantry({ userId, name: trimmed });
     setInputValue("");
 
     if (result.alreadyExists) {
@@ -56,7 +57,7 @@ export function PantryPage() {
         setDupMessage("");
       }, 3000);
     }
-  }, [inputValue, sessionId, addToPantry]);
+  }, [inputValue, userId, addToPantry]);
 
   const handleRemove = useCallback(
     (id: Id<"pantryItems">, name: string) => {

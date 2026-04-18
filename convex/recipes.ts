@@ -20,7 +20,7 @@ const filtersValidator = v.object({
 // "internal" means it cannot be called directly from the browser; only from actions.
 export const insertRecipeSet = internalMutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     ingredients: v.array(v.string()),
     filters: filtersValidator,
     results: v.array(v.any()),
@@ -37,7 +37,7 @@ export const insertRecipeSet = internalMutation({
 // Separate from insertRecipeSet (which stays internal for Convex actions).
 export const saveRecipeSet = mutation({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     ingredients: v.array(v.string()),
     filters: filtersValidator,
     results: v.array(v.any()),
@@ -54,7 +54,7 @@ export const saveRecipeSet = mutation({
 // Calls Claude API, stores the results in Convex, and returns the recipe set ID.
 export const generateRecipes = action({
   args: {
-    sessionId: v.string(),
+    userId: v.string(),
     ingredients: v.array(v.string()),
     filters: filtersValidator,
   },
@@ -112,7 +112,7 @@ ${recipeSchema}`,
 
     // Use ctx.runMutation to call the internal mutation from within this action
     const recipeSetId = await ctx.runMutation(internal.recipes.insertRecipeSet, {
-      sessionId: args.sessionId,
+      userId: args.userId,
       ingredients: args.ingredients,
       filters: args.filters,
       results: recipes,

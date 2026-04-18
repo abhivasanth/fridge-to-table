@@ -1,5 +1,10 @@
 import { ShoppingListPage } from "@/components/ShoppingListPage";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export default function MyShoppingListRoute() {
-  return <ShoppingListPage />;
+  return (
+    <AuthGuard>
+      <ShoppingListPage />
+    </AuthGuard>
+  );
 }
