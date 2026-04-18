@@ -100,10 +100,10 @@ export const createCheckoutSession = action({
         customer_email: args.email,
       });
 
-    // Reuse existing Stripe customer so trial history and payment methods carry
-    // over. If the stored customer ID is stale (e.g. Stripe test-mode cleaned it
-    // up), retry with email — the webhook will overwrite the stale ID on
-    // successful completion.
+    // Reuse existing Stripe customer so payment methods and billing history
+    // carry over. If the stored customer ID is stale (e.g. Stripe test-mode
+    // cleaned it up), retry with email — the webhook will overwrite the stale
+    // ID on successful completion.
     let session: Stripe.Checkout.Session;
     if (user.stripeCustomerId) {
       try {

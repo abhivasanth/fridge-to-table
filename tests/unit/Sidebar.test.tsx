@@ -8,25 +8,6 @@ const mockHistory: HistoryEntry[] = [
   { id: "2", query: "chicken steak", timestamp: Date.now() - 86400001, resultType: "chefs", videoResults: [], pinned: true },
 ];
 
-vi.mock("@clerk/nextjs", () => ({
-  useUser: () => ({
-    user: { id: "test-user-123", primaryEmailAddress: { emailAddress: "test@example.com" }, firstName: "Test", lastName: "User" },
-    isLoaded: true,
-  }),
-  UserButton: () => null,
-  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
-  SignIn: () => null,
-  SignUp: () => null,
-}));
-vi.mock("@/convex/_generated/api", () => ({
-  api: {
-    users: { getByClerkId: "getByClerkId" },
-  },
-}));
-vi.mock("convex/react", () => ({
-  useQuery: () => ({ plan: "chef" }),
-}));
-
 vi.mock("@/lib/searchHistory", () => ({
   loadHistory: vi.fn(() => mockHistory),
   deleteHistoryEntry: vi.fn(),
