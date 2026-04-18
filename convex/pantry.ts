@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireUserId } from "./auth";
 
 // ---------------------------------------------------------------------------
 // Duplicated normalization & classification logic from lib/pantryUtils.ts
@@ -304,40 +305,39 @@ function classifyCategory(name: string): CategoryKey {
 // Convex queries & mutations
 // ---------------------------------------------------------------------------
 
-/** Returns all pantry items for a session. */
+/** Returns all pantry items for the authenticated user. */
 export const getPantryItems = query({
-  args: {
-    sessionId: v.string(),
-  },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
     return await ctx.db
       .query("pantryItems")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
 
 /**
  * Adds an item to the pantry. Normalizes the name, auto-classifies category,
- * and checks for duplicates using the by_session_and_name index.
+ * and checks for duplicates using the by_user_and_name index.
  *
  * Returns { alreadyExists: true, existingId } if duplicate,
  * or { alreadyExists: false, id } if newly inserted.
  */
 export const addToPantry = mutation({
   args: {
-    sessionId: v.string(),
     name: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const displayName = args.name.toLowerCase().trim();
     const normalized = normalizeName(args.name);
 
     // Check for duplicate using the index
     const existing = await ctx.db
       .query("pantryItems")
-      .withIndex("by_session_and_name", (q) =>
-        q.eq("sessionId", args.sessionId).eq("normalizedName", normalized)
+      .withIndex("by_user_and_name", (q) =>
+        q.eq("userId", userId).eq("normalizedName", normalized)
       )
       .first();
 
@@ -347,7 +347,7 @@ export const addToPantry = mutation({
 
     const now = Date.now();
     const id = await ctx.db.insert("pantryItems", {
-      sessionId: args.sessionId,
+      userId,
       name: displayName,
       normalizedName: normalized,
       category: classifyCategory(normalized),
@@ -359,12 +359,19 @@ export const addToPantry = mutation({
   },
 });
 
-/** Removes a pantry item by its document ID. */
+/**
+ * Removes a pantry item by its document ID. Verifies the item belongs to the
+ * caller before deleting — prevents cross-user deletion via enumerated IDs.
+ */
 export const removeFromPantry = mutation({
   args: {
     id: v.id("pantryItems"),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const item = await ctx.db.get(args.id);
+    if (!item) return;
+    if (item.userId !== userId) throw new Error("Forbidden");
     await ctx.db.delete(args.id);
   },
 });

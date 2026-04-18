@@ -1,15 +1,17 @@
 import { query, mutation, action } from "./_generated/server";
 import { parseYouTubeInput } from "../lib/parseYouTubeUrl";
 import { v } from "convex/values";
+import { requireUserId } from "./auth";
 
 // ─── listCustomChefs ───────────────────────────────────────────────────────
 
 export const listCustomChefs = query({
-  args: { sessionId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
     if (!doc) return [];
@@ -23,16 +25,16 @@ const MAX_CHEFS = 6;
 
 export const addCustomChef = mutation({
   args: {
-    sessionId: v.string(),
     channelId: v.string(),
     channelName: v.string(),
     channelThumbnail: v.string(),
     resolvedAt: v.number(),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
     const newChef = {
@@ -45,7 +47,7 @@ export const addCustomChef = mutation({
 
     if (!doc) {
       await ctx.db.insert("customChefs", {
-        sessionId: args.sessionId,
+        userId,
         chefs: [newChef],
         updatedAt: Date.now(),
       });
@@ -71,13 +73,13 @@ export const addCustomChef = mutation({
 
 export const removeCustomChef = mutation({
   args: {
-    sessionId: v.string(),
     channelId: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
     if (!doc) return;
@@ -95,7 +97,14 @@ export const removeCustomChef = mutation({
 
 export const resolveYouTubeChannel = action({
   args: { input: v.string() },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    // Gate on auth — this action calls YouTube Data API. Only signed-in users
+    // can reach the /my-chefs UI that invokes this, but the action would
+    // otherwise be callable by any anonymous Convex client. Match the cost
+    // protection on searchChefVideos and analyzePhoto.
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
       return { ok: false as const, error: "api_error" as const };

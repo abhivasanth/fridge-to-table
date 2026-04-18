@@ -1,5 +1,10 @@
 import { PantryPage } from "@/components/PantryPage";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export default function MyPantryRoute() {
-  return <PantryPage />;
+  return (
+    <AuthGuard>
+      <PantryPage />
+    </AuthGuard>
+  );
 }

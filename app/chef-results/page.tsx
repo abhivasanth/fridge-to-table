@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChefVideoCard } from "@/components/ChefVideoCard";
 import { VideoModal } from "@/components/VideoModal";
+import { AuthGuard } from "@/components/AuthGuard";
 import type { ChefVideoResult } from "@/types/recipe";
 
 type ActiveVideo = {
@@ -16,6 +17,14 @@ type ActiveVideo = {
 };
 
 export default function ChefResultsPage() {
+  return (
+    <AuthGuard>
+      <ChefResultsContent />
+    </AuthGuard>
+  );
+}
+
+function ChefResultsContent() {
   const [results, setResults] = useState<ChefVideoResult[] | null>(null);
   const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
 

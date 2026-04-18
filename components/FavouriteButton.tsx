@@ -1,7 +1,7 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type Props = {
@@ -12,8 +12,11 @@ type Props = {
 // Heart button that toggles a recipe's saved state.
 // Uses Convex's real-time query — the button updates instantly after clicking.
 export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
-  const sessionId = getSessionId();
-  const favourites = useQuery(api.favourites.getFavourites, sessionId ? { sessionId } : "skip");
+  const { user, isReady } = useAuthedUser();
+  const favourites = useQuery(
+    api.favourites.getFavourites,
+    isReady ? {} : "skip"
+  );
   const saveFavourite = useMutation(api.favourites.saveFavourite);
   const removeFavourite = useMutation(api.favourites.removeFavourite);
 
@@ -22,11 +25,12 @@ export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
   );
 
   async function handleToggle() {
+    if (!user) return;
     const id = recipeSetId as Id<"recipes">;
     if (isFavourited) {
-      await removeFavourite({ sessionId, recipeSetId: id, recipeIndex });
+      await removeFavourite({ recipeSetId: id, recipeIndex });
     } else {
-      await saveFavourite({ sessionId, recipeSetId: id, recipeIndex });
+      await saveFavourite({ recipeSetId: id, recipeIndex });
     }
   }
 

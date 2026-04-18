@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useAction } from "convex/react";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import { CHEFS } from "@/lib/chefs";
 import { getSlotIds, setSlotIds, MAX_CHEF_TABLE_SLOTS } from "@/lib/chefSlots";
 import { CustomChefCard } from "@/components/CustomChefCard";
+import { AuthGuard } from "@/components/AuthGuard";
 
 const MAX_CUSTOM_CHEFS = 6;
 
@@ -27,11 +28,19 @@ const RESOLVE_ERROR_MESSAGES: Record<NonNullable<ResolveError>, string> = {
 };
 
 export default function MyChefsMPage() {
-  const sessionId = getSessionId();
+  return (
+    <AuthGuard>
+      <MyChefsContent />
+    </AuthGuard>
+  );
+}
+
+function MyChefsContent() {
+  const { user, isReady } = useAuthedUser();
   const customChefs =
     useQuery(
       api.customChefs.listCustomChefs,
-      sessionId ? { sessionId } : "skip"
+      isReady ? {} : "skip"
     ) ?? [];
 
   const addCustomChef = useMutation(api.customChefs.addCustomChef);
@@ -101,12 +110,11 @@ export default function MyChefsMPage() {
   }
 
   async function handleAdd() {
-    if (!preview || !sessionId) return;
+    if (!preview || !user) return;
     setAddError(null);
 
     try {
       await addCustomChef({
-        sessionId,
         channelId: preview.channelId,
         channelName: preview.channelName,
         channelThumbnail: preview.channelThumbnail,
@@ -132,8 +140,8 @@ export default function MyChefsMPage() {
   }
 
   async function handleRemove(channelId: string) {
-    if (!sessionId) return;
-    await removeCustomChef({ sessionId, channelId });
+    if (!user) return;
+    await removeCustomChef({ channelId });
     const next = slotIds.filter((id) => id !== channelId);
     setSlotIdsState(next);
     setSlotIds(next);

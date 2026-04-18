@@ -1,21 +1,37 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { ConvexHttpClient } from "convex/browser";
+import { fetchMutation } from "convex/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 
 export const runtime = "nodejs";
-export const maxDuration = 60; // Vercel Hobby allows up to 60s; Sonnet needs ~28s
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const { sessionId, ingredients, filters } = await req.json();
+    // Route is marked as a public route in middleware.ts so this 401 path can
+    // actually fire (middleware.auth.protect() would otherwise return 404).
+    const { userId, getToken } = await auth();
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Forward the Clerk JWT to Convex so saveRecipeSet can derive userId
+    // server-side via requireUserId(ctx) — never trusting client-supplied IDs.
+    const token = await getToken({ template: "convex" });
+    if (!token) {
+      return Response.json(
+        { error: "Unable to obtain Convex token" },
+        { status: 500 }
+      );
+    }
+
+    const { ingredients, filters } = await req.json();
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
     const ingredientList = ingredients.join(", ");
     const cuisineNote = filters.cuisine || "any style";
 
-    // Including the schema in the prompt dramatically improves Claude's JSON reliability
     const recipeSchema = `{
   title: string,
   description: string (1-2 sentences),
@@ -29,8 +45,6 @@ export async function POST(req: Request) {
   uncertainIngredients?: string[]
 }`;
 
-    // System message enables Anthropic prompt caching — cached after first call,
-    // reducing input processing time for subsequent calls within 5 minutes.
     const stream = await client.messages.stream({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
@@ -66,7 +80,6 @@ ${recipeSchema}`,
       }
     }
 
-    // Strip markdown code fences if Claude wraps the JSON (e.g. ```json ... ```)
     const text = fullText
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/```\s*$/i, "")
@@ -80,15 +93,20 @@ ${recipeSchema}`,
       );
     }
 
-    const recipeSetId = await convex.mutation(
+    const recipeSetId = await fetchMutation(
       api.recipes.saveRecipeSet,
-      { sessionId, ingredients, filters, results: recipes }
+      { ingredients, filters, results: recipes },
+      { token }
     );
 
     return Response.json({ recipeSetId });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[generate-recipes] Error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    // Log the full error for observability but never leak it to the client —
+    // raw messages may include Anthropic / Convex / internal context.
+    console.error("[generate-recipes] Error:", err);
+    return Response.json(
+      { error: "Recipe generation failed" },
+      { status: 500 }
+    );
   }
 }

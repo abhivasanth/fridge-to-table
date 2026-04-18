@@ -2,16 +2,16 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 
 export function ShoppingListPage() {
-  const sessionId = getSessionId();
+  const { user, isReady } = useAuthedUser();
   const items = useQuery(
     api.shoppingList.getShoppingListItems,
-    sessionId ? { sessionId } : "skip"
+    isReady ? {} : "skip"
   );
   const addItem = useMutation(api.shoppingList.addToShoppingList);
   const removeItem = useMutation(api.shoppingList.removeFromShoppingList);
@@ -31,9 +31,9 @@ export function ShoppingListPage() {
 
   const submitItem = useCallback(async () => {
     const name = inputValue.trim();
-    if (!name || !sessionId) return;
+    if (!name || !user) return;
 
-    const result = await addItem({ sessionId, name });
+    const result = await addItem({ name });
 
     if (result.alreadyExists) {
       setInputValue("");
@@ -48,7 +48,7 @@ export function ShoppingListPage() {
     } else {
       setInputValue("");
     }
-  }, [inputValue, sessionId, addItem]);
+  }, [inputValue, user, addItem]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {

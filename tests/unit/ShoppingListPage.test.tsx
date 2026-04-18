@@ -21,10 +21,25 @@ vi.mock("@/convex/_generated/api", () => ({
 vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useMutation: (ref: unknown) => ref,
+  useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
 }));
 
-vi.mock("@/lib/session", () => ({
-  getSessionId: () => "test-session-123",
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({
+    user: {
+      id: "user_test",
+      primaryEmailAddress: { emailAddress: "test@example.com" },
+      firstName: "Test",
+      lastName: "User",
+    },
+    isLoaded: true,
+  }),
+  UserButton: () => null,
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  SignIn: () => null,
+  SignUp: () => null,
+  SignedIn: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  SignedOut: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock("next/link", () => ({
@@ -93,7 +108,6 @@ describe("ShoppingListPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      sessionId: "test-session-123",
       name: "milk",
     });
   });
@@ -108,7 +122,6 @@ describe("ShoppingListPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      sessionId: "test-session-123",
       name: "milk",
     });
   });

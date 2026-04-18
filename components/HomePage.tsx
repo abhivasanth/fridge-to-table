@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { useAction, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
-import { getSessionId } from "@/lib/session";
 import { saveHistoryEntry } from "@/lib/searchHistory";
 import { saveSearchState, loadSearchState } from "@/lib/searchState";
 import { IngredientInput } from "@/components/IngredientInput";
@@ -145,13 +145,17 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
     setMounted(true);
   }, []);
 
-  const sessionId = getSessionId();
+  const { user, isReady } = useAuthedUser();
   const customChefsResult = useQuery(
     api.customChefs.listCustomChefs,
-    sessionId ? { sessionId } : "skip"
+    isReady ? {} : "skip"
   );
   const customChefsRaw = customChefsResult ?? [];
-  const customChefsLoaded = customChefsResult !== undefined;
+  // When auth isn't ready (signed-out visitor, or Clerk still loading), we
+  // intentionally skip the query — treat that as "loaded with no custom chefs"
+  // so the Chef's Table grid renders for public visitors, not an eternal
+  // skeleton. When auth IS ready, wait for the real query result.
+  const customChefsLoaded = !isReady || customChefsResult !== undefined;
 
   // Build merged chef list: defaults (always) + customs
   const allSlots: ChefSlot[] = [
@@ -189,6 +193,15 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   const analyzePhoto = useAction(api.photos.analyzePhoto);
   const searchChefVideos = useAction(api.chefs.searchChefVideos);
   async function handleSubmit(ingredients: string[], imageBase64?: string) {
+    // All three backends (analyzePhoto, searchChefVideos, /api/generate-recipes)
+    // require a signed-in user. Redirect before firing any network work so
+    // signed-out visitors land on /sign-in instead of seeing the generic
+    // "chef is taking a break" error from the catch below.
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -233,12 +246,15 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
           videoResults: results,
         });
       } else {
-        const sessionId = getSessionId();
         const res = await fetch("/api/generate-recipes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, ingredients: finalIngredients, filters }),
+          body: JSON.stringify({ ingredients: finalIngredients, filters }),
         });
+        if (res.status === 401) {
+          router.push("/sign-in");
+          return;
+        }
         if (!res.ok) throw new Error("Recipe generation failed");
         const { recipeSetId } = await res.json();
         router.push(`/results/${recipeSetId}`);

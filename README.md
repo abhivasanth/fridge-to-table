@@ -10,37 +10,46 @@ A recipe suggestion web app that generates personalised recipes from the ingredi
 
 Fridge to Table lets users input their available ingredients — either by typing a comma-separated list or uploading a fridge photo — and instantly receive three tailored recipe suggestions. Users can filter by diet (vegetarian, vegan, non-vegetarian), cuisine style, cooking time, and difficulty. Recipes include step-by-step instructions, a pantry-aware ingredients list, and an interactive shopping list card for anything missing.
 
-The app features a **Chef's Table** mode where users can discover up to 3 most relevant YouTube recipe videos per chef from popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, pantry, shopping list, and new searches. Favourites can be saved and revisited — no account required.
+The app features a **Chef's Table** mode where users can discover up to 3 most relevant YouTube recipe videos per chef from popular cooking creators (8 featured chefs + up to 6 custom YouTube channels). A collapsible **sidebar** provides quick access to search history, favourites, pantry, shopping list, and new searches. Favourites can be saved and revisited across devices.
 
 Users can manage a persistent **My Pantry** of staple ingredients they always have on hand, and a **My Shopping List** of items to buy. Recipe pages are pantry-aware — ingredients already in the pantry are highlighted, and the shopping list card automatically hides pantry items.
+
+Authentication is provided by **Clerk** (Google OAuth + email/password). All user-owned data (favourites, pantry, shopping list, custom chefs, recipe history) is scoped to the authenticated Clerk user ID — users keep their data across browsers and devices. The home page and Chef's Table are browsable signed-out; writes and personal lists require sign-in.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│              Next.js 16 (Vercel)                │
-│  App Router · TypeScript · Tailwind CSS         │
-│  API route for recipe generation (streaming)    │
-└──────────┬────────────────────┬─────────────────┘
-           │  Convex React SDK  │  Anthropic SDK
-           ▼                    ▼
-┌──────────────────────┐  ┌──────────────────────┐
-│   Convex (Backend)   │  │  Claude Sonnet 4.6   │
-│  Mutations · Queries │  │  (Anthropic)         │
-│  Database · Actions  │  │  Recipe generation   │
-│  Photo analysis      │  │  via API route       │
-│  Chef video search   │  │                      │
-└──────────────────────┘  └──────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                Next.js 16 (Vercel)                   │
+│  App Router · TypeScript · Tailwind CSS              │
+│  Middleware-level Clerk auth · API route (streaming) │
+└────┬───────────────────┬──────────────────┬──────────┘
+     │  Clerk            │  Convex React    │  Anthropic SDK
+     │  (SignIn/SignUp,  │  + Clerk JWT     │
+     │  UserButton)      │  via             │
+     │                   │  ConvexProvider  │
+     ▼                   ▼                  ▼
+┌─────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│   Clerk     │   │ Convex (Backend) │   │ Claude Sonnet    │
+│  (Auth,     │   │ Mutations · Qry  │   │ 4.6 (Anthropic)  │
+│  Session    │   │ Actions · DB     │   │ Recipe gen via   │
+│  JWT)       │   │ JWT-validated    │   │ API route        │
+└─────────────┘   │ via issuer       │   │                  │
+                  │ domain           │   │                  │
+                  └──────────────────┘   └──────────────────┘
 ```
 
 **Key design decisions:**
 
-- **Hybrid backend architecture.** Recipe generation uses a Next.js API route (`/api/generate-recipes`) that calls Claude Sonnet directly via streaming, then saves results to Convex via `ConvexHttpClient`. This reduces latency from ~40s (through Convex Actions) to ~28s (direct connection to Anthropic). All other Claude API calls (photo analysis, Chef's Table) remain in Convex Actions. The Convex `generateRecipes` action is kept as a production-identical fallback.
+- **Hybrid backend architecture.** Recipe generation uses a Next.js API route (`/api/generate-recipes`) that calls Claude Sonnet directly via streaming, then saves results to Convex via `fetchMutation` (forwarding the Clerk JWT). This reduces latency from ~40s (through Convex Actions) to ~28s (direct connection to Anthropic). All other Claude API calls (photo analysis, Chef's Table) remain in Convex Actions. The Convex `generateRecipes` action is kept as a production-identical fallback.
 - **Prompt caching via system message.** The recipe generation API route uses a separate `system` parameter for the persona instruction ("You are a creative chef..."), enabling Anthropic's prompt caching — subsequent calls within 5 minutes skip re-processing the system prompt.
 - **Convex as the primary backend.** Photo analysis, Chef's Table video search, favourites, pantry, and shopping list all use Convex Actions and Mutations. The Anthropic API key lives in both Convex environment variables (for actions) and Vercel environment variables (for the API route).
-- **Anonymous sessions.** A UUID is generated on first visit and stored in `localStorage`. No login required. Favourites, pantry items, and shopping list are scoped to this session ID.
+- **Clerk + Convex auth.** Clerk handles the UI (Google OAuth, email/password, UserButton). `ConvexProviderWithClerk` forwards Clerk's session JWT to Convex on every query/mutation. Convex validates the JWT against `CLERK_JWT_ISSUER_DOMAIN` and exposes the Clerk user ID via `ctx.auth.getUserIdentity().subject`. All user-owned tables store `userId: string` (the Clerk user ID) — there is intentionally no `users` table (YAGNI — Clerk is the source of truth for identity).
+- **Server-derived user identity.** User-owned Convex functions never accept `userId` as a client argument. The helper `requireUserId(ctx)` in `convex/auth.ts` derives identity from the JWT. Delete-by-ID mutations additionally verify ownership before mutating.
+- **Two-stage client-side auth readiness.** The `useAuthedUser()` hook combines Clerk's `isLoaded` with Convex's `useConvexAuth().isAuthenticated` — this closes a race where Clerk reports "loaded" before `ConvexProviderWithClerk` has attached the JWT. All `useQuery` calls against authed Convex functions gate on `useAuthedUser().isReady`.
+- **Middleware protection + AuthGuard UX.** `middleware.ts` enforces auth at the routing layer (unauth'd visits to protected routes redirect to `/sign-in`). `components/AuthGuard.tsx` provides a loading spinner UX inside the protected page while Clerk hydrates on the client.
 - **Server components for data pages.** The results and recipe detail pages are Next.js Server Components using `fetchQuery` — data is fetched before the page renders, eliminating loading spinners.
 - **Real-time favourites.** `useQuery` from Convex provides live updates — saving or removing a favourite reflects instantly without a page refresh.
 - **Two-tier chef selection.** Chef's Table slots (which chefs appear) are stored in `localStorage`. Per-search toggles (which slotted chefs to include) are transient UI state. This keeps the roster persistent without extra DB writes.
@@ -60,6 +69,7 @@ Users can manage a persistent **My Pantry** of staple ingredients they always ha
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript |
 | Styling | Tailwind CSS |
+| Auth | Clerk v7 (`@clerk/nextjs`), Convex JWT validation (`convex/react-clerk`) |
 | Backend | Convex (Actions, Mutations, Queries) |
 | Database | Convex (built-in) |
 | AI | Claude Sonnet 4.6 via `@anthropic-ai/sdk` |
@@ -74,20 +84,25 @@ Users can manage a persistent **My Pantry** of staple ingredients they always ha
 
 ```
 fridge_to_table/
+├── middleware.ts                           # Clerk middleware — protects non-public routes
 ├── app/
-│   ├── layout.tsx                          # Root layout with ConvexClientProvider
+│   ├── layout.tsx                          # Root layout with ConvexClientProvider (Clerk + Convex)
 │   ├── page.tsx                            # Server Component — derives initialTab from searchParams
-│   ├── api/generate-recipes/route.ts      # Recipe generation API route (streaming Claude call)
-│   ├── results/[recipeSetId]/page.tsx      # Results page (3 recipe cards)
-│   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page
-│   ├── chef-results/page.tsx              # Chef's Table results page (section-per-chef layout)
-│   ├── favourites/page.tsx                 # Saved favourites page
-│   ├── my-chefs/page.tsx                   # Manage chef roster (featured + custom)
-│   ├── my-pantry/page.tsx                  # My Pantry page (persistent staple ingredients)
-│   └── my-shopping-list/page.tsx           # My Shopping List page (items to buy)
+│   ├── api/generate-recipes/route.ts      # Recipe generation API route (Clerk auth + streaming Claude)
+│   ├── sign-in/[[...sign-in]]/page.tsx     # Clerk sign-in route
+│   ├── sign-up/[[...sign-up]]/page.tsx     # Clerk sign-up route
+│   ├── results/[recipeSetId]/page.tsx      # Results page (3 recipe cards) — forwards Clerk JWT
+│   ├── recipe/[recipeSetId]/[recipeIndex]/ # Recipe detail page — forwards Clerk JWT
+│   ├── chef-results/page.tsx              # Chef's Table results page (AuthGuard)
+│   ├── favourites/page.tsx                 # Saved favourites page (AuthGuard)
+│   ├── my-chefs/page.tsx                   # Manage chef roster (AuthGuard)
+│   ├── my-pantry/page.tsx                  # My Pantry page (AuthGuard)
+│   └── my-shopping-list/page.tsx           # My Shopping List page (AuthGuard)
 ├── components/
 │   ├── HomePage.tsx                        # Client Component — home page (ingredients, filters, Chef's Table)
-│   ├── ConvexClientProvider.tsx            # Wraps app with Convex context
+│   ├── ConvexClientProvider.tsx            # ClerkProvider + ConvexProviderWithClerk
+│   ├── AuthPage.tsx                        # Shared shell for Clerk <SignIn>/<SignUp>
+│   ├── AuthGuard.tsx                       # Client gate: loading spinner + redirect to /sign-in
 │   ├── ClientNav.tsx                       # Top nav + collapsed icon rail (desktop)
 │   ├── Sidebar.tsx                         # Slide-out sidebar (history, favourites, new search)
 │   ├── IngredientInput.tsx                 # Text/photo input + diet filter
@@ -107,17 +122,20 @@ fridge_to_table/
 │   ├── BottomNav.tsx                       # Mobile bottom navigation bar
 │   └── Navbar.tsx                          # Legacy top navbar
 ├── convex/
-│   ├── schema.ts                           # Database schema (recipes, favourites, customChefs, pantryItems, shoppingListItems)
-│   ├── recipes.ts                          # generateRecipes action (fallback) + saveRecipeSet mutation (API route) + getRecipeSet query
+│   ├── schema.ts                           # Database schema (recipes, favourites, customChefs, pantryItems, shoppingListItems) — userId-keyed, no users table
+│   ├── auth.ts                             # requireUserId(ctx) — derives Clerk user ID from JWT
+│   ├── auth.config.ts                      # JWT validator config (issuer = Clerk)
+│   ├── recipes.ts                          # generateRecipes action (fallback) + saveRecipeSet mutation (API route) + getRecipeSet query — all authed
 │   ├── chefs.ts                            # Chef's Table video search action (protein-aware filtering, dedup, up to 3 per chef)
-│   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution
-│   ├── photos.ts                           # analyzePhoto action (Claude vision)
-│   ├── favourites.ts                       # save/remove/get favourites
-│   ├── pantry.ts                           # Pantry CRUD (add/remove/get, auto-classify, dedup)
-│   ├── shoppingList.ts                     # Shopping list CRUD (add/remove/get, dedup)
+│   ├── customChefs.ts                      # Custom chef CRUD + YouTube channel resolution — authed
+│   ├── photos.ts                           # analyzePhoto action (Claude vision) — authed
+│   ├── favourites.ts                       # save/remove/get favourites — authed
+│   ├── pantry.ts                           # Pantry CRUD — authed, ownership checks on delete-by-ID
+│   ├── shoppingList.ts                     # Shopping list CRUD — authed, ownership checks on delete-by-ID
 │   └── _generated/                         # Auto-generated Convex bindings (committed)
+├── hooks/
+│   └── useAuthedUser.ts                    # Combines Clerk isLoaded + Convex JWT-attached readiness
 ├── lib/
-│   ├── session.ts                          # Anonymous session ID (localStorage)
 │   ├── chefs.ts                            # Featured chef definitions + ChefSlot adapters
 │   ├── chefSlots.ts                        # Chef's Table slot management (localStorage)
 │   ├── searchHistory.ts                    # Search history storage (localStorage)
@@ -144,7 +162,9 @@ fridge_to_table/
 
 - Node.js 20+
 - A [Convex](https://convex.dev) account
+- A [Clerk](https://dashboard.clerk.com) account (free tier is fine for development)
 - An [Anthropic](https://console.anthropic.com) API key with credits
+- A [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com) key
 
 ### Setup
 
@@ -153,86 +173,110 @@ fridge_to_table/
 npm install
 ```
 
-**2. Start Convex (keep this running in a dedicated terminal)**
+**2. Create your Clerk application**
+- Sign in to https://dashboard.clerk.com → create a new application (or use an existing one).
+- Enable **Google** as a social connection (Configure → SSO connections).
+- Under **Configure → JWT templates**, click **+ New template** and pick the **Convex** preset. **Name it exactly `convex`** (lowercase). Save. This is required — without it, `getToken({ template: "convex" })` returns 404 and Convex queries will fail with "Not authenticated".
+- Copy the **Publishable Key** (`pk_test_...`) and **Secret Key** (`sk_test_...`) from Configure → API keys.
+- Copy the **Issuer** URL from your JWT template (e.g., `https://singular-buffalo-90.clerk.accounts.dev`) — you'll need this for Convex.
+
+**3. Start Convex (keep this running in a dedicated terminal)**
 ```bash
 npx convex dev
 ```
 This creates `.env.local` with `NEXT_PUBLIC_CONVEX_URL` automatically.
 
-**3. Set API keys in Convex**
+**4. Set environment variables in Convex**
 ```bash
 npx convex env set ANTHROPIC_API_KEY sk-ant-your-key-here
 npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here
+npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-clerk-instance.clerk.accounts.dev
 ```
 
-**4. Start the Next.js dev server (separate terminal)**
+**5. Populate `.env.local`** (copy from `.env.example`)
+```
+NEXT_PUBLIC_CONVEX_URL=...                 # set by `npx convex dev`
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+ANTHROPIC_API_KEY=sk-ant-api03-...         # also needed here for the /api/generate-recipes route
+```
+
+**6. Start the Next.js dev server (separate terminal)**
 ```bash
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. Sign in with Google or email/password to exercise authenticated flows.
 
 ---
 
 ## Data Model
+
+> **Note:** There is intentionally no `users` table. Clerk is the source of truth for identity (email, name, OAuth providers, session history). All user-owned tables store `userId: string` which is the Clerk user ID (e.g., `user_3CTg...`). A `users` table would be added only if a feature needs per-user server-side metadata that isn't already in Clerk (admin roles, notification prefs, analytics aggregates).
 
 ### `recipes` table
 Stores one row per search — a set of 3 generated recipes.
 
 | Field | Type | Description |
 |---|---|---|
-| `sessionId` | `string` | Anonymous user UUID |
+| `userId` | `string` | Clerk user ID |
 | `ingredients` | `string[]` | Ingredients the user entered |
 | `filters` | `object` | `{ cuisine, maxCookingTime, difficulty, diet? }` |
 | `results` | `any[]` | Array of 3 `Recipe` objects (JSON) |
 | `generatedAt` | `number` | `Date.now()` timestamp |
 
+Indexes: `by_user`.
+
 ### `favourites` table
-Tracks which recipes a session has saved.
+Tracks which recipes a user has saved.
 
 | Field | Type | Description |
 |---|---|---|
-| `sessionId` | `string` | Anonymous user UUID |
+| `userId` | `string` | Clerk user ID |
 | `recipeSetId` | `Id<"recipes">` | References the recipes table |
 | `recipeIndex` | `number` | 0, 1, or 2 — which of the 3 recipes |
 | `savedAt` | `number` | `Date.now()` timestamp |
 
+Indexes: `by_user`, `by_user_and_recipe` (userId + recipeSetId + recipeIndex).
+
 ### `customChefs` table
-Stores custom YouTube chefs added by a session.
+Stores custom YouTube chefs added by a user.
 
 | Field | Type | Description |
 |---|---|---|
-| `sessionId` | `string` | Anonymous user UUID |
+| `userId` | `string` | Clerk user ID |
 | `chefs` | `array` | Array of `{ channelId, channelName, channelThumbnail, addedAt, resolvedAt }` |
 | `updatedAt` | `number` | Last modification timestamp |
+
+Indexes: `by_user`.
 
 ### `pantryItems` table
 Persistent pantry — ingredients the user always has on hand.
 
 | Field | Type | Description |
 |---|---|---|
-| `sessionId` | `string` | Anonymous user UUID |
+| `userId` | `string` | Clerk user ID |
 | `name` | `string` | Display name, lowercase trimmed |
 | `normalizedName` | `string` | For matching/dedup (depluralized, alias-resolved) |
 | `category` | `string` | Auto-classified: `oils_fats`, `spices_powders`, `sauces_condiments`, `basics`, `other` |
 | `createdAt` | `number` | `Date.now()` timestamp |
 | `updatedAt` | `number` | `Date.now()` timestamp |
 
-Indexes: `by_session`, `by_session_and_name` (sessionId + normalizedName).
+Indexes: `by_user`, `by_user_and_name` (userId + normalizedName).
 
 ### `shoppingListItems` table
 Items the user wants to buy.
 
 | Field | Type | Description |
 |---|---|---|
-| `sessionId` | `string` | Anonymous user UUID |
+| `userId` | `string` | Clerk user ID |
 | `name` | `string` | Display name |
 | `normalizedName` | `string` | For matching/dedup |
 | `source` | `string` | `manual` (typed in) or `recipe` (added from recipe page) |
 | `createdAt` | `number` | `Date.now()` timestamp |
 | `updatedAt` | `number` | `Date.now()` timestamp |
 
-Indexes: `by_session`, `by_session_and_name` (sessionId + normalizedName).
+Indexes: `by_user`, `by_user_and_name` (userId + normalizedName).
 
 ---
 
@@ -262,7 +306,7 @@ npm run test:e2e
 
 ## Deployment
 
-Production is hosted on **Vercel** (frontend) + **Convex** (backend).
+Production is hosted on **Vercel** (frontend) + **Convex** (backend). Every PR gets an isolated Vercel Preview deployment backed by an ephemeral Convex preview deployment.
 
 ### Deploy
 
@@ -274,26 +318,52 @@ The Vercel build command is configured as:
 ```
 npx convex deploy --cmd 'npm run build'
 ```
-This deploys Convex functions first (regenerating `_generated/` bindings), then builds Next.js with the fresh bindings.
+This deploys Convex functions first (regenerating `_generated/` bindings), then builds Next.js with the fresh bindings. For Preview deploys, Convex creates a fresh ephemeral deployment (e.g., `necessary-bird-659.convex.cloud`) per PR.
 
 ### Required Vercel environment variables
 
-| Variable | Value |
-|---|---|
-| `NEXT_PUBLIC_CONVEX_URL` | Your production Convex URL (e.g. `https://helpful-loris-385.convex.cloud`) |
-| `CONVEX_DEPLOY_KEY` | Production deploy key from Convex dashboard → Settings → Deploy Keys |
-| `ANTHROPIC_API_KEY` | Your Anthropic API key — used by the recipe generation API route |
+Add these in **Project Settings → Environment Variables** (Project tab, not Shared, unless you manage keys at the team level).
 
-### Set API keys in production Convex
+| Variable | Scope | Sensitive | Value / Source |
+|---|---|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | All Environments | no | Production Convex URL (e.g. `https://helpful-loris-385.convex.cloud`). For Preview, the Convex integration rewrites this automatically to the ephemeral preview deployment URL at build time. |
+| `CONVEX_DEPLOY_KEY` | **Production** only | yes | Production Deploy Key — Convex dashboard → **Project Settings** → **Production Deploy Keys** |
+| `CONVEX_DEPLOY_KEY` | **Preview** only | yes | Preview Deploy Key — Convex dashboard → **Project Settings** → **Preview Deploy Keys** → generate one. Must be a separate entry from the Production key (Convex refuses to use a production key in a non-production build). |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Preview + Production | no (safe to expose) | Clerk → Configure → API keys (`pk_test_...` or `pk_live_...`) |
+| `CLERK_SECRET_KEY` | Preview + Production | yes | Clerk → Configure → API keys (`sk_test_...` or `sk_live_...`) |
+| `ANTHROPIC_API_KEY` | Preview + Production | yes | Anthropic console. Server-only (no `NEXT_PUBLIC_` prefix). |
+
+**Important — Convex Default Environment Variables.** The `CLERK_JWT_ISSUER_DOMAIN`, `YOUTUBE_API_KEY`, and `ANTHROPIC_API_KEY` env vars must exist **inside Convex** (not just Vercel) so backend actions and `auth.config.ts` can read them. Preview Convex deployments are created fresh per PR and need these as **Default Environment Variables** in Convex dashboard → Project Settings → Environment Variables → **Default Environment Variables**. Add each with all three deployment types checked (Production, Preview, Development). These values are applied when a new preview deployment spins up; existing deployments are not affected retroactively.
 
 ```bash
+# Set on the production Convex deployment directly:
 npx convex env set ANTHROPIC_API_KEY sk-ant-your-key-here --prod
 npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
+npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-clerk-instance.clerk.accounts.dev --prod
 ```
+
+### Clerk setup required for every Clerk instance
+
+Each Clerk instance (development, staging, production) needs:
+
+1. **JWT template named `convex`** — Clerk dashboard → Configure → JWT templates → + New template → **Convex** preset → name it exactly `convex` (lowercase). Without this, `getToken({ template: "convex" })` returns 404 and nothing authed works.
+2. (Recommended) **Email lockdown** — Configure → Email, Phone, Username → disable "Users can add email addresses". Users key off the stable Clerk user ID, but email changes complicate downstream analytics/notifications.
+
+### Vercel Toolbar on preview deployments
+
+Vercel auto-injects a dev toolbar on `.vercel.app` preview URLs for logged-in Vercel users. It does not appear on production and is not visible to end users.
 
 ---
 
 ## User Flows
+
+### 0. Sign-in / sign-up
+1. Unauth'd visitors can view the home page (ingredient input + Chef's Table grid) and generic pages.
+2. Attempting a personalized action (generate recipes, save a favourite, visit `/favourites`, `/my-pantry`, `/my-shopping-list`, `/my-chefs`, or `/chef-results`) redirects to `/sign-in` via `middleware.ts` / `AuthGuard`.
+3. Sign-in options: **Continue with Google** (OAuth) or email + password.
+4. Sign-up mirrors sign-in — new users can create an account with either method.
+5. After authentication, Clerk issues a session JWT. `ConvexProviderWithClerk` forwards the JWT to Convex on every query/mutation.
+6. Top-right **UserButton** (Clerk component) opens the Manage Account modal (profile, security, connected accounts, sign out). There is intentionally no custom `/settings` page — Clerk handles it.
 
 ### 1. Text input flow
 1. User enters ingredients as comma-separated text
@@ -349,7 +419,7 @@ npx convex env set YOUTUBE_API_KEY your-youtube-api-key-here --prod
 3. Ingredients and filters are restored from `sessionStorage` after mount
 4. Entrance animations are skipped — the page loads instantly
 5. Clicking **New Search** (sidebar or icon rail) clears the saved state and shows a clean home page
-6. Closing the browser tab or opening a new tab always starts fresh (`sessionStorage` is tab-scoped)
+6. Closing the browser tab or opening a new tab always starts fresh (`sessionStorage` is tab-scoped). User-owned data (favourites, pantry, shopping list, chefs) lives in Convex keyed by Clerk user ID, so it persists across tabs, browsers, and devices once the user signs in.
 
 ### 7. Sidebar navigation
 1. Hamburger button (mobile) or toggle button (desktop) opens the sidebar
@@ -407,7 +477,9 @@ The homepage displays four user testimonials highlighting different aspects of t
 
 - **Recipe generation takes ~28 seconds** — Claude Sonnet generates ~3000 tokens for 3 full recipes at ~80-100 tokens/second. This is a model speed constraint, not an architectural one. The API route uses streaming to keep the connection alive. Previous architecture through Convex Actions took ~40 seconds due to additional network latency.
 - **Photo upload occasionally fails** — the Claude Vision → ingredient extraction flow can time out or return empty results on some images. Typing ingredients directly is more reliable.
-- **Session-scoped data** — clearing `localStorage` or switching browsers loses favourites, chef slots, search history, pantry items, and shopping list. A future auth layer would persist these across devices.
+- **No anonymous mode / no data migration** — All user-owned data requires sign-in. There is no anonymous session path. Pre-auth `sessionId`-keyed data was wiped when Clerk auth was introduced (pre-launch, zero real users). If a public demo path is ever added, it needs migration designed up front.
+- **No retention policy** — Recipe search history, favourites, pantry, shopping list, and custom chefs accumulate indefinitely per user. A cleanup cron for old non-favourited recipe searches is in the backlog.
+- **No cascade on account deletion** — Deleting a Clerk account does not automatically purge the user's Convex data. A Clerk webhook → Convex wipe-by-userId is in the backlog (required for launch from a legal/compliance perspective).
 - **Duplicated normalization logic** — pantry/shopping list name normalization is implemented in both `lib/pantryUtils.ts` (client-side for UI matching) and `convex/pantry.ts` / `convex/shoppingList.ts` (server-side for atomic dedup). Changes to normalization rules must be applied in both places. This is a Convex isolation constraint — backend functions cannot import from Next.js `lib/`.
 - **No pagination** — the results page always shows exactly 3 recipes per search.
 - **Custom chef limit** — max 6 custom YouTube chefs per session (in addition to 8 featured chefs).
@@ -419,13 +491,35 @@ The homepage displays four user testimonials highlighting different aspects of t
 
 ## Environment Variables
 
-| Variable | Where | Description |
-|---|---|---|
-| `NEXT_PUBLIC_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-created by `npx convex dev`) |
-| `ANTHROPIC_API_KEY` | Convex environment + `.env.local` + Vercel | Anthropic API key — used by Convex Actions (photo analysis) and the Next.js API route (recipe generation). Set in Convex via `npx convex env set` and in Vercel via dashboard. |
-| `YOUTUBE_API_KEY` | Convex environment | YouTube Data API v3 key — used for Chef's Table video search and custom chef channel resolution |
+A consolidated view of every variable, where it lives, and what uses it. See **Deployment** above for Vercel scoping rules.
 
-> The Anthropic and YouTube API keys are **never** exposed to the browser. The Anthropic key lives in Convex environment variables (for photo analysis and fallback recipe generation) and in Vercel/`.env.local` environment variables (for the recipe generation API route — server-side only, not prefixed with `NEXT_PUBLIC_`). The YouTube key lives exclusively in Convex.
+### Next.js runtime (local `.env.local` + Vercel)
+
+| Variable | Public? | Description |
+|---|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | yes | Convex deployment URL (auto-set locally by `npx convex dev`; Vercel sets this per environment via Convex integration) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | yes | Clerk publishable key (`pk_test_...` / `pk_live_...`). Safe to expose — it only identifies your Clerk instance. |
+| `CLERK_SECRET_KEY` | **no** (server-only) | Clerk secret key (`sk_test_...` / `sk_live_...`). Never prefixed with `NEXT_PUBLIC_`. |
+| `ANTHROPIC_API_KEY` | **no** (server-only) | Used by `/api/generate-recipes` to call Claude directly from the Next.js server |
+
+### Vercel-only (build-time)
+
+| Variable | Scope | Description |
+|---|---|---|
+| `CONVEX_DEPLOY_KEY` | Production | Production deploy key from Convex dashboard → Project Settings → Production Deploy Keys |
+| `CONVEX_DEPLOY_KEY` | Preview | Preview deploy key (separate entry) — generates an ephemeral Convex backend per PR |
+
+### Convex runtime (set via `npx convex env set` or Project Settings → Environment Variables)
+
+| Variable | Where set | Description |
+|---|---|---|
+| `CLERK_JWT_ISSUER_DOMAIN` | Convex — Default Env Vars (checked for Prod/Preview/Dev) | Used by `convex/auth.config.ts` to validate Clerk JWTs. Must exactly match your Clerk instance's Issuer URL (no trailing slash). |
+| `ANTHROPIC_API_KEY` | Convex — Default Env Vars | Used by `convex/photos.ts` (vision) and `convex/recipes.ts` (fallback action) |
+| `YOUTUBE_API_KEY` | Convex — Default Env Vars | Used by `convex/chefs.ts` and `convex/customChefs.ts` for video search / channel resolution |
+
+> **Secret-exposure model:** Only `NEXT_PUBLIC_*` values are sent to the browser. Everything else is server-only. Convex env vars are accessible only inside Convex functions (never sent to the client).
+>
+> **Adding a new Convex env var to all future preview deployments:** set it under Convex Project Settings → Environment Variables → Default Environment Variables. Existing preview deployments are not updated retroactively; push a new commit to the PR to create a fresh one.
 
 ---
 
@@ -441,6 +535,8 @@ After every production deployment, update the following to reflect any changes:
 
 ## Future Work
 
-- Add user authentication to persist data across devices/browsers
-- Share a recipe via URL
+- **Data retention cron** — auto-delete `recipes` rows older than 90 days that are not referenced by any `favourites` entry
+- **Account deletion cascade** — Clerk webhook on `user.deleted` → Convex action that wipes all rows matching the Clerk user ID (GDPR / CCPA requirement before public launch)
+- **Separate production Clerk + Convex instances** — currently dev-mode Clerk keys and the dev Convex deployment double as production. Stand up a prod Clerk application and a prod Convex deployment before onboarding real users.
+- Share a recipe via URL (public deep-link that doesn't require sign-in to view)
 - Nutritional information per recipe

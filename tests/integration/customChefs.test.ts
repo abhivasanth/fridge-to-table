@@ -3,12 +3,17 @@ import { describe, test, expect, vi, afterEach } from "vitest";
 import { api } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 
+function withUser(t: ReturnType<typeof convexTest>, clerkId: string) {
+  return t.withIdentity({ subject: clerkId });
+}
+
 describe("listCustomChefs", () => {
-  test("returns empty array when no document exists for session", async () => {
+  test("returns empty array when no document exists for the caller", async () => {
     const t = convexTest(schema);
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-new",
-    });
+    const result = await withUser(t, "user_new").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
     expect(result).toEqual([]);
   });
 
@@ -16,7 +21,7 @@ describe("listCustomChefs", () => {
     const t = convexTest(schema);
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-abc",
+        userId: "user_abc",
         chefs: [
           { channelId: "UC2", channelName: "Chef B", channelThumbnail: "b.jpg", addedAt: 2000, resolvedAt: 1000 },
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
@@ -25,20 +30,21 @@ describe("listCustomChefs", () => {
       });
     });
 
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
-    });
+    const result = await withUser(t, "user_abc").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
 
     expect(result).toHaveLength(2);
     expect(result[0].channelId).toBe("UC1");
     expect(result[1].channelId).toBe("UC2");
   });
 
-  test("only returns chefs for the given sessionId", async () => {
+  test("only returns chefs for the authenticated user", async () => {
     const t = convexTest(schema);
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-X",
+        userId: "user_X",
         chefs: [
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
         ],
@@ -46,15 +52,23 @@ describe("listCustomChefs", () => {
       });
     });
 
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-Y",
-    });
+    const result = await withUser(t, "user_Y").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
     expect(result).toEqual([]);
   });
+
+  test("unauthenticated callers are rejected", async () => {
+    const t = convexTest(schema);
+    await expect(
+      t.query(api.customChefs.listCustomChefs, {})
+    ).rejects.toThrow(/Not authenticated/);
+  });
 });
+
 describe("addCustomChef", () => {
   const newChef = {
-    sessionId: "session-abc",
     channelId: "UCtest123",
     channelName: "Test Chef",
     channelThumbnail: "https://example.com/thumb.jpg",
@@ -64,11 +78,12 @@ describe("addCustomChef", () => {
   test("creates a new document when none exists", async () => {
     const t = convexTest(schema);
 
-    await t.mutation(api.customChefs.addCustomChef, newChef);
+    await withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, newChef);
 
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
-    });
+    const result = await withUser(t, "user_abc").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
     expect(result).toHaveLength(1);
     expect(result[0].channelId).toBe("UCtest123");
     expect(result[0].channelName).toBe("Test Chef");
@@ -77,16 +92,17 @@ describe("addCustomChef", () => {
   test("appends to existing document", async () => {
     const t = convexTest(schema);
 
-    await t.mutation(api.customChefs.addCustomChef, newChef);
-    await t.mutation(api.customChefs.addCustomChef, {
+    await withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, newChef);
+    await withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, {
       ...newChef,
       channelId: "UCother456",
       channelName: "Other Chef",
     });
 
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
-    });
+    const result = await withUser(t, "user_abc").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
     expect(result).toHaveLength(2);
   });
 
@@ -94,7 +110,7 @@ describe("addCustomChef", () => {
     const t = convexTest(schema);
 
     for (let i = 1; i <= 6; i++) {
-      await t.mutation(api.customChefs.addCustomChef, {
+      await withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, {
         ...newChef,
         channelId: `UC${i}`,
         channelName: `Chef ${i}`,
@@ -102,7 +118,7 @@ describe("addCustomChef", () => {
     }
 
     await expect(
-      t.mutation(api.customChefs.addCustomChef, {
+      withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, {
         ...newChef,
         channelId: "UC7",
         channelName: "Chef 7",
@@ -113,21 +129,28 @@ describe("addCustomChef", () => {
   test("throws when channelId is already in the list", async () => {
     const t = convexTest(schema);
 
-    await t.mutation(api.customChefs.addCustomChef, newChef);
+    await withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, newChef);
 
     await expect(
-      t.mutation(api.customChefs.addCustomChef, newChef)
+      withUser(t, "user_abc").mutation(api.customChefs.addCustomChef, newChef)
     ).rejects.toThrow("duplicate");
+  });
+
+  test("unauthenticated callers are rejected", async () => {
+    const t = convexTest(schema);
+    await expect(
+      t.mutation(api.customChefs.addCustomChef, newChef)
+    ).rejects.toThrow(/Not authenticated/);
   });
 });
 
 describe("removeCustomChef", () => {
-  test("removes the chef with the given channelId", async () => {
+  test("removes the chef with the given channelId (for the caller only)", async () => {
     const t = convexTest(schema);
 
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-abc",
+        userId: "user_abc",
         chefs: [
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
           { channelId: "UC2", channelName: "Chef B", channelThumbnail: "b.jpg", addedAt: 2000, resolvedAt: 1000 },
@@ -136,24 +159,23 @@ describe("removeCustomChef", () => {
       });
     });
 
-    await t.mutation(api.customChefs.removeCustomChef, {
-      sessionId: "session-abc",
+    await withUser(t, "user_abc").mutation(api.customChefs.removeCustomChef, {
       channelId: "UC1",
     });
 
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
-    });
+    const result = await withUser(t, "user_abc").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
     expect(result).toHaveLength(1);
     expect(result[0].channelId).toBe("UC2");
   });
 
-  test("is a no-op when session has no document", async () => {
+  test("is a no-op when the caller has no document", async () => {
     const t = convexTest(schema);
 
     await expect(
-      t.mutation(api.customChefs.removeCustomChef, {
-        sessionId: "session-none",
+      withUser(t, "user_none").mutation(api.customChefs.removeCustomChef, {
         channelId: "UC1",
       })
     ).resolves.toBeNull();
@@ -164,7 +186,7 @@ describe("removeCustomChef", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.insert("customChefs", {
-        sessionId: "session-abc",
+        userId: "user_abc",
         chefs: [
           { channelId: "UC1", channelName: "Chef A", channelThumbnail: "a.jpg", addedAt: 1000, resolvedAt: 1000 },
         ],
@@ -172,14 +194,14 @@ describe("removeCustomChef", () => {
       });
     });
 
-    await t.mutation(api.customChefs.removeCustomChef, {
-      sessionId: "session-abc",
+    await withUser(t, "user_abc").mutation(api.customChefs.removeCustomChef, {
       channelId: "UC-not-exist",
     });
 
-    const result = await t.query(api.customChefs.listCustomChefs, {
-      sessionId: "session-abc",
-    });
+    const result = await withUser(t, "user_abc").query(
+      api.customChefs.listCustomChefs,
+      {}
+    );
     expect(result).toHaveLength(1);
   });
 });
@@ -221,9 +243,10 @@ describe("resolveYouTubeChannel", () => {
     mockFetchSuccess("UCtest123", "Babish Culinary Universe", "https://example.com/thumb.jpg");
 
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@babish",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@babish" }
+    );
 
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -236,9 +259,10 @@ describe("resolveYouTubeChannel", () => {
   test("returns parse_error for an unrecognised input", async () => {
     process.env.YOUTUBE_API_KEY = "fake-key";
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "not a url",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "not a url" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("parse_error");
   });
@@ -247,9 +271,10 @@ describe("resolveYouTubeChannel", () => {
     process.env.YOUTUBE_API_KEY = "fake-key";
     mockFetchEmpty();
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@nobody",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@nobody" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("not_found");
   });
@@ -258,19 +283,29 @@ describe("resolveYouTubeChannel", () => {
     process.env.YOUTUBE_API_KEY = "fake-key";
     mockFetchApiError();
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@babish",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@babish" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("not_found");
   });
 
   test("returns api_error when YOUTUBE_API_KEY is not set", async () => {
     const t = convexTest(schema);
-    const result = await t.action(api.customChefs.resolveYouTubeChannel, {
-      input: "@babish",
-    });
+    const result = await withUser(t, "user_alice").action(
+      api.customChefs.resolveYouTubeChannel,
+      { input: "@babish" }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("api_error");
+  });
+
+  test("unauthenticated callers can't invoke resolveYouTubeChannel", async () => {
+    process.env.YOUTUBE_API_KEY = "fake-key";
+    const t = convexTest(schema);
+    await expect(
+      t.action(api.customChefs.resolveYouTubeChannel, { input: "@babish" })
+    ).rejects.toThrow(/Not authenticated/);
   });
 });

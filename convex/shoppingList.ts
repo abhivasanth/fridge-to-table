@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireUserId } from "./auth";
 
 // ---------------------------------------------------------------------------
 // Normalization logic (duplicated from lib/pantryUtils.ts — must stay in sync)
@@ -113,15 +114,14 @@ function normalizeName(raw: string): string {
 // Queries
 // ---------------------------------------------------------------------------
 
-/** Returns all shopping list items for a session. */
+/** Returns all shopping list items for the authenticated user. */
 export const getShoppingListItems = query({
-  args: {
-    sessionId: v.string(),
-  },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
     return await ctx.db
       .query("shoppingListItems")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
@@ -137,19 +137,19 @@ export const getShoppingListItems = query({
  */
 export const addToShoppingList = mutation({
   args: {
-    sessionId: v.string(),
     name: v.string(),
     source: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const displayName = args.name.toLowerCase().trim();
     const normalized = normalizeName(args.name);
 
     // Check for duplicate using the index
     const existing = await ctx.db
       .query("shoppingListItems")
-      .withIndex("by_session_and_name", (q) =>
-        q.eq("sessionId", args.sessionId).eq("normalizedName", normalized)
+      .withIndex("by_user_and_name", (q) =>
+        q.eq("userId", userId).eq("normalizedName", normalized)
       )
       .first();
 
@@ -159,7 +159,7 @@ export const addToShoppingList = mutation({
 
     const now = Date.now();
     const id = await ctx.db.insert("shoppingListItems", {
-      sessionId: args.sessionId,
+      userId,
       name: displayName,
       normalizedName: normalized,
       source: args.source ?? "manual",
@@ -171,12 +171,19 @@ export const addToShoppingList = mutation({
   },
 });
 
-/** Remove an item from the shopping list by ID. */
+/**
+ * Remove a shopping list item by ID. Verifies ownership before deleting —
+ * prevents cross-user deletion via enumerated IDs.
+ */
 export const removeFromShoppingList = mutation({
   args: {
     id: v.id("shoppingListItems"),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const item = await ctx.db.get(args.id);
+    if (!item) return;
+    if (item.userId !== userId) throw new Error("Forbidden");
     await ctx.db.delete(args.id);
   },
 });
