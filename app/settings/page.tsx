@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useAction } from "convex/react";
@@ -94,16 +94,24 @@ function PlanPickerView({ dbUser }: { dbUser: DbUser }) {
 function PastDueView({ dbUser }: { dbUser: DbUser }) {
   const createPortal = useAction(api.stripe.createPortalSession);
   const [opening, setOpening] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   async function handleUpdatePayment() {
     if (!dbUser.stripeCustomerId) return;
+    setPortalError(null);
     setOpening(true);
-    const result = await createPortal({
-      stripeCustomerId: dbUser.stripeCustomerId,
-    });
-    if (result.url) {
-      window.location.href = result.url;
-    } else {
+    try {
+      const result = await createPortal({
+        stripeCustomerId: dbUser.stripeCustomerId,
+      });
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        setPortalError("Couldn't open the billing portal. Please try again.");
+      }
+    } catch {
+      setPortalError("Couldn't open the billing portal. Please try again.");
+    } finally {
       setOpening(false);
     }
   }
@@ -134,6 +142,9 @@ function PastDueView({ dbUser }: { dbUser: DbUser }) {
           >
             {opening ? "Opening..." : "Update payment method"}
           </button>
+          {portalError && (
+            <p className="text-sm text-red-600 mt-3">{portalError}</p>
+          )}
         </section>
       </div>
     </main>
@@ -150,14 +161,44 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
   const [showCancel, setShowCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [resuming, setResuming] = useState(false);
+  const [portalOpening, setPortalOpening] = useState(false);
   const [subActionError, setSubActionError] = useState<string | null>(null);
+  // Optimistic override — flips immediately so the UI reflects the user's
+  // intent while we wait for the Stripe webhook to reach Convex.
+  const [pendingCancelOverride, setPendingCancelOverride] = useState<
+    boolean | null
+  >(null);
+
+  const actualPendingCancel = dbUser.cancelAtPeriodEnd === true;
+
+  // Clear the override once the webhook-driven truth catches up.
+  useEffect(() => {
+    if (
+      pendingCancelOverride !== null &&
+      pendingCancelOverride === actualPendingCancel
+    ) {
+      setPendingCancelOverride(null);
+    }
+  }, [pendingCancelOverride, actualPendingCancel]);
 
   async function handleManagePayment() {
     if (!dbUser.stripeCustomerId) return;
-    const result = await createPortal({
-      stripeCustomerId: dbUser.stripeCustomerId,
-    });
-    if (result.url) window.location.href = result.url;
+    setSubActionError(null);
+    setPortalOpening(true);
+    try {
+      const result = await createPortal({
+        stripeCustomerId: dbUser.stripeCustomerId,
+      });
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        setSubActionError("Couldn't open the billing portal. Please try again.");
+      }
+    } catch {
+      setSubActionError("Couldn't open the billing portal. Please try again.");
+    } finally {
+      setPortalOpening(false);
+    }
   }
 
   async function handleCancelSubscription() {
@@ -177,6 +218,7 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
       setShowCancel(false);
       return;
     }
+    setPendingCancelOverride(true);
     setShowCancel(false);
   }
 
@@ -194,10 +236,12 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
           ? "Your subscription has already ended. Please start a new one."
           : "Something went wrong. Please try again."
       );
+      return;
     }
+    setPendingCancelOverride(false);
   }
 
-  const pendingCancel = dbUser.cancelAtPeriodEnd === true;
+  const pendingCancel = pendingCancelOverride ?? actualPendingCancel;
 
   const nextBillingDate = dbUser.currentPeriodEnd
     ? new Date(dbUser.currentPeriodEnd).toLocaleDateString()
@@ -270,9 +314,10 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
             <p className="text-sm text-gray-700">Card on file</p>
             <button
               onClick={handleManagePayment}
-              className="text-sm text-[#D4622A] hover:underline"
+              disabled={portalOpening}
+              className="text-sm text-[#D4622A] hover:underline disabled:opacity-50"
             >
-              Update card
+              {portalOpening ? "Opening..." : "Update card"}
             </button>
           </div>
         </section>

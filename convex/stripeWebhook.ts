@@ -24,6 +24,10 @@ function mapStatus(stripeStatus: Stripe.Subscription.Status): string {
   if (stripeStatus === "active") return "active";
   if (stripeStatus === "past_due") return "past_due";
   if (stripeStatus === "canceled") return "cancelled";
+  // incomplete, incomplete_expired, unpaid, paused — log for observability.
+  // SubscriptionGuard treats these as inactive (correct); the stored string
+  // round-trips for debugging and potential future state handling.
+  console.warn("[mapStatus] Unknown Stripe subscription status", { stripeStatus });
   return stripeStatus;
 }
 

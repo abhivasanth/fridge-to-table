@@ -18,11 +18,18 @@ export async function POST(req: Request) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-    // Get user's plan for rate limit tier
-    const dbUser = await convex.query(api.users.getByClerkId, { clerkId: userId });
-    const plan = dbUser?.plan;
+    // Server-side subscription guard — client-only SubscriptionGuard is bypassable
+    const summary = await convex.query(api.users.getSubscriptionSummary, {
+      clerkId: userId,
+    });
+    if (!summary.hasActiveSub) {
+      return Response.json(
+        { error: "Subscription required", subscriptionRequired: true },
+        { status: 402 }
+      );
+    }
 
-    const usage = await convex.query(api.searchUsage.checkLimit, { userId, plan });
+    const usage = await convex.query(api.searchUsage.checkLimit, { userId });
     if (!usage.allowed) {
       const resetsIn = usage.resetsAt
         ? Math.ceil((usage.resetsAt - Date.now()) / 60000)
@@ -31,7 +38,7 @@ export async function POST(req: Request) {
       const minutes = resetsIn % 60;
       return Response.json(
         {
-          error: `You've reached your search limit for now. Resets in ${hours > 0 ? `${hours}h ` : ""}${minutes}m.${plan !== "chef" ? " Upgrade to Chef for more." : ""}`,
+          error: `You've reached your search limit for now. Resets in ${hours > 0 ? `${hours}h ` : ""}${minutes}m.`,
           rateLimited: true,
         },
         { status: 429 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SettingsPage from "@/app/settings/page";
 
 type DbUser = {
@@ -170,11 +170,24 @@ describe("SettingsPage subscription states", () => {
       expect(screen.queryByText("Next charge")).not.toBeInTheDocument();
     });
 
-    it("clicking Resume invokes the resumeSubscription action", () => {
+    it("clicking Resume invokes the resumeSubscription action", async () => {
       mockState.user = pendingActive();
       render(<SettingsPage />);
       fireEvent.click(screen.getByRole("button", { name: /Resume subscription/ }));
-      expect(resumeSpy).toHaveBeenCalledWith({ stripeSubscriptionId: "sub_123" });
+      await waitFor(() => {
+        expect(resumeSpy).toHaveBeenCalledWith({ stripeSubscriptionId: "sub_123" });
+      });
+    });
+
+    it("clicking Resume optimistically flips UI back to Cancel affordance", async () => {
+      mockState.user = pendingActive();
+      render(<SettingsPage />);
+      fireEvent.click(screen.getByRole("button", { name: /Resume subscription/ }));
+      // After the action resolves, UI should show Cancel again (optimistic override)
+      // even though dbUser.cancelAtPeriodEnd hasn't changed yet
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /Cancel subscription/ })).toBeInTheDocument();
+      });
     });
   });
 
@@ -226,7 +239,19 @@ describe("SettingsPage subscription states", () => {
       render(<SettingsPage />);
       fireEvent.click(screen.getByRole("button", { name: /Cancel subscription/ }));
       fireEvent.click(screen.getByRole("button", { name: /Yes, cancel/ }));
-      expect(cancelSpy).toHaveBeenCalledWith({ stripeSubscriptionId: "sub_123" });
+      await waitFor(() => {
+        expect(cancelSpy).toHaveBeenCalledWith({ stripeSubscriptionId: "sub_123" });
+      });
+    });
+
+    it("after successful cancel, UI optimistically shows Resume button", async () => {
+      mockState.user = baseUser();
+      render(<SettingsPage />);
+      fireEvent.click(screen.getByRole("button", { name: /Cancel subscription/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Yes, cancel/ }));
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /Resume subscription/ })).toBeInTheDocument();
+      });
     });
 
     it("'Keep my subscription' returns to settings without cancelling", () => {

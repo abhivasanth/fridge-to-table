@@ -2,15 +2,14 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-const BASIC_MAX_SEARCHES = 5;
-const CHEF_MAX_SEARCHES = 100;
+const MAX_SEARCHES = 100;
 const WINDOW_MS = 5 * 60 * 60 * 1000; // 5 hours
 
 // Check if user can search — returns { allowed, remaining, resetsAt }
 export const checkLimit = query({
-  args: { userId: v.string(), plan: v.optional(v.string()) },
+  args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const maxSearches = args.plan === "chef" ? CHEF_MAX_SEARCHES : BASIC_MAX_SEARCHES;
+    const maxSearches = MAX_SEARCHES;
     const cutoff = Date.now() - WINDOW_MS;
     const recent = await ctx.db
       .query("searchUsage")

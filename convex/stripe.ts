@@ -8,6 +8,26 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
 }
 
+// Structured error checks — Stripe's error.code is stable, message isn't.
+function isStaleCustomerError(err: unknown): boolean {
+  if (err instanceof Stripe.errors.StripeInvalidRequestError) {
+    return err.code === "resource_missing" && err.param === "customer";
+  }
+  return false;
+}
+
+function isTerminalSubscriptionError(err: unknown): boolean {
+  if (err instanceof Stripe.errors.StripeInvalidRequestError) {
+    // "resource_missing" — subscription doesn't exist
+    if (err.code === "resource_missing") return true;
+    // Message-based fallback for states Stripe returns as 400s
+    // (incomplete_expired / canceled subs reject cancel/update)
+    const msg = err.message ?? "";
+    return /incomplete_expired|canceled/i.test(msg);
+  }
+  return false;
+}
+
 type CheckoutResult =
   | { ok: true; url: string }
   | {
@@ -45,6 +65,17 @@ export const createCheckoutSession = action({
       return { ok: false, reason: "past_due", redirectTo: "/settings" };
     }
 
+    // Allow-list: only truly-unsubscribed users can start a new checkout.
+    // Any other status (incomplete, incomplete_expired, unpaid, paused, etc.)
+    // indicates an in-flight Stripe state we shouldn't overwrite with a new sub.
+    if (user.subscriptionStatus !== "none" && user.subscriptionStatus !== "cancelled") {
+      console.warn(
+        "[createCheckoutSession] Refusing checkout for unknown subscription status",
+        { clerkId: args.clerkId, status: user.subscriptionStatus }
+      );
+      return { ok: false, reason: "already_subscribed", redirectTo: "/settings" };
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
     const baseConfig: Stripe.Checkout.SessionCreateParams = {
@@ -78,8 +109,9 @@ export const createCheckoutSession = action({
       try {
         session = await createWithCustomer();
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (/No such customer/i.test(message)) {
+        // Stale customerId — retry with customer_email. Webhook overwrites
+        // the stored ID on successful completion.
+        if (isStaleCustomerError(err)) {
           console.warn(
             "[createCheckoutSession] Stale stripeCustomerId, retrying with email",
             { clerkId: args.clerkId, staleCustomerId: user.stripeCustomerId }
@@ -131,11 +163,10 @@ export const cancelSubscription = action({
       });
       return { ok: true };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // Stripe refuses to update subscriptions in a terminal state.
-      if (/incomplete_expired|canceled/i.test(message)) {
+      if (isTerminalSubscriptionError(err)) {
         return { ok: false, reason: "already_ended" };
       }
+      const message = err instanceof Error ? err.message : String(err);
       console.error("[cancelSubscription]", message);
       return { ok: false, reason: "unknown" };
     }
@@ -157,10 +188,10 @@ export const resumeSubscription = action({
       });
       return { ok: true };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (/incomplete_expired|canceled/i.test(message)) {
+      if (isTerminalSubscriptionError(err)) {
         return { ok: false, reason: "already_ended" };
       }
+      const message = err instanceof Error ? err.message : String(err);
       console.error("[resumeSubscription]", message);
       return { ok: false, reason: "unknown" };
     }
