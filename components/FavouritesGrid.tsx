@@ -9,12 +9,11 @@ import type { Id } from "@/convex/_generated/dataModel";
 // Loads and renders the user's saved recipes.
 // Uses Convex's real-time query — removes appear instantly without a page refresh.
 export function FavouritesGrid() {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
   // `undefined` while loading, `[]` when loaded but empty
   const favourites = useQuery(
     api.favourites.getFavourites,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
   const removeFavourite = useMutation(api.favourites.removeFavourite);
 
@@ -55,7 +54,6 @@ export function FavouritesGrid() {
           recipeIndex={fav.recipeIndex}
           onRemove={() =>
             removeFavourite({
-              userId,
               recipeSetId: fav.recipeSetId as Id<"recipes">,
               recipeIndex: fav.recipeIndex,
             })

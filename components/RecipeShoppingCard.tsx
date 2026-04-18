@@ -15,16 +15,15 @@ type Props = {
 type OptimisticState = "pantry" | "shopping" | null;
 
 export function RecipeShoppingCard({ shoppingList }: Props) {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
 
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
   const shoppingItems = useQuery(
     api.shoppingList.getShoppingListItems,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
 
   const addToPantry = useMutation(api.pantry.addToPantry);
@@ -69,6 +68,7 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
 
   const handleAddToShopping = useCallback(
     async (normalizedNames: string[], ingredientNames: string[]) => {
+      if (!user) return;
       setOptimistic((prev) => {
         const next = new Map(prev);
         for (const n of normalizedNames) next.set(n, "shopping");
@@ -77,18 +77,19 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
       try {
         await Promise.all(
           ingredientNames.map((name) =>
-            addToShoppingList({ userId, name, source: "recipe" })
+            addToShoppingList({ name, source: "recipe" })
           )
         );
       } finally {
         for (const n of normalizedNames) clearOptimistic(n);
       }
     },
-    [userId, addToShoppingList, clearOptimistic]
+    [user, addToShoppingList, clearOptimistic]
   );
 
   const handleRemoveFromShopping = useCallback(
     async (normalizedNames: string[]) => {
+      if (!user) return;
       const ids = normalizedNames
         .map((n) => shoppingMap.get(n))
         .filter(Boolean);
@@ -104,11 +105,12 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
         for (const n of normalizedNames) clearOptimistic(n);
       }
     },
-    [shoppingMap, removeFromShoppingList, clearOptimistic]
+    [user, shoppingMap, removeFromShoppingList, clearOptimistic]
   );
 
   const handleAddToPantry = useCallback(
     async (normalizedNames: string[], ingredientNames: string[]) => {
+      if (!user) return;
       setOptimistic((prev) => {
         const next = new Map(prev);
         for (const n of normalizedNames) next.set(n, "pantry");
@@ -117,14 +119,14 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
       try {
         await Promise.all(
           ingredientNames.map((name) =>
-            addToPantry({ userId, name })
+            addToPantry({ name })
           )
         );
       } finally {
         for (const n of normalizedNames) clearOptimistic(n);
       }
     },
-    [userId, addToPantry, clearOptimistic]
+    [user, addToPantry, clearOptimistic]
   );
 
   // Compute state for each item and filter out pantry items

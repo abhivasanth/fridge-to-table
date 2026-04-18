@@ -12,11 +12,10 @@ type Props = {
 // Heart button that toggles a recipe's saved state.
 // Uses Convex's real-time query — the button updates instantly after clicking.
 export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
   const favourites = useQuery(
     api.favourites.getFavourites,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
   const saveFavourite = useMutation(api.favourites.saveFavourite);
   const removeFavourite = useMutation(api.favourites.removeFavourite);
@@ -26,12 +25,12 @@ export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
   );
 
   async function handleToggle() {
-    if (!userId) return;
+    if (!user) return;
     const id = recipeSetId as Id<"recipes">;
     if (isFavourited) {
-      await removeFavourite({ userId, recipeSetId: id, recipeIndex });
+      await removeFavourite({ recipeSetId: id, recipeIndex });
     } else {
-      await saveFavourite({ userId, recipeSetId: id, recipeIndex });
+      await saveFavourite({ recipeSetId: id, recipeIndex });
     }
   }
 

@@ -8,11 +8,10 @@ import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 
 export function ShoppingListPage() {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
   const items = useQuery(
     api.shoppingList.getShoppingListItems,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
   const addItem = useMutation(api.shoppingList.addToShoppingList);
   const removeItem = useMutation(api.shoppingList.removeFromShoppingList);
@@ -32,9 +31,9 @@ export function ShoppingListPage() {
 
   const submitItem = useCallback(async () => {
     const name = inputValue.trim();
-    if (!name || !userId) return;
+    if (!name || !user) return;
 
-    const result = await addItem({ userId, name });
+    const result = await addItem({ name });
 
     if (result.alreadyExists) {
       setInputValue("");
@@ -49,7 +48,7 @@ export function ShoppingListPage() {
     } else {
       setInputValue("");
     }
-  }, [inputValue, userId, addItem]);
+  }, [inputValue, user, addItem]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {

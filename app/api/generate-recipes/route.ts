@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { ConvexHttpClient } from "convex/browser";
+import { fetchMutation } from "convex/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 
@@ -8,15 +8,26 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
+    // Route is marked as a public route in middleware.ts so this 401 path can
+    // actually fire (middleware.auth.protect() would otherwise return 404).
+    const { userId, getToken } = await auth();
     if (!userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Forward the Clerk JWT to Convex so saveRecipeSet can derive userId
+    // server-side via requireUserId(ctx) — never trusting client-supplied IDs.
+    const token = await getToken({ template: "convex" });
+    if (!token) {
+      return Response.json(
+        { error: "Unable to obtain Convex token" },
+        { status: 500 }
+      );
     }
 
     const { ingredients, filters } = await req.json();
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
     const ingredientList = ingredients.join(", ");
     const cuisineNote = filters.cuisine || "any style";
@@ -82,9 +93,10 @@ ${recipeSchema}`,
       );
     }
 
-    const recipeSetId = await convex.mutation(
+    const recipeSetId = await fetchMutation(
       api.recipes.saveRecipeSet,
-      { userId, ingredients, filters, results: recipes }
+      { ingredients, filters, results: recipes },
+      { token }
     );
 
     return Response.json({ recipeSetId });

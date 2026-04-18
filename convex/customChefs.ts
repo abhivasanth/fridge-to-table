@@ -1,15 +1,17 @@
 import { query, mutation, action } from "./_generated/server";
 import { parseYouTubeInput } from "../lib/parseYouTubeUrl";
 import { v } from "convex/values";
+import { requireUserId } from "./auth";
 
 // ─── listCustomChefs ───────────────────────────────────────────────────────
 
 export const listCustomChefs = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
     if (!doc) return [];
@@ -23,16 +25,16 @@ const MAX_CHEFS = 6;
 
 export const addCustomChef = mutation({
   args: {
-    userId: v.string(),
     channelId: v.string(),
     channelName: v.string(),
     channelThumbnail: v.string(),
     resolvedAt: v.number(),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
     const newChef = {
@@ -45,7 +47,7 @@ export const addCustomChef = mutation({
 
     if (!doc) {
       await ctx.db.insert("customChefs", {
-        userId: args.userId,
+        userId,
         chefs: [newChef],
         updatedAt: Date.now(),
       });
@@ -71,13 +73,13 @@ export const addCustomChef = mutation({
 
 export const removeCustomChef = mutation({
   args: {
-    userId: v.string(),
     channelId: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const doc = await ctx.db
       .query("customChefs")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
     if (!doc) return;

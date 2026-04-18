@@ -145,11 +145,10 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
     setMounted(true);
   }, []);
 
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded: clerkLoaded } = useUser();
   const customChefsResult = useQuery(
     api.customChefs.listCustomChefs,
-    userId ? { userId } : "skip"
+    clerkLoaded && user ? {} : "skip"
   );
   const customChefsRaw = customChefsResult ?? [];
   const customChefsLoaded = customChefsResult !== undefined;

@@ -17,11 +17,10 @@ type Props = {
 };
 
 export function RecipeIngredientsList({ ingredients }: Props) {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
 
   // Build a set of normalized pantry names for quick lookup

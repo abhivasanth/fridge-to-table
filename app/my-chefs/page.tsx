@@ -36,12 +36,11 @@ export default function MyChefsMPage() {
 }
 
 function MyChefsContent() {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
   const customChefs =
     useQuery(
       api.customChefs.listCustomChefs,
-      userId ? { userId } : "skip"
+      isLoaded && user ? {} : "skip"
     ) ?? [];
 
   const addCustomChef = useMutation(api.customChefs.addCustomChef);
@@ -111,12 +110,11 @@ function MyChefsContent() {
   }
 
   async function handleAdd() {
-    if (!preview || !userId) return;
+    if (!preview || !user) return;
     setAddError(null);
 
     try {
       await addCustomChef({
-        userId,
         channelId: preview.channelId,
         channelName: preview.channelName,
         channelThumbnail: preview.channelThumbnail,
@@ -142,8 +140,8 @@ function MyChefsContent() {
   }
 
   async function handleRemove(channelId: string) {
-    if (!userId) return;
-    await removeCustomChef({ userId, channelId });
+    if (!user) return;
+    await removeCustomChef({ channelId });
     const next = slotIds.filter((id) => id !== channelId);
     setSlotIdsState(next);
     setSlotIds(next);

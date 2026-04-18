@@ -114,7 +114,6 @@ describe("PantryPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith({
-      userId: "user_test",
       name: "butter",
     });
   });
@@ -129,7 +128,6 @@ describe("PantryPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToPantry).toHaveBeenCalledWith({
-      userId: "user_test",
       name: "butter",
     });
   });

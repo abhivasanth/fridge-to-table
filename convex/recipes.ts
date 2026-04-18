@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Recipe } from "../types/recipe";
+import { requireUserId } from "./auth";
 
 const filtersValidator = v.object({
   cuisine: v.string(),
@@ -33,32 +34,39 @@ export const insertRecipeSet = internalMutation({
   },
 });
 
-// Public mutation — used by the Next.js API route via ConvexHttpClient.
-// Separate from insertRecipeSet (which stays internal for Convex actions).
+// Public mutation — used by the Next.js API route via fetchMutation with
+// the caller's Clerk JWT. userId is derived from the JWT, never trusted
+// from the client.
 export const saveRecipeSet = mutation({
   args: {
-    userId: v.string(),
     ingredients: v.array(v.string()),
     filters: filtersValidator,
     results: v.array(v.any()),
   },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     return await ctx.db.insert("recipes", {
-      ...args,
+      userId,
+      ingredients: args.ingredients,
+      filters: args.filters,
+      results: args.results,
       generatedAt: Date.now(),
     });
   },
 });
 
 // Generates 3 recipes from a list of ingredients and filters.
-// Calls Claude API, stores the results in Convex, and returns the recipe set ID.
+// Kept as a fallback alongside the Next.js API route (which is preferred for
+// latency reasons per CLAUDE.md). userId is derived from the JWT.
 export const generateRecipes = action({
   args: {
-    userId: v.string(),
     ingredients: v.array(v.string()),
     filters: filtersValidator,
   },
   handler: async (ctx, args): Promise<Id<"recipes">> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const userId = identity.subject;
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     const ingredientList = args.ingredients.join(", ");
@@ -112,7 +120,7 @@ ${recipeSchema}`,
 
     // Use ctx.runMutation to call the internal mutation from within this action
     const recipeSetId = await ctx.runMutation(internal.recipes.insertRecipeSet, {
-      userId: args.userId,
+      userId,
       ingredients: args.ingredients,
       filters: args.filters,
       results: recipes,

@@ -10,11 +10,10 @@ import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 
 export function PantryPage() {
-  const { user } = useUser();
-  const userId = user?.id ?? "";
+  const { user, isLoaded } = useUser();
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    userId ? { userId } : "skip"
+    isLoaded && user ? {} : "skip"
   );
   const addToPantry = useMutation(api.pantry.addToPantry);
   const removeFromPantry = useMutation(api.pantry.removeFromPantry);
@@ -40,9 +39,9 @@ export function PantryPage() {
 
   const handleAdd = useCallback(async () => {
     const trimmed = inputValue.trim();
-    if (!trimmed || !userId) return;
+    if (!trimmed || !user) return;
 
-    const result = await addToPantry({ userId, name: trimmed });
+    const result = await addToPantry({ name: trimmed });
     setInputValue("");
 
     if (result.alreadyExists) {
@@ -57,7 +56,7 @@ export function PantryPage() {
         setDupMessage("");
       }, 3000);
     }
-  }, [inputValue, userId, addToPantry]);
+  }, [inputValue, user, addToPantry]);
 
   const handleRemove = useCallback(
     (id: Id<"pantryItems">, name: string) => {

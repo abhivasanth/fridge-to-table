@@ -107,7 +107,6 @@ describe("ShoppingListPage", () => {
       fireEvent.click(screen.getByText("Add"));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      userId: "user_test",
       name: "milk",
     });
   });
@@ -122,7 +121,6 @@ describe("ShoppingListPage", () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith({
-      userId: "user_test",
       name: "milk",
     });
   });

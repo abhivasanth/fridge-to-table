@@ -146,7 +146,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByLabelText(/Add .* to shopping list/));
     });
     expect(mockAddToShoppingList).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_test", source: "recipe" })
+      expect.objectContaining({ source: "recipe" })
     );
   });
 
@@ -157,7 +157,7 @@ describe("RecipeShoppingCard", () => {
       fireEvent.click(screen.getByText("already have it"));
     });
     expect(mockAddToPantry).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_test" })
+      expect.objectContaining({ name: expect.any(String) })
     );
   });
 
