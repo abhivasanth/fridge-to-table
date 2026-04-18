@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
@@ -23,7 +23,13 @@ function useIsDesktop() {
 export function ClientNav({ children }: { children: React.ReactNode }) {
   const isDesktop = useIsDesktop();
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoaded: authLoaded } = useUser();
+
+  const onSignIn = pathname?.startsWith("/sign-in") ?? false;
+  const onSignUp = pathname?.startsWith("/sign-up") ?? false;
+  const filledClass = "text-sm bg-[#1A3A2A] text-white px-4 py-1.5 rounded-full hover:bg-[#2a5a3a] transition-colors";
+  const plainClass = "text-sm text-gray-600 hover:text-[#1A3A2A] transition-colors";
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -81,13 +87,15 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
             <>
               <Link
                 href="/sign-in"
-                className="text-sm text-gray-600 hover:text-[#1A3A2A] transition-colors"
+                aria-current={onSignIn ? "page" : undefined}
+                className={onSignIn ? filledClass : plainClass}
               >
                 Sign in
               </Link>
               <Link
                 href="/sign-up"
-                className="text-sm bg-[#1A3A2A] text-white px-4 py-1.5 rounded-full hover:bg-[#2a5a3a] transition-colors"
+                aria-current={onSignUp ? "page" : undefined}
+                className={onSignIn ? plainClass : filledClass}
               >
                 Sign up
               </Link>
