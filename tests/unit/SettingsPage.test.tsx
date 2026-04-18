@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import SettingsPage from "@/app/settings/page";
 
 type DbUser = {
@@ -19,6 +25,9 @@ type DbUser = {
 const mockState = { user: null as DbUser | null };
 const cancelSpy = vi.fn().mockResolvedValue({ ok: true });
 const resumeSpy = vi.fn().mockResolvedValue({ ok: true });
+const portalSpy = vi
+  .fn()
+  .mockResolvedValue({ url: "https://billing.stripe.com/test" });
 
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
@@ -54,6 +63,7 @@ vi.mock("convex/react", () => ({
   useAction: (name: string) => {
     if (name === "stripe:cancelSubscription") return cancelSpy;
     if (name === "stripe:resumeSubscription") return resumeSpy;
+    if (name === "stripe:createPortalSession") return portalSpy;
     return vi.fn();
   },
 }));
@@ -89,6 +99,9 @@ describe("SettingsPage subscription states", () => {
   beforeEach(() => {
     cancelSpy.mockReset().mockResolvedValue({ ok: true });
     resumeSpy.mockReset().mockResolvedValue({ ok: true });
+    portalSpy
+      .mockReset()
+      .mockResolvedValue({ url: "https://billing.stripe.com/test" });
   });
 
   describe("Page structure", () => {
@@ -261,6 +274,92 @@ describe("SettingsPage subscription states", () => {
       fireEvent.click(screen.getByRole("button", { name: /Keep my subscription/ }));
       expect(cancelSpy).not.toHaveBeenCalled();
       expect(screen.queryByText(/Cancel your subscription\?/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Error scoping — errors render near the button that triggered them", () => {
+    // Helper: get the <section> that contains a given heading text
+    function sectionByHeading(name: string): HTMLElement {
+      const heading = screen.getByRole("heading", { level: 2, name });
+      const section = heading.closest("section");
+      if (!section) throw new Error(`No section wraps heading '${name}'`);
+      return section as HTMLElement;
+    }
+
+    it("renders portal error inside the Payment section (next to 'Update card')", async () => {
+      mockState.user = baseUser();
+      // Simulate Stripe returning no URL — mimics a billingPortal failure
+      portalSpy.mockResolvedValueOnce({ url: null });
+      render(<SettingsPage />);
+      fireEvent.click(screen.getByRole("button", { name: /Update card/ }));
+      const paymentSection = sectionByHeading("Payment");
+      await waitFor(() => {
+        expect(
+          within(paymentSection).getByText(/Couldn't open the billing portal/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("does NOT render portal error inside the Subscription section", async () => {
+      mockState.user = baseUser();
+      portalSpy.mockResolvedValueOnce({ url: null });
+      render(<SettingsPage />);
+      fireEvent.click(screen.getByRole("button", { name: /Update card/ }));
+      // Wait for the error to appear (in Payment) first, then check Subscription is clean
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Couldn't open the billing portal/i)
+        ).toBeInTheDocument();
+      });
+      const subscriptionSection = sectionByHeading("Subscription");
+      expect(
+        within(subscriptionSection).queryByText(/Couldn't open the billing portal/i)
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders cancel error inside the Subscription section (next to Cancel/Resume), not Payment", async () => {
+      mockState.user = baseUser();
+      cancelSpy.mockResolvedValueOnce({ ok: false, reason: "already_ended" });
+      render(<SettingsPage />);
+      fireEvent.click(screen.getByRole("button", { name: /Cancel subscription/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Yes, cancel/ }));
+      // Wait for the cancel modal to close before inspecting sections
+      await waitFor(() => {
+        expect(
+          screen.queryByRole("button", { name: /Yes, cancel/ })
+        ).not.toBeInTheDocument();
+      });
+      const subscriptionSection = sectionByHeading("Subscription");
+      expect(
+        within(subscriptionSection).getByText(/Your subscription has already ended/)
+      ).toBeInTheDocument();
+      const paymentSection = sectionByHeading("Payment");
+      expect(
+        within(paymentSection).queryByText(/Your subscription has already ended/)
+      ).not.toBeInTheDocument();
+    });
+
+    it("clears a stale portal error when the user initiates a Cancel action", async () => {
+      mockState.user = baseUser();
+      portalSpy.mockResolvedValueOnce({ url: null });
+      render(<SettingsPage />);
+
+      // Trigger portal error
+      fireEvent.click(screen.getByRole("button", { name: /Update card/ }));
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Couldn't open the billing portal/i)
+        ).toBeInTheDocument();
+      });
+
+      // Now open the Cancel modal — the stale portal error should clear
+      fireEvent.click(screen.getByRole("button", { name: /Cancel subscription/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Yes, cancel/ }));
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/Couldn't open the billing portal/i)
+        ).not.toBeInTheDocument();
+      });
     });
   });
 

@@ -162,6 +162,9 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
   const [cancelling, setCancelling] = useState(false);
   const [resuming, setResuming] = useState(false);
   const [portalOpening, setPortalOpening] = useState(false);
+  // Errors are scoped to the action that produced them so messages render
+  // adjacent to the button the user clicked, not in a shared slot.
+  const [portalError, setPortalError] = useState<string | null>(null);
   const [subActionError, setSubActionError] = useState<string | null>(null);
   // Optimistic override — flips immediately so the UI reflects the user's
   // intent while we wait for the Stripe webhook to reach Convex.
@@ -183,7 +186,7 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
 
   async function handleManagePayment() {
     if (!dbUser.stripeCustomerId) return;
-    setSubActionError(null);
+    setPortalError(null);
     setPortalOpening(true);
     try {
       const result = await createPortal({
@@ -192,10 +195,10 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
       if (result.url) {
         window.location.href = result.url;
       } else {
-        setSubActionError("Couldn't open the billing portal. Please try again.");
+        setPortalError("Couldn't open the billing portal. Please try again.");
       }
     } catch {
-      setSubActionError("Couldn't open the billing portal. Please try again.");
+      setPortalError("Couldn't open the billing portal. Please try again.");
     } finally {
       setPortalOpening(false);
     }
@@ -203,6 +206,7 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
 
   async function handleCancelSubscription() {
     if (!dbUser.stripeSubscriptionId) return;
+    setPortalError(null);
     setSubActionError(null);
     setCancelling(true);
     const result = await cancelSub({
@@ -224,6 +228,7 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
 
   async function handleResumeSubscription() {
     if (!dbUser.stripeSubscriptionId) return;
+    setPortalError(null);
     setSubActionError(null);
     setResuming(true);
     const result = await resumeSub({
@@ -320,6 +325,9 @@ function ManageView({ dbUser }: { dbUser: DbUser }) {
               {portalOpening ? "Opening..." : "Update card"}
             </button>
           </div>
+          {portalError && (
+            <p className="text-sm text-red-500 mt-3">{portalError}</p>
+          )}
         </section>
 
         {/* Subscription section */}
