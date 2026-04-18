@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -12,10 +12,10 @@ type Props = {
 // Heart button that toggles a recipe's saved state.
 // Uses Convex's real-time query — the button updates instantly after clicking.
 export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
-  const { user, isLoaded } = useUser();
+  const { user, isReady } = useAuthedUser();
   const favourites = useQuery(
     api.favourites.getFavourites,
-    isLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
   const saveFavourite = useMutation(api.favourites.saveFavourite);
   const removeFavourite = useMutation(api.favourites.removeFavourite);

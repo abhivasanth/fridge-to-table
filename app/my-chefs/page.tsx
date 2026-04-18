@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import { CHEFS } from "@/lib/chefs";
 import { getSlotIds, setSlotIds, MAX_CHEF_TABLE_SLOTS } from "@/lib/chefSlots";
@@ -36,11 +36,11 @@ export default function MyChefsMPage() {
 }
 
 function MyChefsContent() {
-  const { user, isLoaded } = useUser();
+  const { user, isReady } = useAuthedUser();
   const customChefs =
     useQuery(
       api.customChefs.listCustomChefs,
-      isLoaded && user ? {} : "skip"
+      isReady ? {} : "skip"
     ) ?? [];
 
   const addCustomChef = useMutation(api.customChefs.addCustomChef);

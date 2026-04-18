@@ -1,6 +1,6 @@
 "use client";
 import { useQuery, useMutation } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import type { Recipe } from "@/types/recipe";
@@ -9,11 +9,11 @@ import type { Id } from "@/convex/_generated/dataModel";
 // Loads and renders the user's saved recipes.
 // Uses Convex's real-time query — removes appear instantly without a page refresh.
 export function FavouritesGrid() {
-  const { user, isLoaded } = useUser();
+  const { isReady } = useAuthedUser();
   // `undefined` while loading, `[]` when loaded but empty
   const favourites = useQuery(
     api.favourites.getFavourites,
-    isLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
   const removeFavourite = useMutation(api.favourites.removeFavourite);
 

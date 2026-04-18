@@ -14,6 +14,7 @@ vi.mock("@/convex/_generated/api", () => ({
 
 vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
 }));
 
 vi.mock("@clerk/nextjs", () => ({

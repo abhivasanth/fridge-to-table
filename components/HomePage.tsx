@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAction, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import { saveHistoryEntry } from "@/lib/searchHistory";
 import { saveSearchState, loadSearchState } from "@/lib/searchState";
@@ -145,10 +145,10 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
     setMounted(true);
   }, []);
 
-  const { user, isLoaded: clerkLoaded } = useUser();
+  const { user, isReady } = useAuthedUser();
   const customChefsResult = useQuery(
     api.customChefs.listCustomChefs,
-    clerkLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
   const customChefsRaw = customChefsResult ?? [];
   const customChefsLoaded = customChefsResult !== undefined;

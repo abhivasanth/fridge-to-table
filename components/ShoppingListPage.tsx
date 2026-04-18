@@ -2,16 +2,16 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 
 export function ShoppingListPage() {
-  const { user, isLoaded } = useUser();
+  const { user, isReady } = useAuthedUser();
   const items = useQuery(
     api.shoppingList.getShoppingListItems,
-    isLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
   const addItem = useMutation(api.shoppingList.addToShoppingList);
   const removeItem = useMutation(api.shoppingList.removeFromShoppingList);

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import { CATEGORY_ORDER, CATEGORY_LABELS } from "@/lib/pantryUtils";
 import type { CategoryKey } from "@/lib/pantryUtils";
@@ -10,10 +10,10 @@ import type { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 
 export function PantryPage() {
-  const { user, isLoaded } = useUser();
+  const { user, isReady } = useAuthedUser();
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    isLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
   const addToPantry = useMutation(api.pantry.addToPantry);
   const removeFromPantry = useMutation(api.pantry.removeFromPantry);

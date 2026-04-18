@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useAuthedUser } from "@/hooks/useAuthedUser";
 import { api } from "@/convex/_generated/api";
 import { normalizeName } from "@/lib/pantryUtils";
 import { parseIngredientNames } from "@/lib/ingredientNameParser";
@@ -15,15 +15,15 @@ type Props = {
 type OptimisticState = "pantry" | "shopping" | null;
 
 export function RecipeShoppingCard({ shoppingList }: Props) {
-  const { user, isLoaded } = useUser();
+  const { user, isReady } = useAuthedUser();
 
   const pantryItems = useQuery(
     api.pantry.getPantryItems,
-    isLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
   const shoppingItems = useQuery(
     api.shoppingList.getShoppingListItems,
-    isLoaded && user ? {} : "skip"
+    isReady ? {} : "skip"
   );
 
   const addToPantry = useMutation(api.pantry.addToPantry);
