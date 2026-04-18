@@ -16,7 +16,6 @@ import type * as pantry from "../pantry.js";
 import type * as photos from "../photos.js";
 import type * as recipes from "../recipes.js";
 import type * as shoppingList from "../shoppingList.js";
-import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -33,7 +32,6 @@ declare const fullApi: ApiFromModules<{
   photos: typeof photos;
   recipes: typeof recipes;
   shoppingList: typeof shoppingList;
-  users: typeof users;
 }>;
 
 /**

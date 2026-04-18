@@ -3,18 +3,12 @@ import { v } from "convex/values";
 
 // The full database schema for Fridge to Table.
 // All user-owned tables are keyed by the Clerk user ID string (stored as `userId`).
+// There is intentionally no `users` table — Clerk is the source of truth for
+// identity; Clerk's dashboard shows every signed-up user with richer info
+// than we'd mirror (sign-up method, session history, OAuth providers).
+// Add a `users` table here only when a feature needs per-user server-side
+// metadata (admin roles, notification preferences, analytics aggregates).
 export default defineSchema({
-  // Users — mirrors Clerk identity for attaching app-specific data later.
-  // Created on first sign-in via getOrCreateUser mutation.
-  users: defineTable({
-    clerkId: v.string(),
-    email: v.string(),
-    firstName: v.optional(v.string()),
-    lastName: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  }).index("by_clerk_id", ["clerkId"]),
-
   // Each row stores one "search" — a set of 3 generated recipes for a user.
   recipes: defineTable({
     userId: v.string(),                // Clerk user ID
