@@ -1,4 +1,5 @@
 import { fetchQuery } from "convex/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 import { FavouriteButton } from "@/components/FavouriteButton";
 import { RecipeIngredientsList } from "@/components/RecipeIngredientsList";
@@ -13,9 +14,16 @@ type Props = {
 
 export default async function RecipeDetailPage({ params }: Props) {
   const { recipeSetId, recipeIndex: recipeIndexStr } = await params;
-  const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
-    recipeSetId: recipeSetId as Id<"recipes">,
-  });
+  const { getToken } = await auth();
+  const token = await getToken({ template: "convex" });
+
+  const recipeSet = token
+    ? await fetchQuery(
+        api.recipes.getRecipeSet,
+        { recipeSetId: recipeSetId as Id<"recipes"> },
+        { token }
+      )
+    : null;
 
   const recipeIndex = parseInt(recipeIndexStr, 10);
   const recipe = recipeSet

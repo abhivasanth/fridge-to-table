@@ -130,13 +130,19 @@ ${recipeSchema}`,
   },
 });
 
-// Retrieves a recipe set by its Convex ID.
-// Used by the results page and recipe detail page.
+// Retrieves a recipe set by its Convex ID. Scoped to the authenticated owner —
+// recipe IDs are opaque but we enforce ownership as defense-in-depth.
+// Returns null for unknown IDs or IDs owned by another user (deliberately
+// identical response to avoid leaking existence).
 export const getRecipeSet = query({
   args: {
     recipeSetId: v.id("recipes"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.recipeSetId);
+    const userId = await requireUserId(ctx);
+    const recipeSet = await ctx.db.get(args.recipeSetId);
+    if (!recipeSet) return null;
+    if (recipeSet.userId !== userId) return null;
+    return recipeSet;
   },
 });

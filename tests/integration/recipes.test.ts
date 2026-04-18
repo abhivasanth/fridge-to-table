@@ -66,7 +66,7 @@ describe("saveRecipeSet", () => {
     expect(saved!.generatedAt).toBeTypeOf("number");
   });
 
-  test("saved recipe set is retrievable via getRecipeSet", async () => {
+  test("saved recipe set is retrievable via getRecipeSet (by owner)", async () => {
     const t = convexTest(schema);
 
     const recipeSetId = await withUser(t, "user_save_2").mutation(
@@ -78,10 +78,47 @@ describe("saveRecipeSet", () => {
       }
     );
 
-    const result = await t.query(api.recipes.getRecipeSet, { recipeSetId });
+    const result = await withUser(t, "user_save_2").query(
+      api.recipes.getRecipeSet,
+      { recipeSetId }
+    );
     expect(result).not.toBeNull();
     expect(result!.userId).toBe("user_save_2");
     expect(result!.results).toHaveLength(1);
+  });
+
+  test("getRecipeSet returns null for a recipe owned by another user", async () => {
+    const t = convexTest(schema);
+    const recipeSetId = await withUser(t, "user_alice").mutation(
+      api.recipes.saveRecipeSet,
+      {
+        ingredients: ["rice"],
+        filters: { cuisine: "", maxCookingTime: 20, difficulty: "easy" },
+        results: [mockRecipe],
+      }
+    );
+
+    const bobView = await withUser(t, "user_bob").query(
+      api.recipes.getRecipeSet,
+      { recipeSetId }
+    );
+    expect(bobView).toBeNull();
+  });
+
+  test("getRecipeSet requires authentication", async () => {
+    const t = convexTest(schema);
+    const recipeSetId = await withUser(t, "user_alice").mutation(
+      api.recipes.saveRecipeSet,
+      {
+        ingredients: ["x"],
+        filters: { cuisine: "", maxCookingTime: 20, difficulty: "easy" },
+        results: [mockRecipe],
+      }
+    );
+
+    await expect(
+      t.query(api.recipes.getRecipeSet, { recipeSetId })
+    ).rejects.toThrow(/Not authenticated/);
   });
 
   test("unauthenticated callers can't save a recipe set", async () => {
@@ -151,7 +188,7 @@ describe("generateRecipes", () => {
     expect(saved!.results).toHaveLength(3);
   });
 
-  test("getRecipeSet returns the saved recipe set by ID", async () => {
+  test("getRecipeSet returns the saved recipe set by ID (for owner)", async () => {
     const t = convexTest(schema);
 
     const recipeSetId = await withUser(t, "user_xyz").action(
@@ -162,7 +199,10 @@ describe("generateRecipes", () => {
       }
     );
 
-    const result = await t.query(api.recipes.getRecipeSet, { recipeSetId });
+    const result = await withUser(t, "user_xyz").query(
+      api.recipes.getRecipeSet,
+      { recipeSetId }
+    );
 
     expect(result).not.toBeNull();
     expect(result!.results).toHaveLength(3);

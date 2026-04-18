@@ -101,8 +101,12 @@ ${recipeSchema}`,
 
     return Response.json({ recipeSetId });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[generate-recipes] Error:", message);
-    return Response.json({ error: message }, { status: 500 });
+    // Log the full error for observability but never leak it to the client —
+    // raw messages may include Anthropic / Convex / internal context.
+    console.error("[generate-recipes] Error:", err);
+    return Response.json(
+      { error: "Recipe generation failed" },
+      { status: 500 }
+    );
   }
 }

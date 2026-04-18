@@ -1,17 +1,30 @@
 // convex/users.ts
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { requireUserId } from "./auth";
 
-// Get user by Clerk ID — used by components to check if the user record exists.
-// Accepts clerkId as an argument (no auth required) because this is sometimes
-// called before the user is signed in to verify record existence.
-export const getByClerkId = query({
+// Internal: look up a user by Clerk ID. Not exposed publicly — doing so would
+// let any authenticated caller enumerate any other user's row. Use
+// `getCurrentUser` for the public, auth-scoped variant.
+export const getByClerkId = internalQuery({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+  },
+});
+
+// Public: return the currently-authenticated user's row (or null if no row
+// exists yet — the UserSync effect creates it on first sign-in).
+export const getCurrentUser = query({
+  args: {},
+  handler: async (ctx) => {
+    const clerkId = await requireUserId(ctx);
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
       .unique();
   },
 });

@@ -1,4 +1,5 @@
 import { fetchQuery } from "convex/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 import { RecipeCard } from "@/components/RecipeCard";
 import Link from "next/link";
@@ -9,12 +10,21 @@ type Props = {
   params: Promise<{ recipeSetId: string }>;
 };
 
-// Server component — fetches data before rendering (no loading spinner needed)
+// Server component — fetches data before rendering (no loading spinner needed).
+// Middleware ensures only authenticated users reach this route; we still
+// forward the Clerk JWT to Convex so `getRecipeSet` can enforce ownership.
 export default async function ResultsPage({ params }: Props) {
   const { recipeSetId } = await params;
-  const recipeSet = await fetchQuery(api.recipes.getRecipeSet, {
-    recipeSetId: recipeSetId as Id<"recipes">,
-  });
+  const { getToken } = await auth();
+  const token = await getToken({ template: "convex" });
+
+  const recipeSet = token
+    ? await fetchQuery(
+        api.recipes.getRecipeSet,
+        { recipeSetId: recipeSetId as Id<"recipes"> },
+        { token }
+      )
+    : null;
 
   if (!recipeSet) {
     return (
