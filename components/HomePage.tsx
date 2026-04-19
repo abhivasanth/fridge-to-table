@@ -135,10 +135,16 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Restore saved state from sessionStorage after mount
+  // Restore saved state from sessionStorage after mount.
+  // Also restores `activeTab` — without this, a signed-out visitor who
+  // submits from the Chef's Table tab, signs in, and returns would land
+  // on "/" with only `initialTab` from the server component (defaults to
+  // "any-recipe"), silently losing their tab selection. Saving without
+  // restoring would be worse-than-useless.
   useEffect(() => {
     const savedState = loadSearchState();
     if (savedState) {
+      setActiveTab(savedState.activeTab);
       setFilters(savedState.filters);
       setInitialText(savedState.ingredientText);
     }
