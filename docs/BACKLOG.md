@@ -1,6 +1,6 @@
 # Product Backlog
 
-Last updated: 2026-04-18
+Last updated: 2026-04-19
 
 ---
 
@@ -272,3 +272,52 @@ Today, production and dev share the same Clerk application (dev-mode `pk_test_..
 - Convex production deployment is a one-time `npx convex deploy` against a new deploy key; all future deploys from `main` flow through it
 - Consider adding a staging environment between dev and prod if the team grows
 - Retention: production data is real user data — FTT-007 (cron) and FTT-008 (cascade-delete) must be in place before or shortly after this lands
+
+---
+
+## FTT-010: Clear local search history + search state on explicit sign-out
+
+**Priority:** Medium
+**Points:** 2
+**Labels:** auth, privacy, ux
+
+### Description
+
+Browser `localStorage` key `ftt_search_history` (from `lib/searchHistory.ts`) and the in-flight `sessionStorage` key `fridgeToTable_searchState` (from `lib/searchState.ts`) are browser-scoped rather than account-scoped. If user A signs out and user B signs in on the same browser, user B sees user A's Recent Searches in the sidebar. Uncovered by PR #51 code-review finding I2 ("no clear on explicit sign-out"). Deferred at the time because it's pre-existing, not introduced by the PR.
+
+Also relevant for a single user who signs out intentionally and expects their history to disappear from the UI — matches the mental model that "my account's history" should feel account-scoped.
+
+### Acceptance Criteria
+
+- [ ] Signing out (via Clerk's `UserButton` → Sign out) clears `ftt_search_history` from localStorage
+- [ ] Signing out also clears `fridgeToTable_searchState` from sessionStorage (abandoned in-flight searches don't pre-populate the next visitor's form)
+- [ ] Chef roster selection (`fridgeToTable_selectedChefs` in localStorage) is **intentionally preserved** — this is a device preference, not user data
+- [ ] PR #51's save-before-redirect flow is not broken. Specifically: a signed-out user who submits Find Recipes and is sent to `/sign-in` must still see their ingredients/tab/filters restored after they actually sign in. The clear must only fire on a genuine signed-in → signed-out transition, not on every `!user` state.
+- [ ] Cross-tab behaviour verified: user signs out in tab A, tab B's `ClientNav` detects the session-change broadcast and clears its own storage
+- [ ] Existing tests still pass (`tests/unit/ClientNav.test.tsx`)
+- [ ] New test added: mock `useUser` transitioning from `{ user: non-null }` to `{ user: null }`, assert `clearHistory` and `clearSearchState` are called
+- [ ] README User Flow 0 and CLAUDE.md Auth Architecture updated to document the sign-out clearing behaviour
+
+### Technical Notes
+
+- Preferred implementation (from design triage): add a `useRef<boolean>` in `components/ClientNav.tsx` that tracks whether the user was signed in, then a `useEffect` that fires `clearHistory()` + `clearSearchState()` on the transition to `!user`.
+  ```tsx
+  const wasSignedIn = useRef(false);
+  useEffect(() => {
+    if (!authLoaded) return;
+    if (user) {
+      wasSignedIn.current = true;
+    } else if (wasSignedIn.current) {
+      clearHistory();
+      clearSearchState();
+      wasSignedIn.current = false;
+    }
+  }, [authLoaded, user]);
+  ```
+- The naive approach (`if (authLoaded && !user) clearHistory()`) will fire on `/sign-in` after a submit-while-signed-out, wiping PR #51's saved state. Use the ref-tracking pattern to only detect the transition.
+- If "pinned" history entries (via `updateHistoryEntry({ pinned: true })`) should survive sign-out, adjust `clearHistory()` to only delete unpinned entries. Current behaviour would clear all.
+- This does **not** address server-side recipe accumulation. That's FTT-007 (retention cron) and FTT-008 (account-deletion cascade) territory.
+
+### Out of scope
+
+- Moving search history to server-side (account-scoped storage). Separate decision — doubles the cost of every search write and violates the current YAGNI decision to keep history in localStorage.
