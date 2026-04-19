@@ -150,7 +150,7 @@ export function PantryPage() {
           <button
             onClick={handleAdd}
             disabled={!inputValue.trim()}
-            className="bg-[#1D9E75] text-white text-sm font-medium px-4 py-2 rounded-lg transition-opacity disabled:opacity-40"
+            className="bg-[#1D9E75] text-white text-sm font-medium px-4 py-2 rounded-lg transition-opacity disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
             Add
           </button>
@@ -203,7 +203,7 @@ export function PantryPage() {
                             item.name
                           )
                         }
-                        className="ml-2 text-[#B4B2A9] hover:text-[#888780] transition-colors leading-none"
+                        className="ml-2 text-[#B4B2A9] hover:text-[#888780] transition-colors leading-none cursor-pointer"
                         aria-label={`Remove ${item.name}`}
                       >
                         ×
@@ -234,7 +234,7 @@ export function PantryPage() {
           <span>Removed &ldquo;{pendingRemove.name}&rdquo;</span>
           <button
             onClick={handleUndo}
-            className="text-[#1D9E75] font-medium hover:underline"
+            className="text-[#1D9E75] font-medium hover:underline cursor-pointer"
           >
             Undo
           </button>

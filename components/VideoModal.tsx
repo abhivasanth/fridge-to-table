@@ -83,7 +83,7 @@ export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onC
           type="button"
           onClick={onClose}
           aria-label="Close video"
-          className="absolute -top-10 right-0 md:-top-10 md:right-0 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors z-20"
+          className="absolute -top-10 right-0 md:-top-10 md:right-0 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors z-20 cursor-pointer"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M2 2l10 10M12 2L2 12" />
@@ -123,7 +123,7 @@ export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onC
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 aria-label="Copy video link"
               >
                 {copied ? (
@@ -147,7 +147,7 @@ export function VideoModal({ videoId, title, chefName, chefEmoji, thumbnail, onC
                 href={youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
               >
                 Watch on YouTube ↗
               </a>

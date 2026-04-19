@@ -145,7 +145,7 @@ export function ShoppingListPage() {
                     onClick={() =>
                       handleRemove(item._id as Id<"shoppingListItems">)
                     }
-                    className="text-[#888780] hover:text-[#D4622A] transition-colors"
+                    className="text-[#888780] hover:text-[#D4622A] transition-colors cursor-pointer"
                     style={{ fontSize: "12px" }}
                   >
                     remove

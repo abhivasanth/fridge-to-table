@@ -39,7 +39,7 @@ export function FavouriteButton({ recipeSetId, recipeIndex }: Props) {
       onClick={handleToggle}
       aria-label={isFavourited ? "Remove from favourites" : "Save to favourites"}
       className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm
-                  border transition-colors
+                  border transition-colors cursor-pointer
                   ${
                     isFavourited
                       ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"

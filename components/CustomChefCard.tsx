@@ -27,7 +27,7 @@ export function CustomChefCard({ chef, onRemove, onAdd }: Props) {
         <button
           type="button"
           onClick={onRemove}
-          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 text-lg leading-none"
+          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 text-lg leading-none cursor-pointer"
           aria-label={`Remove ${chef.channelName}`}
         >
           ✕
@@ -37,7 +37,7 @@ export function CustomChefCard({ chef, onRemove, onAdd }: Props) {
         <button
           type="button"
           onClick={onAdd}
-          className="text-[#D4622A] text-sm font-semibold flex-shrink-0 hover:underline"
+          className="text-[#D4622A] text-sm font-semibold flex-shrink-0 hover:underline cursor-pointer"
           aria-label={`Add ${chef.channelName}`}
         >
           Add

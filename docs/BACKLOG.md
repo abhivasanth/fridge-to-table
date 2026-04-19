@@ -321,3 +321,54 @@ Also relevant for a single user who signs out intentionally and expects their hi
 ### Out of scope
 
 - Moving search history to server-side (account-scoped storage). Separate decision — doubles the cost of every search write and violates the current YAGNI decision to keep history in localStorage.
+
+---
+
+## FTT-011: Validate chef slot IDs against existing chefs (drop orphans)
+
+**Priority:** Medium
+**Points:** 2
+**Labels:** data-integrity, frontend, bug
+
+### Description
+
+`lib/chefSlots.ts:getSlotIds()` returns whatever is in localStorage (`fridgeToTable_chefTableSlots`) without cross-referencing against the set of chefs that actually exist (featured chefs in code + user's custom chefs in Convex). This lets orphan IDs accumulate and corrupt the slot count.
+
+**Observed failure mode (2026-04-19):** A user who previously added a custom YouTube chef (channelId stored in localStorage slot list) lost the Convex row during the pre-auth → post-auth migration wipe. Their localStorage still held the phantom channelId. Result: slot count read as 8/8 selected, but only 7 chefs rendered with checkmarks (the 8 featured). Attempting to toggle the un-selected 8th featured chef triggered the "8 chef limit reached" warning even though the user had 7 real selections.
+
+**Other scenarios that produce the same bug:**
+- Custom chef added on Device A, removed on Device B — Device A's localStorage keeps the orphan
+- A featured chef's `id` changes in code (renamed, restructured) — old localStorage entries become orphans
+- Clearing Convex data during any future schema migration without also clearing browser state
+
+### Acceptance Criteria
+
+- [ ] `getSlotIds()` (or a new `validateSlotIds(slotIds, availableIds)` helper) filters out IDs that don't match any currently-available chef (featured default IDs + current user's custom chef IDs from the `listCustomChefs` query)
+- [ ] Validation runs when `my-chefs/page.tsx` loads AND when `HomePage.tsx` reads slots — both surfaces today call `getSlotIds()` without validation
+- [ ] If the validated list drops below 8, the UI should NOT auto-pad with defaults — the user consciously un-selected those chefs previously. Just accurately report the current count.
+- [ ] When validation drops an ID, also write the cleaned list back to localStorage (self-healing on mount)
+- [ ] The custom chef removal flow (`handleRemove` in `app/my-chefs/page.tsx:142`) already cleans slotIds correctly — this change is belt-and-suspenders for orphans arising from other paths
+- [ ] Add a unit test: seed localStorage with `["chef-gordon-ramsay", "UC-phantom-id"]`, mount my-chefs with `customChefs = []`, assert the rendered count is 1 (not 2) and localStorage has been rewritten to `["chef-gordon-ramsay"]`
+- [ ] No regression to the existing `validateSelectedChefs(selectedIds, slotIds)` helper in `lib/chefSlots.ts`
+
+### Technical Notes
+
+- Likely shape:
+  ```ts
+  // lib/chefSlots.ts
+  export function validateSlotIds(slotIds: string[], availableIds: string[]): string[] {
+    const valid = slotIds.filter((id) => availableIds.includes(id));
+    if (valid.length !== slotIds.length) {
+      setSlotIds(valid); // self-heal
+    }
+    return valid;
+  }
+  ```
+- `availableIds` = `DEFAULT_CHEF_IDS.concat(customChefs.map(c => c.channelId))`
+- On `my-chefs` page, this needs `customChefs` from `useQuery(api.customChefs.listCustomChefs)` — so the validation must run inside the effect that depends on `customChefs` being defined (not in SSR).
+- On `HomePage.tsx`, the same pattern — wait for `customChefsResult !== undefined` before validating.
+- **Workaround for existing users hitting this today:** DevTools → Local Storage → delete key `fridgeToTable_chefTableSlots` → refresh. Slots reset to the 8 featured defaults.
+
+### Out of scope
+
+- Server-side storage of slot preferences. Today they're intentionally device-local (a design preference, not user data). This fix doesn't change that — only cleans orphans from the local store.

@@ -189,7 +189,7 @@ function MyChefsContent() {
                   key={chef.id}
                   type="button"
                   onClick={() => toggleSlot(chef.id)}
-                  className={`relative flex flex-col items-center p-4 pt-5 rounded-2xl border-2 text-center transition-all ${
+                  className={`relative flex flex-col items-center p-4 pt-5 rounded-2xl border-2 text-center transition-all cursor-pointer ${
                     isSlotted ? "border-[#D4622A] bg-orange-50" : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
@@ -235,7 +235,7 @@ function MyChefsContent() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); handleRemove(chef.channelId); }}
-                      className={`absolute top-2 w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 flex items-center justify-center transition-colors ${
+                      className={`absolute top-2 w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer ${
                         isSlotted ? "right-9" : "right-2"
                       }`}
                       aria-label={`Remove ${chef.channelName}`}
@@ -297,7 +297,7 @@ function MyChefsContent() {
                   type="button"
                   onClick={handleResolve}
                   disabled={isResolving || !input.trim()}
-                  className="bg-[#D4622A] text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50 hover:bg-[#bf5724] transition-colors"
+                  className="bg-[#D4622A] text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50 hover:bg-[#bf5724] transition-colors cursor-pointer disabled:cursor-not-allowed"
                 >
                   {isResolving ? "Finding…" : "Find"}
                 </button>
