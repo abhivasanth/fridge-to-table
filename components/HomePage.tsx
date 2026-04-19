@@ -135,10 +135,16 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Restore saved state from sessionStorage after mount
+  // Restore saved state from sessionStorage after mount.
+  // Also restores `activeTab` — without this, a signed-out visitor who
+  // submits from the Chef's Table tab, signs in, and returns would land
+  // on "/" with only `initialTab` from the server component (defaults to
+  // "any-recipe"), silently losing their tab selection. Saving without
+  // restoring would be worse-than-useless.
   useEffect(() => {
     const savedState = loadSearchState();
     if (savedState) {
+      setActiveTab(savedState.activeTab);
       setFilters(savedState.filters);
       setInitialText(savedState.ingredientText);
     }
@@ -197,7 +203,19 @@ export function HomePage({ initialTab }: { initialTab: ActiveTab }) {
     // require a signed-in user. Redirect before firing any network work so
     // signed-out visitors land on /sign-in instead of seeing the generic
     // "chef is taking a break" error from the catch below.
+    //
+    // Persist the in-flight form state to sessionStorage first so the user's
+    // ingredients, tab, and filters are restored when they return after sign-in
+    // — the existing `loadSearchState()` effect on mount will pick them up.
+    // (sessionStorage survives the OAuth redirect because it's tab-scoped.)
+    // Photo uploads aren't restored — the image isn't serialisable cheaply, so
+    // a signed-out photo user simply re-uploads after signing in.
     if (!user) {
+      saveSearchState({
+        activeTab,
+        ingredientText: ingredients.join(", "),
+        filters,
+      });
       router.push("/sign-in");
       return;
     }
