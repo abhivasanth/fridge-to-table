@@ -46,4 +46,16 @@ describe("ClientNav", () => {
     render(<ClientNav><div>test content</div></ClientNav>);
     expect(screen.getByText("test content")).toBeInTheDocument();
   });
+
+  it("shows exactly one auth CTA (pointing at /sign-in) when signed out", () => {
+    // Guards against future refactors silently reintroducing a second CTA or
+    // dropping the sign-in link entirely. The label is deliberately part of
+    // the assertion so renaming "Log in" is a deliberate edit, not an accident.
+    render(<ClientNav><div /></ClientNav>);
+    const signInLink = screen.getByRole("link", { name: /log in/i });
+    expect(signInLink).toHaveAttribute("href", "/sign-in");
+    expect(screen.queryAllByRole("link").filter(
+      (a) => a.getAttribute("href") === "/sign-in" || a.getAttribute("href") === "/sign-up"
+    )).toHaveLength(1);
+  });
 });

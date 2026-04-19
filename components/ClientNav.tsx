@@ -68,9 +68,10 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Top-right auth area — single Sign in CTA when logged out,
+      {/* Top-right auth area — single "Log in" CTA when logged out,
           UserButton when logged in. Clerk's SignIn card already surfaces
-          "Don't have an account? Sign up" for first-time visitors. */}
+          "Don't have an account? Sign up" for first-time visitors, so
+          we don't need a second top-level CTA. */}
       {authLoaded && (
         <div className="fixed top-3 right-4 z-[100] flex items-center gap-3">
           {user ? (
@@ -82,7 +83,7 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
           ) : (
             <Link
               href="/sign-in"
-              className="text-sm bg-[#D4622A] text-white px-5 py-2 rounded-full hover:bg-[#BF5525] transition-colors"
+              className="text-sm bg-[#D4622A] text-white px-5 py-3 rounded-full hover:bg-[#BF5525] transition-colors"
             >
               Log in
             </Link>
