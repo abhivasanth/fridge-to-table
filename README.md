@@ -103,7 +103,7 @@ fridge_to_table/
 │   ├── ConvexClientProvider.tsx            # ClerkProvider + ConvexProviderWithClerk
 │   ├── AuthPage.tsx                        # Shared shell for Clerk <SignIn>/<SignUp>
 │   ├── AuthGuard.tsx                       # Client gate: loading spinner + redirect to /sign-in
-│   ├── ClientNav.tsx                       # Top nav + collapsed icon rail (desktop)
+│   ├── ClientNav.tsx                       # Top nav + collapsed icon rail (desktop); single "Log in" CTA / UserButton
 │   ├── Sidebar.tsx                         # Slide-out sidebar (history, favourites, new search)
 │   ├── IngredientInput.tsx                 # Text/photo input + diet filter
 │   ├── FiltersPanel.tsx                    # Collapsible cuisine/time/difficulty filters
@@ -359,11 +359,12 @@ Vercel auto-injects a dev toolbar on `.vercel.app` preview URLs for logged-in Ve
 
 ### 0. Sign-in / sign-up
 1. Unauth'd visitors can view the home page (ingredient input + Chef's Table grid) and generic pages.
-2. Attempting a personalized action (generate recipes, save a favourite, visit `/favourites`, `/my-pantry`, `/my-shopping-list`, `/my-chefs`, or `/chef-results`) redirects to `/sign-in` via `middleware.ts` / `AuthGuard`.
-3. Sign-in options: **Continue with Google** (OAuth) or email + password.
-4. Sign-up mirrors sign-in — new users can create an account with either method.
-5. After authentication, Clerk issues a session JWT. `ConvexProviderWithClerk` forwards the JWT to Convex on every query/mutation.
-6. Top-right **UserButton** (Clerk component) opens the Manage Account modal (profile, security, connected accounts, sign out). There is intentionally no custom `/settings` page — Clerk handles it.
+2. The top-right nav shows a single orange **"Log in"** pill as the only auth CTA (no separate sign-up button). Rationale: OAuth collapses sign-in and sign-up into a single action, and Clerk's `<SignIn>` card already surfaces "Don't have an account? Sign up" as a footer link for first-time users.
+3. Attempting a personalized action (generate recipes, save a favourite, visit `/favourites`, `/my-pantry`, `/my-shopping-list`, `/my-chefs`, or `/chef-results`) redirects to `/sign-in` via `middleware.ts` / `AuthGuard`.
+4. Sign-in options: **Continue with Google** (OAuth) or email + password. New Google users are auto-created on first sign-in (Clerk default).
+5. **Form state preservation.** If a signed-out visitor submits the Find Recipes form (text or Chef's Table), `handleSubmit` in `HomePage.tsx` saves their ingredients, active tab, and filters to `sessionStorage` via `saveSearchState` before redirecting to `/sign-in`. After authentication, Clerk's `forceRedirectUrl="/"` returns them to the home page, where the existing `loadSearchState` effect rehydrates all three. sessionStorage is tab-scoped and survives the OAuth round-trip to Google and back. Photo uploads are intentionally not preserved (base64 is too large for sessionStorage; cheap to re-upload).
+6. After authentication, Clerk issues a session JWT. `ConvexProviderWithClerk` forwards the JWT to Convex on every query/mutation.
+7. Top-right **UserButton** (Clerk component) opens the Manage Account modal (profile, security, connected accounts, sign out). There is intentionally no custom `/settings` page — Clerk handles it.
 
 ### 1. Text input flow
 1. User enters ingredients as comma-separated text
