@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
@@ -23,13 +23,7 @@ function useIsDesktop() {
 export function ClientNav({ children }: { children: React.ReactNode }) {
   const isDesktop = useIsDesktop();
   const router = useRouter();
-  const pathname = usePathname();
   const { user, isLoaded: authLoaded } = useUser();
-
-  const onSignIn = pathname?.startsWith("/sign-in") ?? false;
-  const onSignUp = pathname?.startsWith("/sign-up") ?? false;
-  const filledClass = "text-sm bg-[#1A3A2A] text-white px-4 py-1.5 rounded-full hover:bg-[#2a5a3a] transition-colors";
-  const plainClass = "text-sm text-gray-600 hover:text-[#1A3A2A] transition-colors";
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -74,7 +68,9 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Top-right auth area — sign in/up when logged out, UserButton when logged in */}
+      {/* Top-right auth area — single Sign in CTA when logged out,
+          UserButton when logged in. Clerk's SignIn card already surfaces
+          "Don't have an account? Sign up" for first-time visitors. */}
       {authLoaded && (
         <div className="fixed top-3 right-4 z-[100] flex items-center gap-3">
           {user ? (
@@ -84,22 +80,12 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
               }}
             />
           ) : (
-            <>
-              <Link
-                href="/sign-in"
-                aria-current={onSignIn ? "page" : undefined}
-                className={onSignIn ? filledClass : plainClass}
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/sign-up"
-                aria-current={onSignUp ? "page" : undefined}
-                className={onSignIn ? plainClass : filledClass}
-              >
-                Sign up
-              </Link>
-            </>
+            <Link
+              href="/sign-in"
+              className="text-sm bg-[#1A3A2A] text-white px-4 py-1.5 rounded-full hover:bg-[#2a5a3a] transition-colors"
+            >
+              Sign in
+            </Link>
           )}
         </div>
       )}
