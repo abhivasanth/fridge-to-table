@@ -150,7 +150,7 @@ export function PantryPage() {
           <button
             onClick={handleAdd}
             disabled={!inputValue.trim()}
-            className="bg-[#1D9E75] text-white text-sm font-medium px-4 py-2 rounded-lg transition-opacity disabled:opacity-40"
+            className="bg-[#1D9E75] text-white text-sm font-medium px-4 py-2 rounded-lg transition-opacity disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
             Add
           </button>
