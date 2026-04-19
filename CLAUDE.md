@@ -82,6 +82,8 @@ These are the non-negotiable rules. A grep for any of these will catch regressio
 
 6. **Integration tests must cover the negative path for invariants 1, 2, and 5.** For each user-owned function: one `t.mutation(...)` (or `.query`/`.action`) call with no identity asserting `/Not authenticated/`, and for invariant 5, one cross-user ownership test asserting `/Forbidden/`. See `tests/integration/pantry.test.ts` and `tests/integration/shoppingList.test.ts` for the canonical shape.
 
+7. **Any submit handler that redirects a signed-out user to `/sign-in` must persist the user's in-flight intent to `sessionStorage` first.** Users who click Find Recipes while signed out lose their work if we redirect without saving. Pattern: `saveSearchState({ activeTab, ingredientText: ingredients.join(", "), filters })` before `router.push("/sign-in")`. The receiving side (`HomePage.tsx`'s mount `useEffect`) must also restore **every** field it saves — saving `activeTab` without calling `setActiveTab` on restore is a silent bug that drops the user on the default tab. sessionStorage is tab-scoped and survives OAuth round-trips; photo uploads are intentionally not preserved (too large, cheap to redo).
+
 ### Ownership checks on delete-by-ID
 
 Any function that accepts an `Id<"tableName">` from the client (e.g. `removeFromPantry({ id })`) must verify ownership before mutating:
@@ -255,3 +257,12 @@ First Preview deploy of PR #46 failed through four sequential env-var errors, ea
 4. Auth worked, but recipe generation returned `[generate-recipes] Error: e: Not Found ... clerkError: true, status: 404`. Root cause: the Clerk **JWT template named `convex`** didn't exist in the Clerk dashboard. `getToken({ template: "convex" })` 404s silently from the server's perspective — the API route bubbles it as 500. Fix: Clerk → Configure → JWT templates → New template → **Convex** preset → name it exactly `convex`. No redeploy needed.
 
 **Future preview deploys that fail:** check these in order. The error messages are specific enough to diagnose without reading code.
+
+### OAuth collapses sign-in and sign-up into one flow (learned 2026-04-18)
+For consumer apps that lead with Google / SSO as the primary auth path, showing separate "Sign in" and "Sign up" CTAs at the top level signals a distinction that doesn't exist in practice — Clerk (and most IDPs) auto-create accounts on first OAuth sign-in. Users click the two buttons interchangeably. PR #50 consolidated them into a single orange "Log in" pill; Clerk's `<SignIn>` card surfaces "Don't have an account? Sign up" as a footer link for first-time users, so the affordance isn't lost. Default to one CTA for consumer OAuth apps. Dual CTAs (optimized for conversion) only matter at scale — pre-launch and low-traffic products get simplicity wins.
+
+### Mobile tap targets need 48px minimum; `py-3` is the default (learned 2026-04-18)
+Apple HIG requires 44×44pt; Material Design requires 48×48dp. `text-sm` (line-height 20px) + `py-2` (16px total) = **36px tall** — below both guidelines. Use `py-3` (48px total height with text-sm) for any pill / button that could be hit on mobile, especially one pinned to screen edges where mis-taps cluster. Canonical example in this repo: the auth CTA in `components/ClientNav.tsx` and the empty-state CTA in `components/FavouritesGrid.tsx:39`.
+
+### Save before auth redirect — saveSearchState must pair with matching restore (learned 2026-04-18)
+If a signed-out user is mid-flow and we redirect them to `/sign-in`, their work must survive the round-trip. Pattern in `components/HomePage.tsx`: call `saveSearchState({ activeTab, ingredientText, filters })` immediately before `router.push("/sign-in")`. The mount `useEffect` on the same page reads `loadSearchState()` and rehydrates. sessionStorage is tab-scoped, so it survives the Clerk OAuth redirect to Google and back. **Critical gotcha discovered in PR #51 code review:** saving a field that isn't also restored is a silent bug. PR #51's first iteration saved `activeTab` but the restore effect only called `setFilters` and `setInitialText` — a Chef's Table user submitting and returning would silently land on the default tab. Always mirror every save field in the restore block. Photo uploads (base64) are intentionally excluded — too large for sessionStorage; re-upload is cheap.
