@@ -82,9 +82,9 @@ export function ClientNav({ children }: { children: React.ReactNode }) {
           ) : (
             <Link
               href="/sign-in"
-              className="text-sm bg-[#1A3A2A] text-white px-4 py-1.5 rounded-full hover:bg-[#2a5a3a] transition-colors"
+              className="text-sm bg-[#D4622A] text-white px-5 py-2 rounded-full hover:bg-[#BF5525] transition-colors"
             >
-              Sign In/Sign Up
+              Log in
             </Link>
           )}
         </div>
