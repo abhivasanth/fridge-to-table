@@ -203,7 +203,7 @@ export function PantryPage() {
                             item.name
                           )
                         }
-                        className="ml-2 text-[#B4B2A9] hover:text-[#888780] transition-colors leading-none"
+                        className="ml-2 text-[#B4B2A9] hover:text-[#888780] transition-colors leading-none cursor-pointer"
                         aria-label={`Remove ${item.name}`}
                       >
                         ×
@@ -234,7 +234,7 @@ export function PantryPage() {
           <span>Removed &ldquo;{pendingRemove.name}&rdquo;</span>
           <button
             onClick={handleUndo}
-            className="text-[#1D9E75] font-medium hover:underline"
+            className="text-[#1D9E75] font-medium hover:underline cursor-pointer"
           >
             Undo
           </button>

@@ -185,7 +185,7 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
                 onClick={() =>
                   handleAddToShopping(normalizedNames, ingredientNames)
                 }
-                className="text-[#BA7517] font-bold flex-shrink-0 w-5 text-center"
+                className="text-[#BA7517] font-bold flex-shrink-0 w-5 text-center cursor-pointer"
                 style={{ fontSize: "18px" }}
                 aria-label={`Add ${displayLabel} to shopping list`}
               >
@@ -195,7 +195,7 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
             {state === "in-shopping" && (
               <button
                 onClick={() => handleRemoveFromShopping(normalizedNames)}
-                className="text-[#BA7517] font-bold flex-shrink-0 w-5 text-center"
+                className="text-[#BA7517] font-bold flex-shrink-0 w-5 text-center cursor-pointer"
                 style={{ fontSize: "18px" }}
                 aria-label={`Remove ${displayLabel} from shopping list`}
               >
@@ -214,7 +214,7 @@ export function RecipeShoppingCard({ shoppingList }: Props) {
                 onClick={() =>
                   handleAddToPantry(normalizedNames, ingredientNames)
                 }
-                className="text-[#0F6E56] flex-shrink-0"
+                className="text-[#0F6E56] flex-shrink-0 cursor-pointer"
                 style={{ fontSize: "12px" }}
               >
                 already have it

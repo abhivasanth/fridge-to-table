@@ -95,7 +95,7 @@ function FavouriteCard({
       <button
         onClick={onRemove}
         aria-label="Remove from favourites"
-        className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors text-lg"
+        className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors text-lg cursor-pointer"
       >
         ♥
       </button>

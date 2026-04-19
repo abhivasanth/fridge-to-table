@@ -176,7 +176,7 @@ function HistoryItem({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setEditValue(entry.query); setEditing(true); }}
-            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" strokeLinejoin="round"/></svg>
             Rename
@@ -184,7 +184,7 @@ function HistoryItem({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onTogglePin(); setMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9.5 1.5l5 5-4 4-2-1-3 3.5-1-1 3.5-3-1-2-4 4z" strokeLinejoin="round"/></svg>
             {entry.pinned ? "Unpin" : "Pin"}
@@ -192,7 +192,7 @@ function HistoryItem({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onDelete(); setMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 4h12M5.5 4V2.5h5V4M6.5 7v5M9.5 7v5M3.5 4l1 10h7l1-10" strokeLinejoin="round" strokeLinecap="round"/></svg>
             Delete
